@@ -175,6 +175,7 @@ git commit -m "feat: add workspace core model"
 - Create: `Sources/SpeakDockCore/Models/AppSettings.swift`
 - Create: `Sources/SpeakDockMac/Settings/SettingsStore.swift`
 - Create: `Sources/SpeakDockMac/Settings/SettingsView.swift`
+- Create: `Sources/SpeakDockMac/Capture/CaptureRootMigrator.swift`
 - Create: `Sources/SpeakDockMac/MenuBar/MenuBarRoot.swift`
 - Create: `Tests/SpeakDockMacTests/SettingsStoreTests.swift`
 
@@ -187,6 +188,8 @@ git commit -m "feat: add workspace core model"
 - `RefineEngine` 默认关闭
 - `API Key` 可以被清空
 - 设置值能持久化并重新加载
+- capture 根目录变更时，支持一键整体迁移
+- 目标目录冲突时，迁移中止并提示
 
 **Step 2: 运行测试确认失败**
 
@@ -203,6 +206,7 @@ Expected:
 **Step 3: 实现设置层**
 
 - 用 `UserDefaults` 持久化语言、capture 根目录、refine 开关、`Base URL / API Key / Model`
+- 实现 capture 根目录整体迁移
 - 菜单栏至少提供：
   - 打开设置
   - 切换语言
@@ -226,7 +230,7 @@ Expected:
 **Step 5: Commit**
 
 ```bash
-git add Sources/SpeakDockCore/Models/AppSettings.swift Sources/SpeakDockMac/Settings/SettingsStore.swift Sources/SpeakDockMac/Settings/SettingsView.swift Sources/SpeakDockMac/MenuBar/MenuBarRoot.swift Tests/SpeakDockMacTests/SettingsStoreTests.swift
+git add Sources/SpeakDockCore/Models/AppSettings.swift Sources/SpeakDockMac/Settings/SettingsStore.swift Sources/SpeakDockMac/Settings/SettingsView.swift Sources/SpeakDockMac/Capture/CaptureRootMigrator.swift Sources/SpeakDockMac/MenuBar/MenuBarRoot.swift Tests/SpeakDockMacTests/SettingsStoreTests.swift
 git commit -m "feat: add settings and menu bar root"
 ```
 
@@ -270,6 +274,8 @@ Expected:
 - 使用 `CGEvent tap` 或等价机制监听 `Fn`
 - 抑制 `Fn` 事件继续传递
 - 把事件映射到核心 `TriggerEvent`
+- 如果默认 `Fn` 路径不可用，允许切换到替代热键
+- 菜单栏明确展示 trigger 是否可用
 
 **Step 5: 手动验证并 Commit**
 
@@ -285,6 +291,7 @@ Expected:
 - 松开 `Fn` 结束
 - 双击 `Fn` 产生提交事件
 - 不再弹系统 emoji 面板
+- 如果默认 trigger 不可用，menu bar 能提示异常状态
 
 ```bash
 git add Sources/SpeakDockCore/Trigger/TriggerEvent.swift Sources/SpeakDockCore/Trigger/TriggerAdapter.swift Sources/SpeakDockMac/Trigger/FnKeyTriggerAdapter.swift Sources/SpeakDockMac/Trigger/TriggerController.swift Tests/SpeakDockCoreTests/TriggerEventTests.swift
@@ -424,10 +431,12 @@ git commit -m "feat: add streaming speech engine and language switching"
 
 覆盖这些行为：
 
-- `Compose` 在有光标时被选中
+- 只有在可可靠判定为可编辑文本目标时，`Compose` 才被选中
 - `Capture` 在无光标时被选中
+- 权限缺失、目标不可判定、或目标不可安全注入时，不静默降级到 `Capture`
 - capture 文件名格式为 `speakdock-YYYYMMDD-HHMMSS.md`
 - 默认目录为桌面
+- `Capture` 首次落盘后，后续一律追加文件尾部
 
 **Step 2: 运行测试确认失败**
 
@@ -443,12 +452,15 @@ Expected:
 
 **Step 3: 实现输出适配**
 
+- `Compose` 只在 Accessibility 聚焦元素可判定为可编辑控件时成立
 - `Compose` 走剪贴板 + `Cmd+V`
 - CJK 输入源切到 ASCII 后再粘贴
 - 粘贴后恢复输入源和剪贴板
+- 当前目标不可可靠注入时，直接报 `Compose` 不可用
 - `Capture` 生成本地 `MD`
 - 首句写入后自动打开默认编辑器
-- 后续继续追加到同一文件
+- 后续继续追加到同一文件尾部
+- 不跟随默认编辑器当前光标
 
 **Step 4: 手动验证**
 
@@ -462,8 +474,10 @@ Expected:
 
 - 聊天框内能直接注入文字
 - 中文输入法下也能稳定注入
+- 权限缺失或目标不可注入时，不会误写成 `Capture`
 - 桌面上无输入框时会生成 `speakdock-*.md`
 - 系统默认编辑器自动打开该文件
+- 后续继续说时，内容继续追加到文件尾部
 
 **Step 5: Commit**
 
@@ -477,6 +491,7 @@ git commit -m "feat: add compose and capture targets"
 **Files:**
 - Create: `Sources/SpeakDockCore/Refine/RefineEngine.swift`
 - Create: `Sources/SpeakDockCore/Refine/ConservativeRefinePrompt.swift`
+- Create: `Sources/SpeakDockCore/Refine/CleanNormalizer.swift`
 - Create: `Sources/SpeakDockMac/Refine/OpenAICompatibleRefineEngine.swift`
 - Create: `Tests/SpeakDockCoreTests/ConservativeRefinePromptTests.swift`
 
@@ -487,6 +502,7 @@ git commit -m "feat: add compose and capture targets"
 - prompt 强调“只修复明显识别错误”
 - prompt 明确禁止润色、改写、删减
 - 未启用 refine 时热路径直接提交
+- 未启用 refine 时，`Clean` 只做确定性清洗
 
 **Step 2: 运行测试确认失败**
 
@@ -502,10 +518,12 @@ Expected:
 
 **Step 3: 实现 refine 接口**
 
+- 定义 `CleanNormalizer`
 - 定义 `RefineEngine` 协议
 - 定义保守纠错 prompt
 - 实现 OpenAI 兼容客户端
 - 把 `Refining...` 状态接到 overlay
+- 默认热路径先只依赖 `CleanNormalizer`
 
 **Step 4: 手动验证**
 
@@ -524,7 +542,7 @@ Expected:
 **Step 5: Commit**
 
 ```bash
-git add Sources/SpeakDockCore/Refine/RefineEngine.swift Sources/SpeakDockCore/Refine/ConservativeRefinePrompt.swift Sources/SpeakDockMac/Refine/OpenAICompatibleRefineEngine.swift Tests/SpeakDockCoreTests/ConservativeRefinePromptTests.swift
+git add Sources/SpeakDockCore/Refine/RefineEngine.swift Sources/SpeakDockCore/Refine/ConservativeRefinePrompt.swift Sources/SpeakDockCore/Refine/CleanNormalizer.swift Sources/SpeakDockMac/Refine/OpenAICompatibleRefineEngine.swift Tests/SpeakDockCoreTests/ConservativeRefinePromptTests.swift
 git commit -m "feat: add conservative refine engine"
 ```
 
@@ -534,6 +552,8 @@ git commit -m "feat: add conservative refine engine"
 - Create: `Sources/SpeakDockMac/App/HotPathCoordinator.swift`
 - Modify: `Sources/SpeakDockCore/Workspace/WorkspaceReducer.swift`
 - Modify: `Sources/SpeakDockMac/MenuBar/MenuBarRoot.swift`
+- Modify: `Sources/SpeakDockMac/Overlay/OverlayView.swift`
+- Modify: `Sources/SpeakDockMac/Overlay/OverlayPanelController.swift`
 - Create: `Tests/SpeakDockCoreTests/UndoFlowTests.swift`
 
 **Step 1: 写失败测试**
@@ -544,6 +564,9 @@ git commit -m "feat: add conservative refine engine"
 - 整理后再次点击会撤回
 - 整理后用户手改再撤回会触发确认需求
 - `Compose` 下双击提交会结束当前工作区
+- `UndoWindow` 固定为 8 秒
+- `Capture` 撤回只删除最近一次追加到文件尾部的片段
+- overlay 上的第二按钮承接整理 / 撤回入口
 
 **Step 2: 运行测试确认失败**
 
@@ -560,9 +583,12 @@ Expected:
 **Step 3: 实现最小协调层**
 
 - 串起 trigger、audio、speech、route、target、refine
-- 接入整理按钮
+- 在 overlay 上接入整理按钮
 - 接入撤回
 - 接入双击提交
+- 写死 `UndoWindow = 8 秒`
+- 按文档优先级复用第二按钮语义
+- `Capture` 回滚只回退最近一次尾部追加片段
 
 **Step 4: 手动验证**
 
@@ -577,11 +603,13 @@ Expected:
 - 一整条热路径可跑通
 - 整理/撤回行为符合文档
 - 双击提交在聊天框可用
+- overlay 上第二按钮可完成整理 / 撤回
+- `UndoWindow` 超时后按钮恢复普通整理
 
 **Step 5: Commit**
 
 ```bash
-git add Sources/SpeakDockMac/App/HotPathCoordinator.swift Sources/SpeakDockCore/Workspace/WorkspaceReducer.swift Sources/SpeakDockMac/MenuBar/MenuBarRoot.swift Tests/SpeakDockCoreTests/UndoFlowTests.swift
+git add Sources/SpeakDockMac/App/HotPathCoordinator.swift Sources/SpeakDockCore/Workspace/WorkspaceReducer.swift Sources/SpeakDockMac/MenuBar/MenuBarRoot.swift Sources/SpeakDockMac/Overlay/OverlayView.swift Sources/SpeakDockMac/Overlay/OverlayPanelController.swift Tests/SpeakDockCoreTests/UndoFlowTests.swift
 git commit -m "feat: wire hot path and undo flow"
 ```
 
@@ -598,6 +626,8 @@ git commit -m "feat: wire hot path and undo flow"
 - 写权限要求
 - 写已支持功能
 - 写未支持范围
+- 写默认 trigger 与替代 trigger 说明
+- 写每项权限对应的功能与失败表现
 
 **Step 2: 补人工验收清单**
 
@@ -606,12 +636,18 @@ git commit -m "feat: wire hot path and undo flow"
 - 启动后 menu bar 可见
 - `Fn` 按住/松开可用
 - 双击提交可用
+- `Fn` 默认路径下不弹 emoji 面板
 - 默认语言为中文
 - 语言切换生效
 - 悬浮层与波形可见
+- overlay 第二按钮可见
 - `Compose` 注入可用
+- 权限缺失时，`Compose` 不会静默降级成 `Capture`
 - `Capture` 生成 `MD` 并自动打开
+- 后续语音追加到文件尾部
+- capture 根目录迁移可用
 - `整理 / 撤回` 可用
+- `UndoWindow = 8 秒` 行为正确
 - refine 配置、测试、启停可用
 
 **Step 3: 跑最终验证**
