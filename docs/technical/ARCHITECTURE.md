@@ -620,18 +620,36 @@ macOS v1 的工程收口写死为：
   - 如果使用 `Fn`，则需要类似 `CGEvent tap` 的全局监听能力
   - 同时要抑制事件透传，避免触发系统 emoji 面板
   - `Fn` 是默认 trigger，不是唯一 trigger
-  - 如果 `Fn` 监听不稳定，v1 允许提供替代热键
+  - 如果 `Fn` 监听不稳定、权限缺失、或被外部设备占用，v1 不自动切到某个固定热键
+  - 这时 menu bar 必须明确显示 `Fn` 当前不可用
+  - 用户只能通过 Settings 显式选择替代 trigger 后继续使用
+  - 替代 trigger 只替换输入源，不改变“按住说话 / 松开结束 / 双击提交”的语义
   - 如果权限缺失导致 trigger 不可用，menu bar 必须明确显示当前 trigger 不可用
   - 默认 `Fn` 路径下，“不弹系统 emoji 面板”是硬验收标准
   - 后续硬件 adapter 可以覆盖默认触发源
 
 - 权限模型
-  - macOS v1 至少要覆盖权限说明：
+  - macOS v1 至少要覆盖这些权限：
     - 麦克风权限
     - Speech Recognition 权限
     - Accessibility 权限
-    - 是否需要 Input Monitoring，取决于最终 trigger 方案
-  - README 和人工验收清单都必须明确写出每项权限的用途与失败表现
+    - Input Monitoring
+  - 其中 `Input Monitoring` 是条件性权限，只在默认 `Fn` 监听方案确实依赖它时才要求
+  - 每项权限都必须写清功能与失败表现：
+    - 麦克风权限缺失
+      - 不能录音
+      - 不能驱动实时波形
+      - 应直接提示录音不可用
+    - Speech Recognition 权限缺失
+      - 可以进入录音态，但不能产出最终文本
+      - 热路径不能假装成功提交
+    - Accessibility 权限缺失
+      - 不能可靠判定当前可编辑目标
+      - `Compose` 必须直接报不可用，不能静默改写成 `Capture`
+    - Input Monitoring 缺失
+      - 默认 `Fn` trigger 不可用或不稳定
+      - menu bar 必须提示 trigger 异常，并引导用户改用显式配置的替代 trigger
+  - README 和人工验收清单都必须同步这一套权限口径
 
 - ASR 与语言
   - 优先流式转录

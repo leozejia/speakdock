@@ -11,6 +11,7 @@
 ## 计划
 
 - `docs/plans/2026-04-10-speakdock-macos-v1-implementation.md`
+- `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md`
 
 ## 研究
 

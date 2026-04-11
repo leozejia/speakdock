@@ -1,7 +1,5 @@
 # SpeakDock macOS v1 Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-
 **Goal:** 构建 SpeakDock 的首个 macOS v1 可运行版本，打通 `按住说话 -> 松开 -> 转录/整理 -> 写入 -> 可撤回` 的本地优先热路径。
 
 **Architecture:** 采用 `一个共享核心 + 一个 macOS 壳层` 的结构。先把 `Workspace + raw_context + TriggerAdapter + ASR + TargetAdapter` 跑通，再补 `RefineEngine` 与 `WikiCompiler` 的可插拔接口，保证后续 iOS 和更多硬件输入源都能复用核心。
@@ -185,9 +183,11 @@ git commit -m "feat: add workspace core model"
 
 - 默认语言为 `zh-CN`
 - 默认 capture 根目录为桌面
+- 默认 trigger 为 `Fn`
 - `RefineEngine` 默认关闭
 - `API Key` 可以被清空
 - 设置值能持久化并重新加载
+- 用户显式切换到替代 trigger 后，设置值能持久化并重新加载
 - capture 根目录变更时，支持一键整体迁移
 - 目标目录冲突时，迁移中止并提示
 
@@ -205,11 +205,13 @@ Expected:
 
 **Step 3: 实现设置层**
 
-- 用 `UserDefaults` 持久化语言、capture 根目录、refine 开关、`Base URL / API Key / Model`
+- 用 `UserDefaults` 持久化语言、capture 根目录、默认/替代 trigger、refine 开关、`Base URL / API Key / Model`
 - 实现 capture 根目录整体迁移
 - 菜单栏至少提供：
   - 打开设置
   - 切换语言
+  - 显示当前 trigger 状态
+  - 当 `Fn` 不可用时进入替代 trigger 配置入口
   - 启用/禁用 refine
   - 退出
 
@@ -274,7 +276,9 @@ Expected:
 - 使用 `CGEvent tap` 或等价机制监听 `Fn`
 - 抑制 `Fn` 事件继续传递
 - 把事件映射到核心 `TriggerEvent`
-- 如果默认 `Fn` 路径不可用，允许切换到替代热键
+- 如果默认 `Fn` 路径不可用，不自动切换到某个固定热键
+- menu bar 明确显示 `Fn` 当前不可用
+- 用户必须在 Settings 里显式选择替代 trigger 后，才切换到新的 trigger
 - 菜单栏明确展示 trigger 是否可用
 
 **Step 5: 手动验证并 Commit**
@@ -292,6 +296,7 @@ Expected:
 - 双击 `Fn` 产生提交事件
 - 不再弹系统 emoji 面板
 - 如果默认 trigger 不可用，menu bar 能提示异常状态
+- 显式切换到替代 trigger 后，按住/松开/双击语义保持一致
 
 ```bash
 git add Sources/SpeakDockCore/Trigger/TriggerEvent.swift Sources/SpeakDockCore/Trigger/TriggerAdapter.swift Sources/SpeakDockMac/Trigger/FnKeyTriggerAdapter.swift Sources/SpeakDockMac/Trigger/TriggerController.swift Tests/SpeakDockCoreTests/TriggerEventTests.swift
@@ -617,6 +622,7 @@ git commit -m "feat: wire hot path and undo flow"
 
 **Files:**
 - Modify: `README.md`
+- Modify: `docs/README.md`
 - Modify: `docs/technical/ARCHITECTURE.md`
 - Create: `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md`
 
@@ -624,9 +630,11 @@ git commit -m "feat: wire hot path and undo flow"
 
 - 写启动方式
 - 写权限要求
+- 写权限矩阵
 - 写已支持功能
 - 写未支持范围
 - 写默认 trigger 与替代 trigger 说明
+- 写“`Fn` 不可用时不自动切换，必须显式选择替代 trigger”
 - 写每项权限对应的功能与失败表现
 
 **Step 2: 补人工验收清单**
@@ -637,6 +645,8 @@ git commit -m "feat: wire hot path and undo flow"
 - `Fn` 按住/松开可用
 - 双击提交可用
 - `Fn` 默认路径下不弹 emoji 面板
+- `Fn` 不可用时，menu bar 会明确提示
+- 用户显式切换到替代 trigger 后，替代 trigger 可用
 - 默认语言为中文
 - 语言切换生效
 - 悬浮层与波形可见
@@ -667,7 +677,7 @@ Expected:
 **Step 4: Commit**
 
 ```bash
-git add README.md docs/technical/ARCHITECTURE.md docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md
+git add README.md docs/README.md docs/technical/ARCHITECTURE.md docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md
 git commit -m "docs: add macOS v1 test checklist and polish docs"
 ```
 
@@ -677,6 +687,7 @@ git commit -m "docs: add macOS v1 test checklist and polish docs"
 
 - menu bar app 可稳定启动
 - 默认 `Fn` 热路径可用
+- `Fn` 不可用时，menu bar 能告警且可切换替代 trigger
 - 中文默认可识别
 - `Compose` 注入成功
 - `Capture` 生成并打开本地 `MD`
