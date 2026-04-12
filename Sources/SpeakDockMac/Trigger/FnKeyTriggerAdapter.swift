@@ -81,6 +81,21 @@ enum ModifierTriggerKey: String, CaseIterable, Sendable {
     }
 }
 
+protocol EventTapPermissionChecking: AnyObject {
+    func preflightListenEventAccess() -> Bool
+    func requestListenEventAccess() -> Bool
+}
+
+final class CoreGraphicsEventTapPermissionChecker: EventTapPermissionChecking {
+    func preflightListenEventAccess() -> Bool {
+        CGPreflightListenEventAccess()
+    }
+
+    func requestListenEventAccess() -> Bool {
+        CGRequestListenEventAccess()
+    }
+}
+
 @MainActor
 final class FnKeyTriggerAdapter: TriggerAdapter {
     var onInputEvent: ((TriggerInputEvent) -> Void)?
@@ -88,15 +103,25 @@ final class FnKeyTriggerAdapter: TriggerAdapter {
     var onAvailabilityChanged: ((TriggerAvailability) -> Void)?
 
     private let triggerKey: ModifierTriggerKey
+    private let permissionChecker: EventTapPermissionChecking
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var isPressed = false
 
-    init(triggerKey: ModifierTriggerKey = .fn) {
+    init(
+        triggerKey: ModifierTriggerKey = .fn,
+        permissionChecker: EventTapPermissionChecking = CoreGraphicsEventTapPermissionChecker()
+    ) {
         self.triggerKey = triggerKey
+        self.permissionChecker = permissionChecker
     }
 
     func start() {
+        guard permissionChecker.preflightListenEventAccess() || permissionChecker.requestListenEventAccess() else {
+            onAvailabilityChanged?(.unavailable(label: "\(triggerKey.unavailableLabel): Input Monitoring Required"))
+            return
+        }
+
         let mask = CGEventMask(1 << CGEventType.flagsChanged.rawValue)
         let refcon = Unmanaged.passUnretained(self).toOpaque()
 

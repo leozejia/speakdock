@@ -380,9 +380,35 @@
   - `make build` -> pass
   - `make run` -> app 启动后保持存活，手动 quit 后退出，没有新增 `SpeakDock` 崩溃报告
 
+#### Hotfix: 启动后 `Fn` 没反应
+
+- 状态：`Complete`
+- 用户反馈：
+  - `make run` 不再崩溃
+  - 但启动后按 `Fn` 没有可见反应
+- 诊断证据：
+  - 进程检查发现之前存在两个 `SpeakDock` 实例，其中一个是验证时遗留的旧实例；已清理到无运行实例
+  - `FnKeyTriggerAdapter.start()` 原实现直接调用 `CGEvent.tapCreate`，没有先走 `CGPreflightListenEventAccess / CGRequestListenEventAccess`
+  - SDK 中 `CoreGraphics` 提供 `CGPreflightListenEventAccess / CGRequestListenEventAccess`，与当前 `CGEvent tap` 监听路径匹配
+  - `Info.plist` 原先没有 `NSInputMonitoringUsageDescription`，无法给默认 `Fn` 全局监听提供明确授权说明
+- 修复：
+  - `FnKeyTriggerAdapter` 增加 `EventTapPermissionChecking`，启动时先 preflight，不满足时主动 request
+  - 权限仍不可用时，menu bar 状态显示 `Fn Unavailable: Input Monitoring Required`
+  - `Info.plist` 增加 `NSInputMonitoringUsageDescription`
+  - 手动验收清单补充首次 Input Monitoring 授权与重启提示
+  - 新增 `FnKeyTriggerAdapterPermissionTests` 和 `PermissionPlistTests`
+- 验证结果：
+  - `make test TEST_FILTER=FnKeyTriggerAdapterPermissionTests` -> pass
+  - `make test TEST_FILTER=PermissionPlistTests` -> pass
+  - `make test` -> pass，`36` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+  - `make build` -> pass
+  - 已确认源码与 `.build/debug/SpeakDock.app/Contents/Info.plist` 均包含 `NSInputMonitoringUsageDescription`
+- 备注：
+  - 图形环境中实际弹窗、授权后是否需要重启、以及 `Fn` 是否进入 `Listening`，仍需由用户在前台环境复测
+
 ## 5. 下一步
 
 - 按 `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md` 在真实图形环境里逐项验收
-- 优先重新运行 `make run`，确认不再出现 `Abort trap: 6`
+- 优先重新运行 `make run`，确认不再出现 `Abort trap: 6`，并处理 Input Monitoring 授权提示
 - 然后验证 `Fn / 替代 trigger / overlay 第二按钮 / Compose / Capture / UndoWindow`
 - 在具备网络条件的环境里验证 refine `Test` 与真实 `Refining...` 往返
