@@ -1,0 +1,226 @@
+import AppKit
+import ApplicationServices
+
+enum ComposeTargetAvailability: Equatable {
+    case available(targetID: String)
+    case noTarget
+    case unavailable(reason: String)
+}
+
+enum ClipboardComposeTargetError: LocalizedError {
+    case unavailable(String)
+
+    var errorDescription: String? {
+        switch self {
+        case let .unavailable(reason):
+            reason
+        }
+    }
+}
+
+@MainActor
+final class ClipboardComposeTarget {
+    private let pasteboard: NSPasteboard
+    private let inputSourceSwitcher: InputSourceSwitcher
+    private let workspace: NSWorkspace
+
+    init(
+        pasteboard: NSPasteboard = .general,
+        inputSourceSwitcher: InputSourceSwitcher = InputSourceSwitcher(),
+        workspace: NSWorkspace = .shared
+    ) {
+        self.pasteboard = pasteboard
+        self.inputSourceSwitcher = inputSourceSwitcher
+        self.workspace = workspace
+    }
+
+    func availability() -> ComposeTargetAvailability {
+        guard AXIsProcessTrusted() else {
+            return .unavailable(reason: "Compose Unavailable")
+        }
+
+        let systemWideElement = AXUIElementCreateSystemWide()
+        var focusedValue: CFTypeRef?
+        let error = AXUIElementCopyAttributeValue(
+            systemWideElement,
+            kAXFocusedUIElementAttribute as CFString,
+            &focusedValue
+        )
+
+        switch error {
+        case .success:
+            guard let focusedValue else {
+                return .noTarget
+            }
+
+            let focusedElement = focusedValue as! AXUIElement
+            if isEditableTextElement(focusedElement) {
+                return .available(targetID: targetIdentifier(for: focusedElement))
+            }
+
+            if isClearlyNonTextTarget(focusedElement) {
+                return .noTarget
+            }
+
+            return .unavailable(reason: "Compose Unavailable")
+
+        case .noValue, .attributeUnsupported:
+            return .noTarget
+
+        case .apiDisabled:
+            return .unavailable(reason: "Compose Unavailable")
+
+        default:
+            return .unavailable(reason: "Compose Unavailable")
+        }
+    }
+
+    func inject(_ text: String) throws {
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else {
+            return
+        }
+
+        guard case .available = availability() else {
+            throw ClipboardComposeTargetError.unavailable("Compose Unavailable")
+        }
+
+        let savedText = pasteboard.string(forType: .string)
+        pasteboard.clearContents()
+        pasteboard.setString(trimmedText, forType: .string)
+
+        let restoreToken = inputSourceSwitcher.prepareForASCIIInjection()
+        postPasteShortcut()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.inputSourceSwitcher.restore(restoreToken)
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.pasteboard.clearContents()
+            if let savedText {
+                self?.pasteboard.setString(savedText, forType: .string)
+            }
+        }
+    }
+
+    func submitCurrentTarget(expectedTargetID: String) throws {
+        try ensureAvailableTarget(expectedTargetID: expectedTargetID)
+        postKeyboardShortcut(keyCode: 0x24, flags: [])
+    }
+
+    func undoLastInsertion(expectedTargetID: String) throws {
+        try ensureAvailableTarget(expectedTargetID: expectedTargetID)
+        postKeyboardShortcut(keyCode: 0x06, flags: .maskCommand)
+    }
+
+    func replaceWorkspaceText(
+        with text: String,
+        undoCount: Int,
+        expectedTargetID: String
+    ) throws {
+        let effectiveUndoCount = max(undoCount, 1)
+        try ensureAvailableTarget(expectedTargetID: expectedTargetID)
+
+        for _ in 0..<effectiveUndoCount {
+            postKeyboardShortcut(keyCode: 0x06, flags: .maskCommand)
+            usleep(50_000)
+        }
+
+        try inject(text)
+    }
+
+    func frontmostApplicationBundleIdentifier() -> String? {
+        workspace.frontmostApplication?.bundleIdentifier
+    }
+
+    private func ensureAvailableTarget(expectedTargetID: String) throws {
+        guard case let .available(targetID) = availability(), targetID == expectedTargetID else {
+            throw ClipboardComposeTargetError.unavailable("Compose Unavailable")
+        }
+    }
+
+    private func postPasteShortcut() {
+        postKeyboardShortcut(keyCode: 0x09, flags: .maskCommand)
+    }
+
+    private func postKeyboardShortcut(keyCode: CGKeyCode, flags: CGEventFlags) {
+        let eventSource = CGEventSource(stateID: .combinedSessionState)
+        let keyDown = CGEvent(keyboardEventSource: eventSource, virtualKey: keyCode, keyDown: true)
+        keyDown?.flags = flags
+
+        let keyUp = CGEvent(keyboardEventSource: eventSource, virtualKey: keyCode, keyDown: false)
+        keyUp?.flags = flags
+
+        keyDown?.post(tap: .cgAnnotatedSessionEventTap)
+        keyUp?.post(tap: .cgAnnotatedSessionEventTap)
+    }
+
+    private func isEditableTextElement(_ element: AXUIElement) -> Bool {
+        guard boolAttribute(kAXEnabledAttribute, on: element) ?? true else {
+            return false
+        }
+
+        if boolAttribute("AXEditable", on: element) == true {
+            return true
+        }
+
+        guard let role = stringAttribute(kAXRoleAttribute, on: element) else {
+            return false
+        }
+
+        if role == kAXTextFieldRole as String || role == kAXTextAreaRole as String || role == "AXSearchField" {
+            return true
+        }
+
+        return false
+    }
+
+    private func isClearlyNonTextTarget(_ element: AXUIElement) -> Bool {
+        guard let role = stringAttribute(kAXRoleAttribute, on: element) else {
+            return false
+        }
+
+        return [
+            kAXApplicationRole as String,
+            kAXWindowRole as String,
+            kAXButtonRole as String,
+            kAXGroupRole as String,
+            kAXScrollAreaRole as String,
+            kAXToolbarRole as String,
+            kAXSplitGroupRole as String,
+            kAXLayoutAreaRole as String,
+            kAXImageRole as String,
+            kAXMenuBarRole as String,
+            kAXMenuItemRole as String,
+        ].contains(role)
+    }
+
+    private func targetIdentifier(for element: AXUIElement) -> String {
+        var pid: pid_t = 0
+        AXUIElementGetPid(element, &pid)
+        let role = stringAttribute(kAXRoleAttribute, on: element) ?? "unknown"
+        let title = stringAttribute(kAXTitleAttribute, on: element) ?? ""
+        return "\(pid):\(role):\(title)"
+    }
+
+    private func boolAttribute(_ attribute: String, on element: AXUIElement) -> Bool? {
+        var value: CFTypeRef?
+        let error = AXUIElementCopyAttributeValue(element, attribute as CFString, &value)
+        guard error == .success, let value else {
+            return nil
+        }
+
+        return (value as? NSNumber)?.boolValue
+    }
+
+    private func stringAttribute(_ attribute: String, on element: AXUIElement) -> String? {
+        var value: CFTypeRef?
+        let error = AXUIElementCopyAttributeValue(element, attribute as CFString, &value)
+        guard error == .success, let value else {
+            return nil
+        }
+
+        return value as? String
+    }
+}

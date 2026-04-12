@@ -1,26 +1,35 @@
 # SpeakDock
 
-SpeakDock 是一个 macOS 本地优先语音工作流系统。
+SpeakDock 是一个 macOS 本地优先语音工作流系统。当前仓库已经落地 macOS v1 参考实现，产品行为以 `docs/technical/ARCHITECTURE.md` 为准，任务顺序和收尾状态分别记录在实现计划与执行日志里。
 
-当前仓库以文档和实现计划为主，macOS v1 先落地，iOS 后续复用同一套核心模型。
+## Quick Start
 
-目标很简单：
+```bash
+cd labs/speakdock
+make build
+make run
+make test
+```
 
-- 用支持的硬件触发录音
-- 用户自然说话
-- 本地组件完成正确动作
-- 结果被路由到当前光标、本地 `MD` 工作区或后台知识层
-
-四个原则：
-
-- 大多数请求本地完成
-- 兼容 Obsidian 风格目录
-- `DJI` 只是第一个试点硬件 adapter
-- 严格区分即时沟通和长期沉淀
-
-当前真相源：
+常用文档：
 
 - `docs/technical/ARCHITECTURE.md`
+- `docs/plans/2026-04-10-speakdock-macos-v1-implementation.md`
+- `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md`
+- `docs/plans/2026-04-11-speakdock-macos-v1-execution-log.md`
+
+## 当前已支持
+
+- menu bar app 形态，默认无 Dock 图标
+- 默认 `Fn` 的 `按住说话 / 松开结束 / 双击提交`
+- `Fn` 不可用时的明确告警，以及用户显式选择替代 trigger
+- `Listening / Thinking / Refining` overlay、实时波形、partial transcript
+- Apple Speech 流式识别，默认 `zh-CN`，支持 `en-US / zh-CN / zh-TW / ja-JP / ko-KR`
+- `Compose` 路径的剪贴板注入、临时 ASCII 输入源切换与恢复
+- `Capture` 路径的 `speakdock-YYYYMMDD-HHMMSS.md` 落盘、自动打开、持续追加
+- `整理 / 撤回 / UndoWindow = 8 秒 / 双击提交`
+- 保守 refine、OpenAI 兼容接口、失败时 fail-open
+- Settings 里的 `Choose & Migrate…`、`Test`、`Save`
 
 ## macOS v1 关键规则
 
@@ -28,6 +37,8 @@ SpeakDock 是一个 macOS 本地优先语音工作流系统。
 - `Fn` 不可用时，不自动切到某个固定热键
 - menu bar 必须明确显示 `Fn` 当前不可用
 - 用户需要在 Settings 里显式选择替代 trigger 后才能继续
+- `Compose` 不可用时直接报错，不能静默降级成 `Capture`
+- refine 是可选能力，默认热路径不能被 refine 失败阻塞
 - `DJI` 或其他硬件 adapter 只覆盖输入层，不改上层产品语义
 
 ## 权限矩阵
@@ -44,9 +55,16 @@ SpeakDock 是一个 macOS 本地优先语音工作流系统。
 - `Input Monitoring` 是否需要，取决于最终采用的 `Fn` 监听实现
 - 如果当前走外接硬件 trigger，而不是键盘 `Fn`，这项权限可以不作为前提
 
-## Docs
+## 当前不在 macOS v1 范围内
 
-- `docs/README.md`
-- `docs/technical/ARCHITECTURE.md`
-- `docs/plans/2026-04-10-speakdock-macos-v1-implementation.md`
-- `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md`
+- iOS 壳层与跨端同步
+- 后台 Wiki / 知识层写回
+- 面向具体第三方应用的深度适配规则库
+- 超出手动验收单范围的性能与长期稳定性结论
+
+## 手动验收重点
+
+- `Fn` 默认路径、替代 trigger、menu bar 告警
+- `Compose / Capture / Undo / 双击提交`
+- `Choose & Migrate…`、`Test / Save`
+- refine 真实网络往返、overlay 状态与权限失败路径
