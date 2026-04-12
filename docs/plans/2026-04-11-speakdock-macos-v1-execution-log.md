@@ -359,8 +359,30 @@
   - `Save` 按钮与当前自动持久化并存，目的是满足显式保存入口与人工验收要求
   - `Test` 按钮的真实联网往返、`Choose & Migrate…` 的对话框交互、以及权限弹窗路径，仍需在具备图形环境和网络条件的机器上人工确认
 
+#### Hotfix: `make run` 启动崩溃
+
+- 状态：`Complete`
+- 用户反馈：
+  - `make run` 构建成功
+  - 启动后返回 `Abort trap: 6`
+- 诊断证据：
+  - 环境：`macOS 15.7.4 (24G517)`
+  - 崩溃报告 `SpeakDock-2026-04-12-112019.ips / 112027.ips` 显示 TCC 在权限路径中触发 `SIGABRT`
+  - 直接执行 app 内二进制会绕开正常 `.app` 启动语义，权限路径更容易落入 TCC 异常
+  - 通过 LaunchServices 启动 `.app` 后，又暴露出 `SpeakDockApp.init()` 过早创建 `OverlayPanelController` 的问题，崩溃栈落在 `OverlayView.swift` / `OverlayPanelController.swift` 的 AppKit 初始化路径
+- 修复：
+  - `scripts/run-dev.sh` 改为 `open -n -W "$APP_PATH"`，让开发启动路径按 `.app` 方式进入
+  - `OverlayPanelController` 改为懒创建 `OverlayPanel / OverlayView`，避免在 `App.init()` 阶段提前触发 AppKit 注册
+  - 新增 `OverlayPanelControllerTests`，覆盖 controller 初始化不应提前创建 overlay 的约束
+- 验证结果：
+  - `make test TEST_FILTER=OverlayPanelControllerTests` -> pass
+  - `make test` -> pass，`34` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+  - `make build` -> pass
+  - `make run` -> app 启动后保持存活，手动 quit 后退出，没有新增 `SpeakDock` 崩溃报告
+
 ## 5. 下一步
 
 - 按 `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md` 在真实图形环境里逐项验收
-- 优先验证 `Fn / 替代 trigger / overlay 第二按钮 / Compose / Capture / UndoWindow`
+- 优先重新运行 `make run`，确认不再出现 `Abort trap: 6`
+- 然后验证 `Fn / 替代 trigger / overlay 第二按钮 / Compose / Capture / UndoWindow`
 - 在具备网络条件的环境里验证 refine `Test` 与真实 `Refining...` 往返

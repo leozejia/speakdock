@@ -5,30 +5,24 @@ import QuartzCore
 final class OverlayPanelController {
     var onSecondaryAction: (() -> Void)? {
         didSet {
-            overlayView.onSecondaryAction = onSecondaryAction
+            overlayView?.onSecondaryAction = onSecondaryAction
         }
     }
 
-    private let panel: OverlayPanel
-    private let overlayView: OverlayView
+    private var panel: OverlayPanel?
+    private var overlayView: OverlayView?
     private var content = OverlayContent(phase: .listening)
     private var dismissTask: Task<Void, Never>?
     private var secondaryActionTitle = "整理"
     private var secondaryActionEnabled = false
 
     init() {
-        let overlayView = OverlayView(frame: .zero)
-        self.overlayView = overlayView
-        self.panel = OverlayPanel()
-        panel.contentView = overlayView
-        overlayView.onSecondaryAction = { [weak self] in
-            self?.onSecondaryAction?()
-        }
     }
 
     func showListening(transcript: String = "") {
         dismissTask?.cancel()
         content = makeContent(phase: .listening, transcript: transcript, level: 0)
+        let overlayView = ensureOverlayView()
         overlayView.render(content)
         present(resize: true, animated: true)
     }
@@ -36,13 +30,14 @@ final class OverlayPanelController {
     func updateTranscript(_ transcript: String) {
         dismissTask?.cancel()
         content.transcript = transcript
+        let overlayView = ensureOverlayView()
         overlayView.render(content)
         present(resize: true, animated: true)
     }
 
     func updateLevel(_ level: Float) {
         content.level = level
-        overlayView.updateLevel(level)
+        overlayView?.updateLevel(level)
     }
 
     func showThinking(transcript: String = "") {
@@ -52,6 +47,7 @@ final class OverlayPanelController {
         if !transcript.isEmpty {
             content.transcript = transcript
         }
+        let overlayView = ensureOverlayView()
         overlayView.render(content)
         present(resize: true, animated: true)
     }
@@ -63,6 +59,7 @@ final class OverlayPanelController {
         if !transcript.isEmpty {
             content.transcript = transcript
         }
+        let overlayView = ensureOverlayView()
         overlayView.render(content)
         present(resize: true, animated: true)
     }
@@ -70,6 +67,7 @@ final class OverlayPanelController {
     func showError(_ message: String, autoDismissAfter delay: TimeInterval = 1.8) {
         dismissTask?.cancel()
         content = makeContent(phase: .error, transcript: message, level: 0)
+        let overlayView = ensureOverlayView()
         overlayView.render(content)
         present(resize: true, animated: true)
         dismiss(after: delay)
@@ -80,7 +78,7 @@ final class OverlayPanelController {
         secondaryActionEnabled = isEnabled
         content.secondaryActionTitle = title
         content.secondaryActionEnabled = isEnabled
-        overlayView.render(content)
+        overlayView?.render(content)
     }
 
     func dismiss(after delay: TimeInterval) {
@@ -106,6 +104,10 @@ final class OverlayPanelController {
         dismissTask?.cancel()
         dismissTask = nil
 
+        guard let panel else {
+            return
+        }
+
         guard panel.isVisible else {
             panel.orderOut(nil)
             return
@@ -124,6 +126,8 @@ final class OverlayPanelController {
     }
 
     private func present(resize: Bool, animated: Bool) {
+        let overlayView = ensureOverlayView()
+        let panel = ensurePanel()
         let targetSize = overlayView.preferredSize(for: content)
         let targetFrame = visibleFrame(for: targetSize)
 
@@ -149,6 +153,31 @@ final class OverlayPanelController {
         }
 
         panel.alphaValue = 1
+    }
+
+    private func ensureOverlayView() -> OverlayView {
+        if let overlayView {
+            return overlayView
+        }
+
+        let overlayView = OverlayView(frame: .zero)
+        overlayView.onSecondaryAction = { [weak self] in
+            self?.onSecondaryAction?()
+        }
+        overlayView.render(content)
+        self.overlayView = overlayView
+        ensurePanel().contentView = overlayView
+        return overlayView
+    }
+
+    private func ensurePanel() -> OverlayPanel {
+        if let panel {
+            return panel
+        }
+
+        let panel = OverlayPanel()
+        self.panel = panel
+        return panel
     }
 
     private func makeContent(
