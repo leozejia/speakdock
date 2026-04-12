@@ -635,6 +635,7 @@ macOS v1 的工程收口写死为：
     - Accessibility 权限
     - Input Monitoring
   - 其中 `Input Monitoring` 是条件性权限，只在默认 `Fn` 监听方案确实依赖它时才要求
+  - 当前 macOS v1 参考实现的 `Fn` event tap 授权入口优先走 Accessibility；如果后续切换到依赖输入监听的实现，再启用 Input Monitoring 口径
   - 每项权限都必须写清功能与失败表现：
     - 麦克风权限缺失
       - 不能录音
@@ -646,8 +647,9 @@ macOS v1 的工程收口写死为：
     - Accessibility 权限缺失
       - 不能可靠判定当前可编辑目标
       - `Compose` 必须直接报不可用，不能静默改写成 `Capture`
+      - 当前参考实现下，默认 `Fn` trigger 也会提示 Accessibility 授权
     - Input Monitoring 缺失
-      - 默认 `Fn` trigger 不可用或不稳定
+      - 仅当当前 `Fn` 监听实现依赖 Input Monitoring 时，默认 `Fn` trigger 不可用或不稳定
       - menu bar 必须提示 trigger 异常，并引导用户改用显式配置的替代 trigger
   - README 和人工验收清单都必须同步这一套权限口径
 

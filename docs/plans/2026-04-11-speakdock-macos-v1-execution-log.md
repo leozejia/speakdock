@@ -382,7 +382,7 @@
 
 #### Hotfix: 启动后 `Fn` 没反应
 
-- 状态：`Complete`
+- 状态：`Superseded by Accessibility hotfix`
 - 用户反馈：
   - `make run` 不再崩溃
   - 但启动后按 `Fn` 没有可见反应
@@ -406,9 +406,33 @@
 - 备注：
   - 图形环境中实际弹窗、授权后是否需要重启、以及 `Fn` 是否进入 `Listening`，仍需由用户在前台环境复测
 
+#### Hotfix: `Fn` 权限路径改为 Accessibility
+
+- 状态：`Complete`
+- 用户反馈：
+  - 系统设置的 Input Monitoring 里没有 `SpeakDock`
+  - 参考同类产品后，默认全局按键路径更符合 Accessibility 授权模型
+- 诊断证据：
+  - 本机 SDK 的 `AXIsProcessTrustedWithOptions` 是正式的辅助功能授权提示入口
+  - `NSEvent` SDK 头文件说明全局 key 事件监听通常依赖 Accessibility trust
+  - macOS SDK 中未发现 `NSAccessibilityUsageDescription` plist key，因此 Accessibility 授权不需要额外 Info.plist usage description key
+- 修复：
+  - `FnKeyTriggerAdapter` 改为启动时先检查 `AXIsProcessTrustedWithOptions(prompt: false)`，不满足时再以 `prompt: true` 触发系统 Accessibility 授权提示
+  - 权限仍不可用时，menu bar 状态显示 `Fn Unavailable: Accessibility Required`
+  - event tap 创建失败时，menu bar 状态显示 `Fn Unavailable: Event Tap Unavailable`
+  - 移除当前实现对 `NSInputMonitoringUsageDescription` 的依赖，避免误导用户去 Input Monitoring 列表寻找应用
+  - README 与人工验收清单改为当前实现优先看 Accessibility；Input Monitoring 只保留为未来替代监听方案的条件性权限
+- 验证结果：
+  - `make test TEST_FILTER=FnKeyTriggerAdapterPermissionTests` -> pass
+  - `make test` -> pass，`36` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+  - `make build` -> pass
+  - 已确认 `.build/debug/SpeakDock.app/Contents/Info.plist` 不包含 `NSInputMonitoringUsageDescription`，避免误导到 Input Monitoring 权限面板
+- 备注：
+  - 仍需由用户在真实前台环境里确认 Accessibility 弹窗、授权后重启、以及 `Fn` 是否进入 `Listening`
+
 ## 5. 下一步
 
 - 按 `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md` 在真实图形环境里逐项验收
-- 优先重新运行 `make run`，确认不再出现 `Abort trap: 6`，并处理 Input Monitoring 授权提示
+- 优先重新运行 `make run`，确认不再出现 `Abort trap: 6`，并处理 Accessibility 授权提示
 - 然后验证 `Fn / 替代 trigger / overlay 第二按钮 / Compose / Capture / UndoWindow`
 - 在具备网络条件的环境里验证 refine `Test` 与真实 `Refining...` 往返

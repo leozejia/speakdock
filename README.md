@@ -47,12 +47,13 @@ make test
 | --- | --- | --- |
 | 麦克风 | 录音、波形、电平反馈 | 无法进入 `Listening`，悬浮层应提示麦克风不可用 |
 | Speech Recognition | 流式转录、最终文本生成 | 可以开始录音，但不能产出可提交文本，热路径应直接报错 |
-| Accessibility | 判定可编辑目标、执行 `Compose` 注入 | `Compose` 直接不可用；不能静默降级成 `Capture` |
-| Input Monitoring（条件性） | 全局监听默认 `Fn` trigger | 默认 `Fn` 路径不可用；menu bar 必须提示异常，用户需改用显式配置的替代 trigger |
+| Accessibility | 判定可编辑目标、执行 `Compose` 注入、当前 `Fn` event tap 授权提示 | `Compose` 直接不可用；默认 `Fn` 路径不可用时 menu bar 必须提示异常 |
+| Input Monitoring（条件性） | 仅当后续替换为依赖输入监听的 `Fn` 实现时使用 | 当前实现不预期出现在 Input Monitoring 列表；如果未来需要，menu bar 必须提示异常 |
 
 说明：
 
-- `Input Monitoring` 是否需要，取决于最终采用的 `Fn` 监听实现
+- 当前实现的 `Fn` event tap 优先走 Accessibility 授权
+- `Input Monitoring` 是否需要，取决于后续是否更换 `Fn` 监听实现
 - 如果当前走外接硬件 trigger，而不是键盘 `Fn`，这项权限可以不作为前提
 
 ## 当前不在 macOS v1 范围内

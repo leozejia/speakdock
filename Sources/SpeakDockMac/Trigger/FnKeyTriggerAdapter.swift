@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import Carbon.HIToolbox
 import CoreGraphics
 import Foundation
@@ -82,17 +83,15 @@ enum ModifierTriggerKey: String, CaseIterable, Sendable {
 }
 
 protocol EventTapPermissionChecking: AnyObject {
-    func preflightListenEventAccess() -> Bool
-    func requestListenEventAccess() -> Bool
+    func isAccessibilityTrusted(prompt: Bool) -> Bool
 }
 
 final class CoreGraphicsEventTapPermissionChecker: EventTapPermissionChecking {
-    func preflightListenEventAccess() -> Bool {
-        CGPreflightListenEventAccess()
-    }
-
-    func requestListenEventAccess() -> Bool {
-        CGRequestListenEventAccess()
+    func isAccessibilityTrusted(prompt: Bool) -> Bool {
+        let options = [
+            "AXTrustedCheckOptionPrompt": prompt,
+        ] as CFDictionary
+        return AXIsProcessTrustedWithOptions(options)
     }
 }
 
@@ -117,8 +116,10 @@ final class FnKeyTriggerAdapter: TriggerAdapter {
     }
 
     func start() {
-        guard permissionChecker.preflightListenEventAccess() || permissionChecker.requestListenEventAccess() else {
-            onAvailabilityChanged?(.unavailable(label: "\(triggerKey.unavailableLabel): Input Monitoring Required"))
+        guard permissionChecker.isAccessibilityTrusted(prompt: false) ||
+            permissionChecker.isAccessibilityTrusted(prompt: true)
+        else {
+            onAvailabilityChanged?(.unavailable(label: "\(triggerKey.unavailableLabel): Accessibility Required"))
             return
         }
 
@@ -142,7 +143,7 @@ final class FnKeyTriggerAdapter: TriggerAdapter {
             },
             userInfo: refcon
         ) else {
-            onAvailabilityChanged?(.unavailable(label: triggerKey.unavailableLabel))
+            onAvailabilityChanged?(.unavailable(label: "\(triggerKey.unavailableLabel): Event Tap Unavailable"))
             return
         }
 

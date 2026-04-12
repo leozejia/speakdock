@@ -1,7 +1,7 @@
 import XCTest
 
 final class PermissionPlistTests: XCTestCase {
-    func testInfoPlistDeclaresInputMonitoringUsage() throws {
+    func testInfoPlistDeclaresSystemPrivacyUsageDescriptions() throws {
         let infoPlistURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("Sources/SpeakDockMac/Resources/Info.plist")
         let data = try Data(contentsOf: infoPlistURL)
@@ -9,7 +9,10 @@ final class PermissionPlistTests: XCTestCase {
             PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
         )
 
-        let usageDescription = try XCTUnwrap(plist["NSInputMonitoringUsageDescription"] as? String)
-        XCTAssertFalse(usageDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        let microphoneUsage = try XCTUnwrap(plist["NSMicrophoneUsageDescription"] as? String)
+        let speechUsage = try XCTUnwrap(plist["NSSpeechRecognitionUsageDescription"] as? String)
+
+        XCTAssertFalse(microphoneUsage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        XCTAssertFalse(speechUsage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     }
 }

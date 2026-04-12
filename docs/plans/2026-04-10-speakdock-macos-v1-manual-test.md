@@ -21,7 +21,7 @@
 1. 启动应用后，menu bar 图标可见。
 2. 应用没有 Dock 图标。
 3. Settings 可以正常打开。
-4. 首次使用默认 `Fn` trigger 时，如果系统弹出 Input Monitoring 授权提示，应授权并重启应用。
+4. 首次使用默认 `Fn` trigger 时，如果系统弹出 Accessibility 授权提示，应授权并重启应用。
 
 ## 4. 默认 Trigger
 
@@ -36,7 +36,7 @@
 2. 系统不会自动切到某个固定替代热键。
 3. 用户可以在 Settings 里显式选择替代 trigger。
 4. 切换后，替代 trigger 仍保持 `按住说话 / 松开结束 / 双击提交` 语义。
-5. 如果 menu bar 显示 `Input Monitoring Required`，先到系统设置授予输入监听权限，再重启应用。
+5. 如果 menu bar 显示 `Accessibility Required`，先到系统设置授予辅助功能权限，再重启应用。
 
 ## 6. ASR 与语言
 
