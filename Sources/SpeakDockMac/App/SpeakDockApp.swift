@@ -31,6 +31,9 @@ struct SpeakDockApp: App {
             speechController: speechController,
             overlayPanelController: overlayPanelController
         )
+        AppRuntime.onDidFinishLaunching = {
+            triggerController.start()
+        }
 
         _settingsStore = State(initialValue: settingsStore)
         _triggerController = State(initialValue: triggerController)

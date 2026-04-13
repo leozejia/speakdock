@@ -430,9 +430,36 @@
 - 备注：
   - 仍需由用户在真实前台环境里确认 Accessibility 弹窗、授权后重启、以及 `Fn` 是否进入 `Listening`
 
+### 2026-04-13
+
+#### Hotfix: 延迟 trigger 启动到 AppKit 完成启动后
+
+- 状态：`Complete`
+- 用户反馈：
+  - Accessibility 中已经给过 `SpeakDock` 授权
+  - 关闭后重新 `make run` 仍然重复弹授权提示
+  - 按 `Fn` 仍无反应
+- 诊断证据：
+  - `TriggerController` 原先在 `SpeakDockApp.init()` 阶段立即 `reloadConfiguration()`
+  - 这会让 `FnKeyTriggerAdapter.start()` 在 AppKit / LaunchServices 完成应用注册前触发 Accessibility / TCC 检查
+  - 系统日志显示启动早期连续出现 `TCCAccessRequest()`，与过早权限检查相符
+- 修复：
+  - `TriggerController` 初始化时不再启动 adapter，初始状态为 `Trigger Not Started`
+  - 新增 `TriggerController.start()`，只在首次调用时安装 adapter
+  - `AppRuntime.applicationDidFinishLaunching` 增加启动回调
+  - `SpeakDockApp.init()` 将 `triggerController.start()` 绑定到 AppKit 完成启动后的回调
+  - 设置变更只在 trigger controller 已启动后才触发 reload
+  - 新增 `TriggerControllerLifecycleTests` 覆盖“初始化不启动”和“启动后设置变更会 reload”
+- 验证结果：
+  - `make test TEST_FILTER=TriggerControllerLifecycleTests` -> pass
+  - `make test` -> pass，`38` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+  - `make build` -> pass
+- 备注：
+  - 仍需用户在真实前台环境重新运行 `make run`，确认 Accessibility 不再重复弹、menu bar 显示 `Fn Ready`，以及按 `Fn` 能进入 `Listening`
+
 ## 5. 下一步
 
 - 按 `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md` 在真实图形环境里逐项验收
-- 优先重新运行 `make run`，确认不再出现 `Abort trap: 6`，并处理 Accessibility 授权提示
+- 优先重新运行 `make run`，确认 Accessibility 不再重复弹；如果仍弹，移除旧授权项后重新添加 `.build/debug/SpeakDock.app`
 - 然后验证 `Fn / 替代 trigger / overlay 第二按钮 / Compose / Capture / UndoWindow`
 - 在具备网络条件的环境里验证 refine `Test` 与真实 `Refining...` 往返

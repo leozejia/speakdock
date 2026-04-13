@@ -5,7 +5,7 @@ import SpeakDockCore
 @MainActor
 @Observable
 final class TriggerController {
-    var availability: TriggerAvailability = .unavailable(label: "Trigger Unavailable")
+    var availability: TriggerAvailability = .unavailable(label: "Trigger Not Started")
     var isPressed = false
     var lastAction: TriggerAction?
 
@@ -13,14 +13,34 @@ final class TriggerController {
     var onPressStateChanged: ((Bool) -> Void)?
 
     private let settingsStore: SettingsStore
+    private let adapterFactory: (ModifierTriggerKey) -> any TriggerAdapter
     private var adapter: (any TriggerAdapter)?
     private var stateMachine = TriggerStateMachine()
+    private var isStarted = false
 
-    init(settingsStore: SettingsStore) {
+    init(
+        settingsStore: SettingsStore,
+        adapterFactory: @escaping (ModifierTriggerKey) -> any TriggerAdapter = { triggerKey in
+            FnKeyTriggerAdapter(triggerKey: triggerKey)
+        }
+    ) {
         self.settingsStore = settingsStore
+        self.adapterFactory = adapterFactory
         settingsStore.onSettingsChanged = { [weak self] _ in
+            guard self?.isStarted == true else {
+                return
+            }
+
             self?.reloadConfiguration()
         }
+    }
+
+    func start() {
+        guard !isStarted else {
+            return
+        }
+
+        isStarted = true
         reloadConfiguration()
     }
 
@@ -35,7 +55,7 @@ final class TriggerController {
             return
         }
 
-        let adapter = FnKeyTriggerAdapter(triggerKey: triggerKey)
+        let adapter = adapterFactory(triggerKey)
         adapter.onAvailabilityChanged = { [weak self] availability in
             self?.availability = availability
         }
