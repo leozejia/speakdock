@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import OSLog
 import SpeakDockCore
 
 @MainActor
@@ -37,9 +38,11 @@ final class TriggerController {
 
     func start() {
         guard !isStarted else {
+            SpeakDockLog.trigger.debug("trigger controller start ignored because it is already started")
             return
         }
 
+        SpeakDockLog.trigger.notice("starting trigger controller")
         isStarted = true
         reloadConfiguration()
     }
@@ -51,15 +54,19 @@ final class TriggerController {
         stateMachine = TriggerStateMachine()
 
         guard let triggerKey = ModifierTriggerKey(selection: settingsStore.settings.triggerSelection) else {
+            SpeakDockLog.trigger.error("unsupported trigger selection")
             availability = .unavailable(label: "Unsupported Trigger")
             return
         }
 
+        SpeakDockLog.trigger.notice("reloading trigger adapter: \(triggerKey.rawValue, privacy: .public)")
         let adapter = adapterFactory(triggerKey)
         adapter.onAvailabilityChanged = { [weak self] availability in
+            SpeakDockLog.trigger.notice("trigger availability changed: \(availability.logLabel, privacy: .public)")
             self?.availability = availability
         }
         adapter.onPressStateChanged = { [weak self] isPressed in
+            SpeakDockLog.trigger.debug("trigger press state changed: \(isPressed, privacy: .public)")
             self?.isPressed = isPressed
             self?.onPressStateChanged?(isPressed)
         }
@@ -72,8 +79,29 @@ final class TriggerController {
 
     private func handle(_ inputEvent: TriggerInputEvent) {
         for action in stateMachine.handle(inputEvent) {
+            SpeakDockLog.trigger.notice("trigger action: \(action.logName, privacy: .public)")
             lastAction = action
             onAction?(action)
+        }
+    }
+}
+
+private extension TriggerAvailability {
+    var logLabel: String {
+        switch self {
+        case let .available(label), let .unavailable(label):
+            label
+        }
+    }
+}
+
+private extension TriggerAction {
+    var logName: String {
+        switch self {
+        case .recording:
+            "recording"
+        case .submit:
+            "submit"
         }
     }
 }

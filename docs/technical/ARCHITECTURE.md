@@ -690,6 +690,15 @@ macOS v1 的工程收口写死为：
   - 如果走 Swift 参考路径，优先保持 `SPM + Makefile`
   - 产物应能稳定生成可运行的 app bundle
 
+- 调试与观测
+  - macOS v1 使用 Apple Unified Logging / `OSLog.Logger` 作为长期调试日志方案
+  - subsystem 固定为 `com.leozejia.speakdock`
+  - category 至少覆盖 `lifecycle / permission / trigger / audio / speech / compose / capture / refine`
+  - 日志只记录状态、边界事件、权限结果、错误类型和非敏感枚举
+  - 不记录音频内容、转写正文、剪贴板内容、API Key、完整 refine 请求正文
+  - CoreAudio realtime tap 回调内不直接写日志；只在录音启动、停止、失败等边界记录
+  - 本地调试入口优先通过 `make logs` 或等价的 `log show --predicate 'subsystem == "com.leozejia.speakdock"'`
+
 ### 10.4 与 README_CN 的反向映射
 
 当前更合理的关系不是“SpeakDock 跟着 README_CN 走”，而是：

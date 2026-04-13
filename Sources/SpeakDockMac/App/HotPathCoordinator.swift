@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import OSLog
 import SpeakDockCore
 
 @MainActor
@@ -114,11 +115,13 @@ final class HotPathCoordinator {
 
     private func handlePressStateChanged(_ isPressed: Bool) {
         if isPressed {
+            SpeakDockLog.trigger.notice("press started")
             cancelRefineTask()
             overlayPanelController.showListening()
             speechController.startSession()
             audioCaptureEngine.start()
         } else {
+            SpeakDockLog.trigger.notice("press ended")
             audioCaptureEngine.stop()
             speechController.finishSession()
             overlayPanelController.dismiss(after: 0.35)
@@ -128,9 +131,11 @@ final class HotPathCoordinator {
     private func handleTriggerAction(_ action: TriggerAction) {
         switch action {
         case .recording:
+            SpeakDockLog.trigger.notice("recording action completed")
             overlayPanelController.showThinking(transcript: speechController.latestTranscript)
 
         case .submit:
+            SpeakDockLog.trigger.notice("submit action received")
             cancelRefineTask()
             speechController.cancelSession()
             submitCurrentWorkspaceIfPossible()
@@ -164,9 +169,11 @@ final class HotPathCoordinator {
 
         switch configuration.executionMode {
         case .cleanOnly:
+            SpeakDockLog.refine.debug("refine disabled; committing clean-only text")
             commitRecognizedText(cleanedText)
 
         case .refineThenSubmit:
+            SpeakDockLog.refine.notice("refine enabled; starting inline refine request")
             overlayPanelController.showRefining(transcript: cleanedText)
             cancelRefineTask()
             activeRefineTask = Task { [weak self] in
@@ -183,6 +190,7 @@ final class HotPathCoordinator {
                     let trimmedResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
                     refinedText = trimmedResponse.isEmpty ? cleanedText : trimmedResponse
                 } catch {
+                    SpeakDockLog.refine.error("inline refine request failed; falling back to clean text")
                     refinedText = cleanedText
                 }
 
@@ -218,9 +226,11 @@ final class HotPathCoordinator {
             commitToCompose(trimmedText, targetID: targetID)
 
         case .noTarget:
+            SpeakDockLog.compose.debug("no compose target; using capture")
             commitToCapture(trimmedText)
 
         case let .unavailable(reason):
+            SpeakDockLog.compose.warning("compose unavailable: \(reason, privacy: .private)")
             overlayPanelController.showError(reason)
         }
     }
@@ -229,6 +239,7 @@ final class HotPathCoordinator {
         do {
             try composeTarget.inject(text)
             captureTarget.resetSession()
+            SpeakDockLog.compose.notice("compose commit succeeded")
 
             let workspace = activateWorkspace(mode: .compose, targetID: targetID)
             WorkspaceReducer.reduce(state: &workspaceState, action: .speechAppended(text))
@@ -248,6 +259,7 @@ final class HotPathCoordinator {
             refreshSecondaryAction()
             overlayPanelController.dismiss(after: 0.5)
         } catch {
+            SpeakDockLog.compose.error("compose commit failed: \(error.localizedDescription, privacy: .private)")
             overlayPanelController.showError(error.localizedDescription)
         }
     }
@@ -260,6 +272,7 @@ final class HotPathCoordinator {
 
         do {
             let fileURL = try captureTarget.write(text, captureRootURL: captureRootURL)
+            SpeakDockLog.capture.notice("capture commit succeeded")
             let workspace = activateWorkspace(mode: .capture, targetID: fileURL.path)
             WorkspaceReducer.reduce(state: &workspaceState, action: .speechAppended(text))
 
@@ -278,6 +291,7 @@ final class HotPathCoordinator {
             refreshSecondaryAction()
             overlayPanelController.dismiss(after: 0.5)
         } catch {
+            SpeakDockLog.capture.error("capture commit failed: \(error.localizedDescription, privacy: .private)")
             overlayPanelController.showError(error.localizedDescription)
         }
     }
@@ -306,9 +320,11 @@ final class HotPathCoordinator {
 
         switch configuration.executionMode {
         case .cleanOnly:
+            SpeakDockLog.refine.debug("manual refine requested while refine is disabled; applying clean text")
             applyRefinedText(baseText, toWorkspaceID: workspace.id)
 
         case .refineThenSubmit:
+            SpeakDockLog.refine.notice("manual refine request started")
             overlayPanelController.showRefining(transcript: baseText)
             cancelRefineTask()
             activeRefineTask = Task { [weak self] in
@@ -325,6 +341,7 @@ final class HotPathCoordinator {
                     let trimmedResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
                     refinedText = trimmedResponse.isEmpty ? baseText : trimmedResponse
                 } catch {
+                    SpeakDockLog.refine.error("manual refine request failed; falling back to clean text")
                     refinedText = baseText
                 }
 
@@ -366,9 +383,11 @@ final class HotPathCoordinator {
                     undoCount: undoCount,
                     expectedTargetID: workspace.targetID
                 )
+                SpeakDockLog.compose.notice("compose refine apply succeeded")
 
             case .capture:
                 try captureTarget.replaceContents(with: trimmedText, targetID: workspace.targetID)
+                SpeakDockLog.capture.notice("capture refine apply succeeded")
 
             case .wiki:
                 break
@@ -380,6 +399,7 @@ final class HotPathCoordinator {
             overlayPanelController.updateTranscript(trimmedText)
             refreshSecondaryAction()
         } catch {
+            SpeakDockLog.refine.error("refine apply failed: \(error.localizedDescription, privacy: .private)")
             overlayPanelController.showError(error.localizedDescription)
         }
     }
@@ -400,9 +420,11 @@ final class HotPathCoordinator {
                     undoCount: 1,
                     expectedTargetID: workspace.targetID
                 )
+                SpeakDockLog.compose.notice("compose refine undo succeeded")
 
             case .capture:
                 try captureTarget.replaceContents(with: rawText, targetID: workspace.targetID)
+                SpeakDockLog.capture.notice("capture refine undo succeeded")
 
             case .wiki:
                 break
@@ -413,6 +435,7 @@ final class HotPathCoordinator {
             overlayPanelController.updateTranscript(rawText)
             refreshSecondaryAction()
         } catch {
+            SpeakDockLog.refine.error("refine undo failed: \(error.localizedDescription, privacy: .private)")
             overlayPanelController.showError(error.localizedDescription)
         }
     }
@@ -427,12 +450,14 @@ final class HotPathCoordinator {
             switch recentSubmission.mode {
             case .compose:
                 try composeTarget.undoLastInsertion(expectedTargetID: recentSubmission.targetID)
+                SpeakDockLog.compose.notice("compose recent submission undo succeeded")
 
             case .capture:
                 try captureTarget.undoLastAppend(
                     expectedTargetID: recentSubmission.targetID,
                     committedText: recentSubmission.committedText
                 )
+                SpeakDockLog.capture.notice("capture recent submission undo succeeded")
 
             case .wiki:
                 break
@@ -454,6 +479,14 @@ final class HotPathCoordinator {
 
             refreshSecondaryAction()
         } catch {
+            switch recentSubmission.mode {
+            case .compose:
+                SpeakDockLog.compose.error("recent submission undo failed: \(error.localizedDescription, privacy: .private)")
+            case .capture:
+                SpeakDockLog.capture.error("recent submission undo failed: \(error.localizedDescription, privacy: .private)")
+            case .wiki:
+                SpeakDockLog.lifecycle.error("recent submission undo failed for unsupported workspace mode")
+            }
             overlayPanelController.showError(error.localizedDescription)
         }
     }
@@ -465,7 +498,9 @@ final class HotPathCoordinator {
 
         do {
             try composeTarget.submitCurrentTarget(expectedTargetID: workspace.targetID)
+            SpeakDockLog.compose.notice("compose submit succeeded")
         } catch {
+            SpeakDockLog.compose.error("compose submit failed: \(error.localizedDescription, privacy: .private)")
             overlayPanelController.showError(error.localizedDescription)
         }
     }

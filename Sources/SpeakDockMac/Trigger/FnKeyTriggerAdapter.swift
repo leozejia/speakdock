@@ -3,6 +3,7 @@ import ApplicationServices
 import Carbon.HIToolbox
 import CoreGraphics
 import Foundation
+import OSLog
 import SpeakDockCore
 
 enum ModifierTriggerKey: String, CaseIterable, Sendable {
@@ -119,6 +120,7 @@ final class FnKeyTriggerAdapter: TriggerAdapter {
         guard permissionChecker.isAccessibilityTrusted(prompt: false) ||
             permissionChecker.isAccessibilityTrusted(prompt: true)
         else {
+            SpeakDockLog.permission.warning("accessibility permission required for trigger: \(self.triggerKey.rawValue, privacy: .public)")
             onAvailabilityChanged?(.unavailable(label: "\(triggerKey.unavailableLabel): Accessibility Required"))
             return
         }
@@ -143,6 +145,7 @@ final class FnKeyTriggerAdapter: TriggerAdapter {
             },
             userInfo: refcon
         ) else {
+            SpeakDockLog.trigger.error("event tap unavailable for trigger: \(self.triggerKey.rawValue, privacy: .public)")
             onAvailabilityChanged?(.unavailable(label: "\(triggerKey.unavailableLabel): Event Tap Unavailable"))
             return
         }
@@ -152,10 +155,12 @@ final class FnKeyTriggerAdapter: TriggerAdapter {
         runLoopSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
         CGEvent.tapEnable(tap: tap, enable: true)
+        SpeakDockLog.trigger.notice("event tap started for trigger: \(self.triggerKey.rawValue, privacy: .public)")
         onAvailabilityChanged?(.available(label: triggerKey.readyLabel))
     }
 
     func stop() {
+        SpeakDockLog.trigger.debug("stopping event tap for trigger: \(self.triggerKey.rawValue, privacy: .public)")
         if let source = runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
         }
@@ -175,6 +180,7 @@ final class FnKeyTriggerAdapter: TriggerAdapter {
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            SpeakDockLog.trigger.warning("event tap disabled by system; re-enabling")
             if let tap = eventTap {
                 CGEvent.tapEnable(tap: tap, enable: true)
             }

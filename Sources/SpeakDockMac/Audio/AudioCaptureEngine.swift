@@ -22,23 +22,29 @@ final class AudioCaptureEngine {
 
     func start() {
         wantsCapture = true
+        SpeakDockLog.audio.notice("audio capture start requested")
 
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .authorized:
+            SpeakDockLog.permission.debug("microphone permission already authorized")
             startCaptureIfNeeded()
 
         case .notDetermined:
+            SpeakDockLog.permission.notice("requesting microphone permission")
             requestMicrophoneAccess()
 
         case .denied, .restricted:
+            SpeakDockLog.permission.warning("microphone permission denied or restricted")
             reportUnavailable()
 
         @unknown default:
+            SpeakDockLog.permission.warning("microphone permission unknown authorization status")
             reportUnavailable()
         }
     }
 
     func stop() {
+        SpeakDockLog.audio.notice("audio capture stop requested")
         wantsCapture = false
         stopCapture()
     }
@@ -51,8 +57,10 @@ final class AudioCaptureEngine {
                 }
 
                 if granted {
+                    SpeakDockLog.permission.notice("microphone permission granted")
                     self.startCaptureIfNeeded()
                 } else {
+                    SpeakDockLog.permission.warning("microphone permission denied")
                     self.reportUnavailable()
                 }
             }
@@ -80,10 +88,12 @@ final class AudioCaptureEngine {
             engine.prepare()
             try engine.start()
             isCapturing = true
+            SpeakDockLog.audio.notice("audio capture started")
             onAvailabilityChanged?(.available)
             onLevelChanged?(0)
         } catch {
             inputNode.removeTap(onBus: 0)
+            SpeakDockLog.audio.error("audio capture failed to start")
             reportUnavailable()
         }
     }
@@ -98,11 +108,13 @@ final class AudioCaptureEngine {
         engine.stop()
         engine.reset()
         isCapturing = false
+        SpeakDockLog.audio.notice("audio capture stopped")
         onLevelChanged?(0)
     }
 
     private func reportUnavailable() {
         stopCapture()
+        SpeakDockLog.audio.error("audio capture unavailable")
         onAvailabilityChanged?(.unavailable(label: "Microphone Unavailable"))
     }
 

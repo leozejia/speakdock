@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import SpeakDockCore
 
 enum OpenAICompatibleRefineEngineError: LocalizedError {
@@ -30,9 +31,11 @@ final class OpenAICompatibleRefineEngine: RefineEngine {
         configuration: RefineConfiguration
     ) async throws -> String {
         guard let endpointURL = endpointURL(from: configuration.baseURL) else {
+            SpeakDockLog.refine.error("refine request rejected because base URL is invalid")
             throw OpenAICompatibleRefineEngineError.invalidBaseURL
         }
 
+        SpeakDockLog.refine.notice("refine request started")
         var urlRequest = URLRequest(url: endpointURL)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -50,14 +53,17 @@ final class OpenAICompatibleRefineEngine: RefineEngine {
 
         let (data, response) = try await session.data(for: urlRequest)
         guard let httpResponse = response as? HTTPURLResponse else {
+            SpeakDockLog.refine.error("refine request returned invalid response")
             throw OpenAICompatibleRefineEngineError.invalidResponse
         }
 
         guard (200...299).contains(httpResponse.statusCode) else {
+            SpeakDockLog.refine.error("refine request failed with status: \(httpResponse.statusCode, privacy: .public)")
             throw OpenAICompatibleRefineEngineError.unexpectedStatusCode(httpResponse.statusCode)
         }
 
         let decodedResponse = try JSONDecoder().decode(ChatCompletionResponse.self, from: data)
+        SpeakDockLog.refine.notice("refine request succeeded")
         return decodedResponse.choices.first?.message.content.trimmingCharacters(in: .whitespacesAndNewlines)
             ?? request.text
     }

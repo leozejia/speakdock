@@ -9,6 +9,7 @@ cd labs/speakdock
 make build
 make run
 make test
+make logs
 ```
 
 常用文档：
@@ -69,3 +70,17 @@ make test
 - `Compose / Capture / Undo / 双击提交`
 - `Choose & Migrate…`、`Test / Save`
 - refine 真实网络往返、overlay 状态与权限失败路径
+
+## 调试日志
+
+- 当前实现使用 Apple Unified Logging / `OSLog.Logger`
+- subsystem 固定为 `com.leozejia.speakdock`
+- category 覆盖 `lifecycle / permission / trigger / audio / speech / compose / capture / refine`
+- 查看最近日志：
+
+```bash
+make logs
+make logs LOG_WINDOW=2h
+```
+
+- 日志不得记录音频内容、转写正文、剪贴板内容或 API Key

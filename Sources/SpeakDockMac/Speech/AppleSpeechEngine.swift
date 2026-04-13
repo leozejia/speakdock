@@ -1,5 +1,6 @@
 import AVFoundation
 import Foundation
+import OSLog
 import Speech
 import SpeakDockCore
 
@@ -20,6 +21,7 @@ final class AppleSpeechEngine: @unchecked Sendable {
     private var currentLanguage = LanguageOption.defaultOption
 
     func start(language: LanguageOption) {
+        SpeakDockLog.speech.notice("speech recognition start requested: language=\(language.rawValue, privacy: .public)")
         queue.async { [weak self] in
             guard let self else {
                 return
@@ -30,15 +32,19 @@ final class AppleSpeechEngine: @unchecked Sendable {
 
             switch SFSpeechRecognizer.authorizationStatus() {
             case .authorized:
+                SpeakDockLog.permission.debug("speech recognition permission already authorized")
                 self.startRecognitionIfNeeded(language: language)
 
             case .notDetermined:
+                SpeakDockLog.permission.notice("requesting speech recognition permission")
                 self.requestAuthorization()
 
             case .denied, .restricted:
+                SpeakDockLog.permission.warning("speech recognition permission denied or restricted")
                 self.reportUnavailable()
 
             @unknown default:
+                SpeakDockLog.permission.warning("speech recognition permission unknown authorization status")
                 self.reportUnavailable()
             }
         }
@@ -51,6 +57,7 @@ final class AppleSpeechEngine: @unchecked Sendable {
     }
 
     func finish() {
+        SpeakDockLog.speech.notice("speech recognition finish requested")
         queue.async { [weak self] in
             guard let self else {
                 return
@@ -62,6 +69,7 @@ final class AppleSpeechEngine: @unchecked Sendable {
     }
 
     func cancel() {
+        SpeakDockLog.speech.notice("speech recognition cancel requested")
         queue.async { [weak self] in
             guard let self else {
                 return
@@ -81,12 +89,15 @@ final class AppleSpeechEngine: @unchecked Sendable {
             self.queue.async {
                 switch status {
                 case .authorized:
+                    SpeakDockLog.permission.notice("speech recognition permission granted")
                     self.startRecognitionIfNeeded(language: self.currentLanguage)
 
                 case .denied, .restricted, .notDetermined:
+                    SpeakDockLog.permission.warning("speech recognition permission unavailable after request")
                     self.reportUnavailable()
 
                 @unknown default:
+                    SpeakDockLog.permission.warning("speech recognition permission unknown status after request")
                     self.reportUnavailable()
                 }
             }
@@ -115,6 +126,7 @@ final class AppleSpeechEngine: @unchecked Sendable {
 
         self.recognizer = recognizer
         self.recognitionRequest = request
+        SpeakDockLog.speech.notice("speech recognition started: language=\(language.rawValue, privacy: .public)")
         notifyAvailability(.available)
 
         recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
@@ -131,6 +143,7 @@ final class AppleSpeechEngine: @unchecked Sendable {
                 )
 
                 if result.isFinal {
+                    SpeakDockLog.speech.notice("speech recognition final result received")
                     self.queue.async {
                         self.resetRecognition(cancelTask: false)
                     }
@@ -138,6 +151,7 @@ final class AppleSpeechEngine: @unchecked Sendable {
             }
 
             if error != nil {
+                SpeakDockLog.speech.error("speech recognition task reported error")
                 self.queue.async {
                     let shouldReport = self.wantsRecognition
                     self.resetRecognition(cancelTask: false)
@@ -151,6 +165,7 @@ final class AppleSpeechEngine: @unchecked Sendable {
 
     private func reportUnavailable() {
         resetRecognition(cancelTask: true)
+        SpeakDockLog.speech.error("speech recognition unavailable")
         notifyAvailability(.unavailable(label: "Speech Recognition Unavailable"))
     }
 

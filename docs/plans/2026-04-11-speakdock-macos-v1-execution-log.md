@@ -524,6 +524,32 @@
 - 备注：
   - 仍需用户在真实图形环境按住 `Fn` 复测录音链路，确认不会再产生新的 `SpeakDock-*.ips` 崩溃报告
 
+#### Feature: 轻量长期调试日志
+
+- 状态：`Complete`
+- 用户反馈：
+  - 当前不应只依赖临时 `log show` 排障，需要长期调试日志能力
+  - 方案必须轻量，不能引入重型日志系统
+- 设计决策：
+  - 采用 Apple Unified Logging / `OSLog.Logger`
+  - subsystem 固定为 `com.leozejia.speakdock`
+  - category 固定为 `lifecycle / permission / trigger / audio / speech / compose / capture / refine`
+  - 不引入第三方依赖，不写本地日志文件，不做远程 telemetry
+  - 不记录音频内容、转写正文、剪贴板内容、API Key、完整 refine 请求正文
+  - CoreAudio realtime tap 回调内不直接写日志，只在录音启动、停止、失败等边界记录
+- 实现：
+  - 新增 `Sources/SpeakDockMac/Logging/SpeakDockLog.swift`
+  - 新增 `scripts/show-logs.sh`
+  - 新增 `make logs LOG_WINDOW=...`
+  - 在 lifecycle / permission / trigger / audio / speech / compose / capture / refine 关键边界接入结构化日志
+  - README 与架构文档补充日志入口和约束
+- 验证结果：
+  - `make test TEST_FILTER=SpeakDockLogTests` -> 先按预期失败，再修复后通过
+  - `make test TEST_FILTER=BuildScriptTests` -> 先按预期失败，再修复后通过
+  - `make test` -> pass，`42` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+  - `make build` -> pass
+  - `make logs LOG_WINDOW=2m` -> pass，能看到 `lifecycle` 与 `trigger` 分类日志，状态包含 `Fn Ready`
+
 ## 5. 下一步
 
 - 按 `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md` 在真实图形环境里逐项验收
