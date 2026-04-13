@@ -499,6 +499,31 @@
   - 旧的 Accessibility 授权记录可能仍绑定旧 `cdhash`，需要用户在系统设置里删除旧 `SpeakDock` 授权项后重新添加一次新的 `.build/debug/SpeakDock.app`
   - 重新授权后，后续 rebuild 应不再因为 `cdhash` 变化导致授权漂移
 
+#### Hotfix: 修复音频 tap 回调触发 MainActor 断言崩溃
+
+- 状态：`Complete`
+- 用户反馈：
+  - 新构建启动后申请了麦克风与 Speech Recognition 权限
+  - 授权后 App 闪退，重新 `make run` 继续闪退
+- 诊断证据：
+  - `~/Library/Logs/DiagnosticReports/SpeakDock-2026-04-13-095052.ips` 中崩溃类型为 `EXC_BREAKPOINT / SIGTRAP`
+  - faulting thread 为 `RealtimeMessenger.mServiceQueue`
+  - 崩溃栈指向 `AudioCaptureEngine.swift` 的 `installTap` 回调：`closure #1 in AudioCaptureEngine.startCaptureIfNeeded()`
+  - 统一日志明确输出：`BUG IN CLIENT OF LIBDISPATCH: Assertion failed: Block was expected to execute on queue [com.apple.main-thread]`
+  - 根因是 audio tap 回调运行在 CoreAudio 实时音频队列，但原闭包捕获 `@MainActor` 的 `AudioCaptureEngine self` 并访问其隔离成员，Swift 6 运行时触发 executor 断言
+- 修复：
+  - 新增非 MainActor 的 `AudioCaptureTapProcessor`，负责在 audio tap 队列处理 buffer、计算 RMS、驱动 `LevelSmoother`
+  - `AudioCaptureEngine` 的 `installTap` 闭包不再捕获 `self`
+  - `onLevelChanged` 与 `onAvailabilityChanged` 显式标注为 `@MainActor` 回调
+  - level/UI 更新通过 `Task { @MainActor in ... }` 回到主执行器
+  - 新增 `AudioCaptureTapProcessorTests` 覆盖 tap 处理器可以从非主线程执行，并把 level 更新交回 main actor
+- 验证结果：
+  - `make test TEST_FILTER=AudioCaptureTapProcessorTests` -> 先按预期失败，再修复后通过
+  - `make test` -> pass，`40` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+  - `make build` -> pass
+- 备注：
+  - 仍需用户在真实图形环境按住 `Fn` 复测录音链路，确认不会再产生新的 `SpeakDock-*.ips` 崩溃报告
+
 ## 5. 下一步
 
 - 按 `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md` 在真实图形环境里逐项验收
