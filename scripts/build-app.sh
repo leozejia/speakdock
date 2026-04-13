@@ -32,7 +32,9 @@ cp "$ROOT_DIR/Sources/SpeakDockMac/Resources/Info.plist" "$CONTENTS_DIR/Info.pli
 cp "$EXECUTABLE_PATH" "$MACOS_DIR/SpeakDock"
 
 if command -v codesign >/dev/null 2>&1; then
-  codesign --force --deep --sign - "$APP_DIR" >/dev/null 2>&1 || true
+  BUNDLE_IDENTIFIER="$(plutil -extract CFBundleIdentifier raw -o - "$CONTENTS_DIR/Info.plist")"
+  DESIGNATED_REQUIREMENT="=designated => identifier \"$BUNDLE_IDENTIFIER\""
+  codesign --force --deep --sign - --requirements "$DESIGNATED_REQUIREMENT" "$APP_DIR" >/dev/null 2>&1 || true
 fi
 
 print -u2 -- "App bundle ready: $APP_DIR"

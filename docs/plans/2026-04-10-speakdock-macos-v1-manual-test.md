@@ -37,6 +37,7 @@
 3. 用户可以在 Settings 里显式选择替代 trigger。
 4. 切换后，替代 trigger 仍保持 `按住说话 / 松开结束 / 双击提交` 语义。
 5. 如果 menu bar 显示 `Accessibility Required`，先到系统设置授予辅助功能权限，再重启应用。
+6. 如果系统设置里 `SpeakDock` 已打开但 menu bar 仍显示 `Accessibility Required`，删除旧授权项，重新添加当前 `.build/debug/SpeakDock.app`，再重启应用。
 
 ## 6. ASR 与语言
 

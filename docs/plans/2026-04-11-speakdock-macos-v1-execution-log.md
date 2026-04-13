@@ -457,6 +457,48 @@
 - 备注：
   - 仍需用户在真实前台环境重新运行 `make run`，确认 Accessibility 不再重复弹、menu bar 显示 `Fn Ready`，以及按 `Fn` 能进入 `Listening`
 
+#### Debug Note: menu bar app 可见性
+
+- 状态：`Diagnosed`
+- 用户反馈：
+  - `SpeakDock` 看起来像完全后台程序，找不到前台入口
+  - 需要确认当前 macOS App 调试方式是否正确
+- 诊断证据：
+  - `Info.plist` 设置了 `LSUIElement = 1`，设计上不会显示 Dock 图标或普通前台窗口
+  - `AppRuntime.applicationDidFinishLaunching` 调用 `NSApp.setActivationPolicy(.accessory)`，与 menu bar 工具形态一致
+  - `SpeakDockApp` 通过 `MenuBarExtra("SpeakDock", systemImage: "mic.circle.fill")` 创建右上角状态栏入口；菜单栏默认入口是麦克风圆形图标，不是左上角应用菜单或 Dock 图标
+  - `scripts/run-dev.sh` 通过 `open -n -W .build/debug/SpeakDock.app` 启动 app bundle，当前调试方式比直接执行二进制更符合 LaunchServices / TCC 权限模型
+  - 进程查询确认 `make run` 的 `open -n -W` 仍在等待，且 `SpeakDock` App 本体进程已运行
+- 结论：
+  - 当前 `make run` 调试方式正确
+  - “无 Dock / 无普通前台窗口”是预期行为
+  - 若右上角也看不到麦克风圆形图标，下一步应排查 menu bar extra 是否被菜单栏空间或第三方菜单栏管理工具隐藏，而不是先改启动方式
+
+#### Hotfix: 稳定开发构建的 Accessibility 授权身份
+
+- 状态：`Complete`
+- 用户反馈：
+  - menu bar 已能打开，但状态显示 `Fn Unavailable: Accessibility Required`
+  - 系统设置 `Privacy & Security -> Accessibility` 中 `SpeakDock` 已打开
+- 诊断证据：
+  - `codesign -dr - .build/debug/SpeakDock.app` 原先输出 `designated => cdhash ...`
+  - 这说明开发 bundle 的 ad-hoc 签名身份绑定到每次构建产物 hash，rebuild 后 TCC 里看似打开的 Accessibility 授权可能不再匹配当前进程
+  - 本机没有可用的稳定 code signing identity：`security find-identity -v -p codesigning` 返回 `0 valid identities found`
+  - 在临时 app bundle 上验证 `codesign --sign - --requirements '=designated => identifier "com.leozejia.speakdock"'` 可把 ad-hoc designated requirement 固定到 bundle identifier
+- 修复：
+  - `scripts/build-app.sh` 的 ad-hoc 签名改为从 `Info.plist` 读取 `CFBundleIdentifier`
+  - 签名时显式写入 `=designated => identifier "$BUNDLE_IDENTIFIER"`
+  - 新增 `BuildScriptTests` 覆盖构建脚本必须保留稳定 designated requirement
+- 验证结果：
+  - `make test TEST_FILTER=BuildScriptTests` -> 先按预期失败，再修复后通过
+  - `make build` -> pass
+  - `codesign -dr - .build/debug/SpeakDock.app` -> `designated => identifier "com.leozejia.speakdock"`
+  - `make test TEST_FILTER=FnKeyTriggerAdapterPermissionTests` -> pass
+  - `make test` -> pass，`39` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+- 备注：
+  - 旧的 Accessibility 授权记录可能仍绑定旧 `cdhash`，需要用户在系统设置里删除旧 `SpeakDock` 授权项后重新添加一次新的 `.build/debug/SpeakDock.app`
+  - 重新授权后，后续 rebuild 应不再因为 `cdhash` 变化导致授权漂移
+
 ## 5. 下一步
 
 - 按 `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md` 在真实图形环境里逐项验收
