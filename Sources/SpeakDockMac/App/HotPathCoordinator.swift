@@ -22,6 +22,7 @@ final class HotPathCoordinator {
 
     private var workspaceState = WorkspaceState()
     private var undoFlowState = UndoFlowState()
+    private var composeTargetSession = ComposeTargetSession()
     private var activeRefineTask: Task<Void, Never>?
     private var renderedSegmentsByWorkspaceID: [UUID: [String]] = [:]
 
@@ -117,6 +118,11 @@ final class HotPathCoordinator {
         if isPressed {
             SpeakDockLog.trigger.notice("press started")
             cancelRefineTask()
+            let composeAvailabilityAtPressStart = composeTarget.captureCurrentTarget()
+            composeTargetSession.begin(availability: composeAvailabilityAtPressStart)
+            if composeTargetSession.hasCapturedTarget {
+                SpeakDockLog.compose.notice("compose target captured at press start")
+            }
             overlayPanelController.showListening()
             speechController.startSession()
             audioCaptureEngine.start()
@@ -143,6 +149,7 @@ final class HotPathCoordinator {
             renderedSegmentsByWorkspaceID.removeAll()
             undoFlowState.clearPendingConfirmation()
             undoFlowState.clearRecentSubmission()
+            composeTargetSession.end()
             refreshSecondaryAction()
             overlayPanelController.dismiss(after: 0.1)
         }
@@ -214,6 +221,31 @@ final class HotPathCoordinator {
             return
         }
 
+        defer {
+            composeTargetSession.end()
+        }
+
+        let resolvedComposeAvailability = composeTargetSession.resolvedAvailability(
+            current: composeTarget.availability()
+        )
+
+        if composeTargetSession.hasCapturedTarget {
+            SpeakDockLog.compose.notice("using compose target captured at press start")
+            switch resolvedComposeAvailability {
+            case let .available(targetID):
+                commitToCompose(trimmedText, targetID: targetID)
+
+            case .noTarget:
+                SpeakDockLog.compose.warning("captured compose target disappeared before commit")
+                overlayPanelController.showError("Compose Unavailable")
+
+            case let .unavailable(reason):
+                SpeakDockLog.compose.warning("captured compose target unavailable before commit: \(reason, privacy: .private)")
+                overlayPanelController.showError(reason)
+            }
+            return
+        }
+
         let frontmostBundleIdentifier = composeTarget.frontmostApplicationBundleIdentifier()
 
         if captureTarget.shouldContinueCapture(frontmostBundleIdentifier: frontmostBundleIdentifier) {
@@ -221,7 +253,7 @@ final class HotPathCoordinator {
             return
         }
 
-        switch composeTarget.availability() {
+        switch resolvedComposeAvailability {
         case let .available(targetID):
             commitToCompose(trimmedText, targetID: targetID)
 
@@ -237,7 +269,7 @@ final class HotPathCoordinator {
 
     private func commitToCompose(_ text: String, targetID: String) {
         do {
-            try composeTarget.inject(text)
+            try composeTarget.inject(text, expectedTargetID: targetID)
             captureTarget.resetSession()
             SpeakDockLog.compose.notice("compose commit succeeded")
 

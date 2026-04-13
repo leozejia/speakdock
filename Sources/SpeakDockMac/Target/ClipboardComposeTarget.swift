@@ -20,9 +20,15 @@ enum ClipboardComposeTargetError: LocalizedError {
 
 @MainActor
 final class ClipboardComposeTarget {
+    private struct FocusedEditableTarget {
+        let element: AXUIElement
+        let targetID: String
+    }
+
     private let pasteboard: NSPasteboard
     private let inputSourceSwitcher: InputSourceSwitcher
     private let workspace: NSWorkspace
+    private var capturedTarget: FocusedEditableTarget?
 
     init(
         pasteboard: NSPasteboard = .general,
@@ -35,7 +41,18 @@ final class ClipboardComposeTarget {
     }
 
     func availability() -> ComposeTargetAvailability {
+        focusedEditableTargetAvailability(captureTarget: false)
+    }
+
+    func captureCurrentTarget() -> ComposeTargetAvailability {
+        focusedEditableTargetAvailability(captureTarget: true)
+    }
+
+    private func focusedEditableTargetAvailability(captureTarget: Bool) -> ComposeTargetAvailability {
         guard AXIsProcessTrusted() else {
+            if captureTarget {
+                capturedTarget = nil
+            }
             return .unavailable(reason: "Compose Unavailable")
         }
 
@@ -50,14 +67,27 @@ final class ClipboardComposeTarget {
         switch error {
         case .success:
             guard let focusedValue else {
+                if captureTarget {
+                    capturedTarget = nil
+                }
                 return .noTarget
             }
 
             let focusedElement = focusedValue as! AXUIElement
             if isEditableTextElement(focusedElement) {
-                return .available(targetID: targetIdentifier(for: focusedElement))
+                let target = FocusedEditableTarget(
+                    element: focusedElement,
+                    targetID: targetIdentifier(for: focusedElement)
+                )
+                if captureTarget {
+                    capturedTarget = target
+                }
+                return .available(targetID: target.targetID)
             }
 
+            if captureTarget {
+                capturedTarget = nil
+            }
             if isClearlyNonTextTarget(focusedElement) {
                 return .noTarget
             }
@@ -65,24 +95,37 @@ final class ClipboardComposeTarget {
             return .unavailable(reason: "Compose Unavailable")
 
         case .noValue, .attributeUnsupported:
+            if captureTarget {
+                capturedTarget = nil
+            }
             return .noTarget
 
         case .apiDisabled:
+            if captureTarget {
+                capturedTarget = nil
+            }
             return .unavailable(reason: "Compose Unavailable")
 
         default:
+            if captureTarget {
+                capturedTarget = nil
+            }
             return .unavailable(reason: "Compose Unavailable")
         }
     }
 
-    func inject(_ text: String) throws {
+    func inject(_ text: String, expectedTargetID: String? = nil) throws {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty else {
             return
         }
 
-        guard case .available = availability() else {
-            throw ClipboardComposeTargetError.unavailable("Compose Unavailable")
+        if let expectedTargetID {
+            try ensureAvailableTargetOrRestoreCapturedTarget(expectedTargetID: expectedTargetID)
+        } else {
+            guard case .available = availability() else {
+                throw ClipboardComposeTargetError.unavailable("Compose Unavailable")
+            }
         }
 
         let savedText = pasteboard.string(forType: .string)
@@ -127,7 +170,7 @@ final class ClipboardComposeTarget {
             usleep(50_000)
         }
 
-        try inject(text)
+        try inject(text, expectedTargetID: expectedTargetID)
     }
 
     func frontmostApplicationBundleIdentifier() -> String? {
@@ -135,6 +178,21 @@ final class ClipboardComposeTarget {
     }
 
     private func ensureAvailableTarget(expectedTargetID: String) throws {
+        guard case let .available(targetID) = availability(), targetID == expectedTargetID else {
+            throw ClipboardComposeTargetError.unavailable("Compose Unavailable")
+        }
+    }
+
+    private func ensureAvailableTargetOrRestoreCapturedTarget(expectedTargetID: String) throws {
+        if case let .available(targetID) = availability(), targetID == expectedTargetID {
+            return
+        }
+
+        guard let capturedTarget, capturedTarget.targetID == expectedTargetID else {
+            throw ClipboardComposeTargetError.unavailable("Compose Unavailable")
+        }
+
+        restoreFocus(to: capturedTarget.element)
         guard case let .available(targetID) = availability(), targetID == expectedTargetID else {
             throw ClipboardComposeTargetError.unavailable("Compose Unavailable")
         }
@@ -154,6 +212,25 @@ final class ClipboardComposeTarget {
 
         keyDown?.post(tap: .cgAnnotatedSessionEventTap)
         keyUp?.post(tap: .cgAnnotatedSessionEventTap)
+    }
+
+    private func restoreFocus(to element: AXUIElement) {
+        var pid: pid_t = 0
+        AXUIElementGetPid(element, &pid)
+
+        NSRunningApplication(processIdentifier: pid)?.activate(
+            from: .current,
+            options: []
+        )
+        AXUIElementSetAttributeValue(element, kAXFocusedAttribute as CFString, kCFBooleanTrue)
+
+        let applicationElement = AXUIElementCreateApplication(pid)
+        AXUIElementSetAttributeValue(
+            applicationElement,
+            kAXFocusedUIElementAttribute as CFString,
+            element
+        )
+        usleep(50_000)
     }
 
     private func isEditableTextElement(_ element: AXUIElement) -> Bool {

@@ -575,6 +575,28 @@
   - `SpeechController.makeAudioBufferAppender()` 的相邻闭包风险已单测覆盖，后台队列调用未触发同类 trap
   - 仍需用户在真实图形环境重新按 `Fn` 复测，确认不会再生成新的 `SpeakDock-*.ips`
 
+#### Hotfix: 修复 Compose 目标未冻结导致误入 Capture/Xcode
+
+- 状态：`Complete`
+- 用户反馈：
+  - 第一次按下 `Fn` 并松开后，会进入 Xcode 编译界面，不能直接发到输入光标处
+- 诊断证据：
+  - `make logs LOG_WINDOW=20m` 显示完整链路已经进入 `press started` -> `audio capture started` -> `press ended` -> `speech recognition final result received`
+  - 随后日志显示 `capture commit succeeded`，没有进入 `compose commit succeeded`
+  - `CaptureFileTarget.write(...)` 首次写入会调用 `NSWorkspace.open(fileURL)`，如果系统默认 `.md` 打开方式是 Xcode，就会表现为跳到 Xcode
+  - 根因是 `HotPathCoordinator.commitRecognizedText(...)` 在 ASR final result 到来时才判定 `composeTarget.availability()`，没有在 `Fn` 按下时冻结原始可编辑目标；并且已有 Capture session 会在 Compose 判定前通过 `shouldContinueCapture(...)` 抢先接管
+- 修复：
+  - 新增 `ComposeTargetSession`，在按下 `Fn` 时记录当时的 Compose target
+  - `HotPathCoordinator` 在提交时优先使用本次按下时捕获的 Compose target
+  - 如果本次录音捕获到 Compose target，则不会被已有 Capture continuation 抢先接管
+  - `ClipboardComposeTarget` 在按下时缓存 AX element；提交时若焦点漂移，会先尝试恢复到该 element，再校验 expected target 后注入
+  - 注入时增加 expected target 校验，避免焦点漂移后误粘贴到其他窗口
+  - 如果 captured Compose target 不可恢复，显示 `Compose Unavailable`，不会静默落到 Capture 打开 Xcode
+- 验证结果：
+  - `make test TEST_FILTER=ComposeTargetSessionTests` -> 先按预期失败，再修复后通过
+  - `make test` -> pass，`47` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+  - `make build` -> pass
+
 ## 5. 下一步
 
 - 按 `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md` 在真实图形环境里逐项验收
