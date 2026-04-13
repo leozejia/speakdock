@@ -74,15 +74,13 @@ final class AudioCaptureEngine {
 
         let inputNode = engine.inputNode
         let format = inputNode.inputFormat(forBus: 0)
-        var tapProcessor = AudioCaptureTapProcessor(
+        let tapBlock = makeAudioCaptureTapBlock(
             onAudioBufferCaptured: onAudioBufferCaptured,
             onLevelChanged: onLevelChanged
         )
 
         inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1_024, format: format) { buffer, _ in
-            tapProcessor.handle(buffer)
-        }
+        inputNode.installTap(onBus: 0, bufferSize: 1_024, format: format, block: tapBlock)
 
         do {
             engine.prepare()

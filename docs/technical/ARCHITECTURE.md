@@ -668,6 +668,9 @@ macOS v1 的工程收口写死为：
   - 波形必须由真实音频电平驱动，而不是假动画
   - 波形应承接 README 里的多柱状、RMS 驱动、弹性宽度这些要求
   - `Thinking / Refining` 状态要明确可见
+  - CoreAudio audio tap block 必须保持非 `MainActor` 隔离
+  - 如果宿主对象是 `@MainActor`，tap block 必须通过非隔离 factory / handler 创建，不能在 `@MainActor` 方法内直接内联 closure
+  - tap block 内只做 buffer 转发与轻量电平计算；任何 UI 更新都必须显式跳回 `MainActor`
 
 - 文本注入
   - macOS `Compose` 路径优先兼容剪贴板 + `Cmd+V` 粘贴注入

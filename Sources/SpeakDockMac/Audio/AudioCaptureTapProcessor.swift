@@ -51,3 +51,31 @@ struct AudioCaptureTapProcessor {
         return min(max(rms * 10, 0), 1)
     }
 }
+
+func makeAudioCaptureTapBlock(
+    onAudioBufferCaptured: ((AVAudioPCMBuffer) -> Void)?,
+    onLevelChanged: (@MainActor (Float) -> Void)?
+) -> AVAudioNodeTapBlock {
+    let handler = AudioCaptureTapBlockHandler(
+        processor: AudioCaptureTapProcessor(
+            onAudioBufferCaptured: onAudioBufferCaptured,
+            onLevelChanged: onLevelChanged
+        )
+    )
+
+    return { buffer, _ in
+        handler.handle(buffer)
+    }
+}
+
+private final class AudioCaptureTapBlockHandler: @unchecked Sendable {
+    private var processor: AudioCaptureTapProcessor
+
+    init(processor: AudioCaptureTapProcessor) {
+        self.processor = processor
+    }
+
+    func handle(_ buffer: AVAudioPCMBuffer) {
+        processor.handle(buffer)
+    }
+}

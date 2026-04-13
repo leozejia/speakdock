@@ -550,6 +550,31 @@
   - `make build` -> pass
   - `make logs LOG_WINDOW=2m` -> pass，能看到 `lifecycle` 与 `trigger` 分类日志，状态包含 `Fn Ready`
 
+#### Hotfix: 修复 tap block 继承 MainActor 隔离导致按 Fn 立即崩溃
+
+- 状态：`Complete`
+- 用户反馈：
+  - `Fn` 已能触发，但按下后 App 会立刻闪退
+- 诊断证据：
+  - `~/Library/Logs/DiagnosticReports/SpeakDock-2026-04-13-144845.ips` 中崩溃类型为 `EXC_BREAKPOINT / SIGTRAP`
+  - faulting thread 为 `RealtimeMessenger.mServiceQueue`
+  - 崩溃栈指向 `AudioCaptureEngine.startCaptureIfNeeded()` 中的 audio tap closure
+  - `make logs LOG_WINDOW=10m` 显示触发顺序为 `press started` -> `speech recognition start requested` -> `audio capture start requested` -> `speech recognition started` -> `audio capture started`，随后崩溃
+  - 根因是 `AudioCaptureEngine` 整体标注为 `@MainActor`，在 `startCaptureIfNeeded()` 内直接创建的 `installTap` closure 继承了 MainActor 隔离；CoreAudio 在实时音频队列调用该 closure 时触发 Swift executor 检查并 trap
+- 修复：
+  - 新增非 MainActor 隔离的 `makeAudioCaptureTapBlock(...)`
+  - 新增 `AudioCaptureTapBlockHandler` 持有 `AudioCaptureTapProcessor`，由 tap block 在实时队列调用
+  - `AudioCaptureEngine.startCaptureIfNeeded()` 不再内联创建 tap closure，改为使用非隔离 factory 返回的 block
+  - 保持 CoreAudio tap 回调内不写日志、不触碰 UI；level 更新仍通过 `Task { @MainActor in ... }` 回主执行器
+- 验证结果：
+  - `make test TEST_FILTER=AudioCaptureTapProcessorTests/testAudioTapBlockCreatedOnMainActorCanRunOffMainThread` -> 先按预期失败，再修复后通过
+  - `make test TEST_FILTER=AudioCaptureTapProcessorTests` -> pass
+  - `make test` -> pass，`44` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+  - `make build` -> pass
+- 备注：
+  - `SpeechController.makeAudioBufferAppender()` 的相邻闭包风险已单测覆盖，后台队列调用未触发同类 trap
+  - 仍需用户在真实图形环境重新按 `Fn` 复测，确认不会再生成新的 `SpeakDock-*.ips`
+
 ## 5. 下一步
 
 - 按 `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md` 在真实图形环境里逐项验收
