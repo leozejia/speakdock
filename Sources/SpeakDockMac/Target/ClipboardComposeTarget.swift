@@ -71,7 +71,7 @@ final class ClipboardComposeTarget {
             guard let focusedValue else {
                 if captureTarget {
                     capturedTarget = nil
-                    SpeakDockLog.compose.debug(
+                    SpeakDockLog.compose.notice(
                         "compose target capture found no focused element: frontmost=\(frontmostBundleIdentifier, privacy: .public)"
                     )
                 }
@@ -99,7 +99,7 @@ final class ClipboardComposeTarget {
 
             if captureTarget {
                 capturedTarget = nil
-                SpeakDockLog.compose.debug(
+                SpeakDockLog.compose.notice(
                     "compose target capture rejected focused element: frontmost=\(frontmostBundleIdentifier, privacy: .public)"
                 )
             }
@@ -112,7 +112,7 @@ final class ClipboardComposeTarget {
         case .noValue, .attributeUnsupported:
             if captureTarget {
                 capturedTarget = nil
-                SpeakDockLog.compose.debug(
+                SpeakDockLog.compose.notice(
                     "compose target capture has no focused UI element attribute: error=\(error.rawValue, privacy: .public), frontmost=\(frontmostBundleIdentifier, privacy: .public)"
                 )
             }
@@ -286,7 +286,7 @@ final class ClipboardComposeTarget {
             isAttributeSettable(kAXSelectedTextRangeAttribute as CFString, on: element)
         )
 
-        SpeakDockLog.compose.debug(
+        SpeakDockLog.compose.notice(
             "compose target capture focused element: frontmost=\(frontmostBundleIdentifier, privacy: .public), role=\(role, privacy: .public), subrole=\(subrole, privacy: .public), axEditable=\(axEditable, privacy: .public), valueSettable=\(valueSettable, privacy: .public), selectedTextRangeSettable=\(selectedTextRangeSettable, privacy: .public)"
         )
     }
