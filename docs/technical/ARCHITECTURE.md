@@ -330,6 +330,8 @@ macOS v1 的工程化定义写死为：
 - 可以把 `AXFocusedUIElement` 作为默认判定入口
 - `AXFocusedUIElement` 不允许只查 system-wide object；VS Code / Electron / 微信类 app 可能返回 `kAXErrorNoValue` 或不暴露 focused window，必须 fallback 到 frontmost application、focused/main window、window list 与 app children 的 AX tree
 - frontmost fallback 必须有深度与访问数量上限，避免复杂第三方 App 的 AX tree 无界遍历
+- 如果某个高优先级 App 能确认前台进程和窗口，但完全不暴露可编辑 AX 节点，可以通过显式 bundle allow-list 启用 paste-only fallback；该 fallback 只能绑定当前前台进程和 bundle，提交时如果前台不再是同一进程则必须失败
+- 当前 paste-only allow-list 只包含 `com.tencent.xinWeChat`
 - “可安全注入”是 `Compose` 成立条件的一部分，不只是附加优化
 
 失败边界：

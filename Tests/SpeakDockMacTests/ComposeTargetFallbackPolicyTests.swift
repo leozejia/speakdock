@@ -18,4 +18,20 @@ final class ComposeTargetFallbackPolicyTests: XCTestCase {
             )
         )
     }
+
+    func testWeChatCanUsePasteOnlyFrontmostApplicationFallback() {
+        XCTAssertTrue(
+            ComposeTargetFallbackPolicy.shouldUsePasteOnlyFrontmostApplicationFallback(
+                bundleIdentifier: "com.tencent.xinWeChat"
+            )
+        )
+    }
+
+    func testUnknownBundleCannotUsePasteOnlyFrontmostApplicationFallback() {
+        XCTAssertFalse(
+            ComposeTargetFallbackPolicy.shouldUsePasteOnlyFrontmostApplicationFallback(
+                bundleIdentifier: "com.example.Unknown"
+            )
+        )
+    }
 }

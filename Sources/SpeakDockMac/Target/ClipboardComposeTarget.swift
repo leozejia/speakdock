@@ -25,10 +25,33 @@ final class ClipboardComposeTarget {
         let targetID: String
     }
 
+    private struct PasteOnlyApplicationTarget {
+        let processIdentifier: pid_t
+        let bundleIdentifier: String
+
+        var targetID: String {
+            "\(processIdentifier):paste-only:\(bundleIdentifier)"
+        }
+    }
+
+    private enum CapturedTarget {
+        case focusedEditableElement(FocusedEditableTarget)
+        case pasteOnlyApplication(PasteOnlyApplicationTarget)
+
+        var targetID: String {
+            switch self {
+            case let .focusedEditableElement(target):
+                target.targetID
+            case let .pasteOnlyApplication(target):
+                target.targetID
+            }
+        }
+    }
+
     private let pasteboard: NSPasteboard
     private let inputSourceSwitcher: InputSourceSwitcher
     private let workspace: NSWorkspace
-    private var capturedTarget: FocusedEditableTarget?
+    private var capturedTarget: CapturedTarget?
 
     init(
         pasteboard: NSPasteboard = .general,
@@ -103,6 +126,18 @@ final class ClipboardComposeTarget {
                 )
             }
 
+            if captureTarget,
+                let pasteOnlyTarget = frontmostPasteOnlyApplicationTarget(
+                    frontmostBundleIdentifier: frontmostBundleIdentifier
+                )
+            {
+                capturedTarget = .pasteOnlyApplication(pasteOnlyTarget)
+                SpeakDockLog.compose.notice(
+                    "compose target capture using paste-only frontmost application fallback: frontmost=\(frontmostBundleIdentifier, privacy: .public)"
+                )
+                return .available(targetID: pasteOnlyTarget.targetID)
+            }
+
             if captureTarget {
                 capturedTarget = nil
                 SpeakDockLog.compose.notice(
@@ -146,7 +181,7 @@ final class ClipboardComposeTarget {
                 targetID: targetIdentifier(for: focusedElement)
             )
             if captureTarget {
-                capturedTarget = target
+                capturedTarget = .focusedEditableElement(target)
                 SpeakDockLog.compose.notice(
                     "compose target capture succeeded: frontmost=\(frontmostBundleIdentifier, privacy: .public)"
                 )
@@ -231,9 +266,17 @@ final class ClipboardComposeTarget {
     }
 
     private func ensureAvailableTarget(expectedTargetID: String) throws {
-        guard case let .available(targetID) = availability(), targetID == expectedTargetID else {
-            throw ClipboardComposeTargetError.unavailable("Compose Unavailable")
+        if case let .available(targetID) = availability(), targetID == expectedTargetID {
+            return
         }
+
+        if let pasteOnlyTarget = frontmostPasteOnlyApplicationTarget(),
+            pasteOnlyTarget.targetID == expectedTargetID
+        {
+            return
+        }
+
+        throw ClipboardComposeTargetError.unavailable("Compose Unavailable")
     }
 
     private func ensureAvailableTargetOrRestoreCapturedTarget(expectedTargetID: String) throws {
@@ -245,7 +288,17 @@ final class ClipboardComposeTarget {
             throw ClipboardComposeTargetError.unavailable("Compose Unavailable")
         }
 
-        restoreFocus(to: capturedTarget.element)
+        switch capturedTarget {
+        case let .focusedEditableElement(target):
+            restoreFocus(to: target.element)
+
+        case let .pasteOnlyApplication(target):
+            guard isFrontmostPasteOnlyApplicationTarget(target) else {
+                throw ClipboardComposeTargetError.unavailable("Compose Unavailable")
+            }
+            return
+        }
+
         guard case let .available(targetID) = availability(), targetID == expectedTargetID else {
             throw ClipboardComposeTargetError.unavailable("Compose Unavailable")
         }
@@ -362,6 +415,37 @@ final class ClipboardComposeTarget {
         }
 
         return nil
+    }
+
+    private func frontmostPasteOnlyApplicationTarget(
+        frontmostBundleIdentifier: String? = nil
+    ) -> PasteOnlyApplicationTarget? {
+        guard let frontmostApplication = workspace.frontmostApplication else {
+            return nil
+        }
+
+        let bundleIdentifier = frontmostBundleIdentifier
+            ?? frontmostApplication.bundleIdentifier
+            ?? "unknown"
+        guard ComposeTargetFallbackPolicy.shouldUsePasteOnlyFrontmostApplicationFallback(
+            bundleIdentifier: bundleIdentifier
+        ) else {
+            return nil
+        }
+
+        return PasteOnlyApplicationTarget(
+            processIdentifier: frontmostApplication.processIdentifier,
+            bundleIdentifier: bundleIdentifier
+        )
+    }
+
+    private func isFrontmostPasteOnlyApplicationTarget(_ target: PasteOnlyApplicationTarget) -> Bool {
+        guard let frontmostApplication = workspace.frontmostApplication else {
+            return false
+        }
+
+        return frontmostApplication.processIdentifier == target.processIdentifier
+            && frontmostApplication.bundleIdentifier == target.bundleIdentifier
     }
 
     private func firstEditableDescendant(

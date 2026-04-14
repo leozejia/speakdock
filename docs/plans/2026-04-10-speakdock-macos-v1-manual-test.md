@@ -66,7 +66,8 @@
 3. probe 结束后运行 `make logs LOG_WINDOW=2m`。
 4. 日志中目标 App 出现 `compose probe result ... availability=available`，并且前面有 `compose target capture succeeded`，可视为该输入框通过 Compose target 捕获。
 5. 如果出现 `compose target frontmost fallback failed` 或 `availability=noTarget`，把该 App 的 bundle id 与同段日志作为兼容性缺口记录。
-6. probe 不替代最终注入验收；通过 probe 后，仍需对重点 App 做一次真实 `Fn` 录音注入。
+6. 微信如果出现 `compose target capture using paste-only frontmost application fallback` 和 `availability=available`，说明通过微信专用 paste-only 捕获；仍需做真实 `Fn` 录音注入确认粘贴行为。
+7. probe 不替代最终注入验收；通过 probe 后，仍需对重点 App 做一次真实 `Fn` 录音注入。
 
 ## 9. Capture
 

@@ -646,6 +646,29 @@
   - `make test` -> pass，`53` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
   - `make build` -> pass
 
+#### Hotfix: 为微信启用受限 paste-only Compose fallback
+
+- 状态：`Ready for manual verification`
+- 用户反馈：
+  - probe 能覆盖多个 App，但微信仍然返回 `availability=noTarget`
+- 诊断证据：
+  - VS Code、Discord、Notes、Chrome、Lark、Mail 在真实输入框时可返回 `availability=available`
+  - 微信段日志稳定显示 `frontmost=com.tencent.xinWeChat`
+  - 微信 `focusedWindowError=0`、`mainWindowError=0`、`childrenError=0`，说明不是权限失败，也不是完全无法读取 AX tree
+  - 微信可遍历约 `396` 到 `408` 个 AX 节点，但没有任何节点满足 `AXEditable`、`AXTextField / AXTextArea` 或可写 `selectedTextRange`
+  - 因此继续盲目扩大通用递归范围不是正确修复方向
+- 修复：
+  - 新增显式 bundle allow-list：`com.tencent.xinWeChat`
+  - 仅当普通 system-wide 与 frontmost AX fallback 都无法拿到可编辑元素时，微信才进入 paste-only fallback
+  - paste-only target 绑定当前前台进程 ID 与 bundle ID
+  - 提交、撤回、整理替换前都会校验当前前台仍是同一微信进程；如果焦点已经切走，直接报 `Compose Unavailable`，不跨 App 误贴
+  - 该 fallback 仍只使用剪贴板 + `Cmd+V`，不记录文本、剪贴板内容或聊天内容
+- 验证结果：
+  - `make test TEST_FILTER=ComposeTargetFallbackPolicyTests` -> pass
+  - `make test` -> pass，`55` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+  - `make build` -> pass
+  - 待真实微信 probe 与 `Fn` 注入验证
+
 ## 5. 下一步
 
 - 按 `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md` 在真实图形环境里逐项验收
