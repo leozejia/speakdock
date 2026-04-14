@@ -14,4 +14,33 @@ final class TermDictionaryTests: XCTestCase {
             "Project Atlas 里面的 SpeakDock，不错"
         )
     }
+
+    func testManualCorrectionCreatesCandidateWithoutMutatingConfirmedDictionary() {
+        let dictionary = TermDictionary(entries: [
+            TermDictionaryEntry(canonicalTerm: "SpeakDock", aliases: ["speak dock"]),
+        ])
+        let extractor = TermDictionaryCandidateExtractor()
+
+        let candidates = extractor.candidates(
+            generatedText: "我们继续做 project adults 的输入体验",
+            correctedText: "我们继续做 Project Atlas 的输入体验"
+        )
+
+        XCTAssertEqual(
+            candidates,
+            [
+                TermDictionaryCandidate(
+                    canonicalTerm: "Project Atlas",
+                    alias: "project adults",
+                    source: .manualCorrection
+                ),
+            ]
+        )
+        XCTAssertEqual(
+            dictionary,
+            TermDictionary(entries: [
+                TermDictionaryEntry(canonicalTerm: "SpeakDock", aliases: ["speak dock"]),
+            ])
+        )
+    }
 }
