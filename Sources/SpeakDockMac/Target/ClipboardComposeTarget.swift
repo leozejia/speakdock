@@ -52,10 +52,12 @@ final class ClipboardComposeTarget {
         guard AXIsProcessTrusted() else {
             if captureTarget {
                 capturedTarget = nil
+                SpeakDockLog.permission.warning("compose target capture failed: accessibility not trusted")
             }
             return .unavailable(reason: "Compose Unavailable")
         }
 
+        let frontmostBundleIdentifier = workspace.frontmostApplication?.bundleIdentifier ?? "unknown"
         let systemWideElement = AXUIElementCreateSystemWide()
         var focusedValue: CFTypeRef?
         let error = AXUIElementCopyAttributeValue(
@@ -69,11 +71,18 @@ final class ClipboardComposeTarget {
             guard let focusedValue else {
                 if captureTarget {
                     capturedTarget = nil
+                    SpeakDockLog.compose.debug(
+                        "compose target capture found no focused element: frontmost=\(frontmostBundleIdentifier, privacy: .public)"
+                    )
                 }
                 return .noTarget
             }
 
             let focusedElement = focusedValue as! AXUIElement
+            if captureTarget {
+                logFocusedElementSnapshot(focusedElement, frontmostBundleIdentifier: frontmostBundleIdentifier)
+            }
+
             if isEditableTextElement(focusedElement) {
                 let target = FocusedEditableTarget(
                     element: focusedElement,
@@ -81,12 +90,18 @@ final class ClipboardComposeTarget {
                 )
                 if captureTarget {
                     capturedTarget = target
+                    SpeakDockLog.compose.notice(
+                        "compose target capture succeeded: frontmost=\(frontmostBundleIdentifier, privacy: .public)"
+                    )
                 }
                 return .available(targetID: target.targetID)
             }
 
             if captureTarget {
                 capturedTarget = nil
+                SpeakDockLog.compose.debug(
+                    "compose target capture rejected focused element: frontmost=\(frontmostBundleIdentifier, privacy: .public)"
+                )
             }
             if isClearlyNonTextTarget(focusedElement) {
                 return .noTarget
@@ -97,18 +112,27 @@ final class ClipboardComposeTarget {
         case .noValue, .attributeUnsupported:
             if captureTarget {
                 capturedTarget = nil
+                SpeakDockLog.compose.debug(
+                    "compose target capture has no focused UI element attribute: error=\(error.rawValue, privacy: .public), frontmost=\(frontmostBundleIdentifier, privacy: .public)"
+                )
             }
             return .noTarget
 
         case .apiDisabled:
             if captureTarget {
                 capturedTarget = nil
+                SpeakDockLog.permission.warning(
+                    "compose target capture failed because AX API is disabled: frontmost=\(frontmostBundleIdentifier, privacy: .public)"
+                )
             }
             return .unavailable(reason: "Compose Unavailable")
 
         default:
             if captureTarget {
                 capturedTarget = nil
+                SpeakDockLog.compose.warning(
+                    "compose target capture failed: error=\(error.rawValue, privacy: .public), frontmost=\(frontmostBundleIdentifier, privacy: .public)"
+                )
             }
             return .unavailable(reason: "Compose Unavailable")
         }
@@ -253,6 +277,20 @@ final class ClipboardComposeTarget {
         return false
     }
 
+    private func logFocusedElementSnapshot(_ element: AXUIElement, frontmostBundleIdentifier: String) {
+        let role = stringAttribute(kAXRoleAttribute, on: element) ?? "nil"
+        let subrole = stringAttribute(kAXSubroleAttribute, on: element) ?? "nil"
+        let axEditable = logValue(boolAttribute("AXEditable", on: element))
+        let valueSettable = logValue(isAttributeSettable(kAXValueAttribute as CFString, on: element))
+        let selectedTextRangeSettable = logValue(
+            isAttributeSettable(kAXSelectedTextRangeAttribute as CFString, on: element)
+        )
+
+        SpeakDockLog.compose.debug(
+            "compose target capture focused element: frontmost=\(frontmostBundleIdentifier, privacy: .public), role=\(role, privacy: .public), subrole=\(subrole, privacy: .public), axEditable=\(axEditable, privacy: .public), valueSettable=\(valueSettable, privacy: .public), selectedTextRangeSettable=\(selectedTextRangeSettable, privacy: .public)"
+        )
+    }
+
     private func isClearlyNonTextTarget(_ element: AXUIElement) -> Bool {
         guard let role = stringAttribute(kAXRoleAttribute, on: element) else {
             return false
@@ -291,6 +329,16 @@ final class ClipboardComposeTarget {
         return (value as? NSNumber)?.boolValue
     }
 
+    private func isAttributeSettable(_ attribute: CFString, on element: AXUIElement) -> Bool? {
+        var isSettable = DarwinBoolean(false)
+        let error = AXUIElementIsAttributeSettable(element, attribute, &isSettable)
+        guard error == .success else {
+            return nil
+        }
+
+        return isSettable.boolValue
+    }
+
     private func stringAttribute(_ attribute: String, on element: AXUIElement) -> String? {
         var value: CFTypeRef?
         let error = AXUIElementCopyAttributeValue(element, attribute as CFString, &value)
@@ -299,5 +347,13 @@ final class ClipboardComposeTarget {
         }
 
         return value as? String
+    }
+
+    private func logValue(_ value: Bool?) -> String {
+        guard let value else {
+            return "nil"
+        }
+
+        return value ? "true" : "false"
     }
 }
