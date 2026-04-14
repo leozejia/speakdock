@@ -597,6 +597,29 @@
   - `make test` -> pass，`47` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
   - `make build` -> pass
 
+#### Hotfix: 修复 VS Code 下 system-wide AXFocusedUIElement 无值导致 Compose 失效
+
+- 状态：`Complete`
+- 用户反馈：
+  - 增加 Compose target 诊断后，VS Code 里仍然会跳到 Xcode
+- 诊断证据：
+  - `make logs LOG_WINDOW=5m` 显示按下 `Fn` 时前台为 `com.microsoft.VSCode`
+  - `AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElementAttribute, ...)` 返回 `error=-25212`
+  - `-25212` 对应 `kAXErrorNoValue`，表示 system-wide accessibility object 没有 focused UI element 值
+  - 这不是权限失败，也不是 Capture 写入失败，而是 Compose target resolver 只查 system-wide focused element，不足以覆盖 VS Code / Electron 类 app
+- 修复：
+  - 新增 `ComposeTargetFallbackPolicy`
+  - system-wide `AXFocusedUIElement` 返回 `.noValue` 或 `.attributeUnsupported` 时，转向 frontmost application fallback
+  - fallback 先查 frontmost app 的 `AXFocusedUIElement`
+  - 如果仍无值，再从 frontmost app 的 `AXFocusedWindow` 子树中递归查找可编辑元素
+  - `selectedTextRange` 可写也被纳入可编辑文本元素判定
+  - 查找范围限制为深度 8、最多 250 个元素，避免在复杂 app 的 AX tree 中无界遍历
+- 验证结果：
+  - `make test TEST_FILTER=ComposeTargetFallbackPolicyTests` -> 先按预期失败，再修复后通过
+  - `make test TEST_FILTER=ComposeTarget` -> pass
+  - `make test` -> pass，`49` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+  - `make build` -> pass
+
 ## 5. 下一步
 
 - 按 `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md` 在真实图形环境里逐项验收

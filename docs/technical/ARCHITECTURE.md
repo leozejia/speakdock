@@ -328,6 +328,7 @@ macOS v1 的工程化定义写死为：
 
 - 只有在拿到 `Accessibility` 的聚焦元素，且该元素被判定为可编辑文本目标时，才进入 `Compose`
 - 可以把 `AXFocusedUIElement` 作为默认判定入口
+- `AXFocusedUIElement` 不允许只查 system-wide object；VS Code / Electron 类 app 可能返回 `kAXErrorNoValue`，必须 fallback 到 frontmost application / focused window 的 AX tree
 - “可安全注入”是 `Compose` 成立条件的一部分，不只是附加优化
 
 失败边界：

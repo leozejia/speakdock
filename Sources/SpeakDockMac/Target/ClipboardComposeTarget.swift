@@ -78,38 +78,28 @@ final class ClipboardComposeTarget {
                 return .noTarget
             }
 
-            let focusedElement = focusedValue as! AXUIElement
-            if captureTarget {
-                logFocusedElementSnapshot(focusedElement, frontmostBundleIdentifier: frontmostBundleIdentifier)
-            }
-
-            if isEditableTextElement(focusedElement) {
-                let target = FocusedEditableTarget(
-                    element: focusedElement,
-                    targetID: targetIdentifier(for: focusedElement)
-                )
-                if captureTarget {
-                    capturedTarget = target
-                    SpeakDockLog.compose.notice(
-                        "compose target capture succeeded: frontmost=\(frontmostBundleIdentifier, privacy: .public)"
-                    )
-                }
-                return .available(targetID: target.targetID)
-            }
-
-            if captureTarget {
-                capturedTarget = nil
-                SpeakDockLog.compose.notice(
-                    "compose target capture rejected focused element: frontmost=\(frontmostBundleIdentifier, privacy: .public)"
-                )
-            }
-            if isClearlyNonTextTarget(focusedElement) {
-                return .noTarget
-            }
-
-            return .unavailable(reason: "Compose Unavailable")
+            return availability(
+                forFocusedElement: focusedValue as! AXUIElement,
+                captureTarget: captureTarget,
+                frontmostBundleIdentifier: frontmostBundleIdentifier
+            )
 
         case .noValue, .attributeUnsupported:
+            if ComposeTargetFallbackPolicy.shouldQueryFrontmostApplication(afterSystemWideFocusedElementError: error),
+                let focusedElement = frontmostApplicationFocusedElement()
+            {
+                if captureTarget {
+                    SpeakDockLog.compose.notice(
+                        "compose target capture using frontmost application fallback: systemWideError=\(error.rawValue, privacy: .public), frontmost=\(frontmostBundleIdentifier, privacy: .public)"
+                    )
+                }
+                return availability(
+                    forFocusedElement: focusedElement,
+                    captureTarget: captureTarget,
+                    frontmostBundleIdentifier: frontmostBundleIdentifier
+                )
+            }
+
             if captureTarget {
                 capturedTarget = nil
                 SpeakDockLog.compose.notice(
@@ -136,6 +126,42 @@ final class ClipboardComposeTarget {
             }
             return .unavailable(reason: "Compose Unavailable")
         }
+    }
+
+    private func availability(
+        forFocusedElement focusedElement: AXUIElement,
+        captureTarget: Bool,
+        frontmostBundleIdentifier: String
+    ) -> ComposeTargetAvailability {
+        if captureTarget {
+            logFocusedElementSnapshot(focusedElement, frontmostBundleIdentifier: frontmostBundleIdentifier)
+        }
+
+        if isEditableTextElement(focusedElement) {
+            let target = FocusedEditableTarget(
+                element: focusedElement,
+                targetID: targetIdentifier(for: focusedElement)
+            )
+            if captureTarget {
+                capturedTarget = target
+                SpeakDockLog.compose.notice(
+                    "compose target capture succeeded: frontmost=\(frontmostBundleIdentifier, privacy: .public)"
+                )
+            }
+            return .available(targetID: target.targetID)
+        }
+
+        if captureTarget {
+            capturedTarget = nil
+            SpeakDockLog.compose.notice(
+                "compose target capture rejected focused element: frontmost=\(frontmostBundleIdentifier, privacy: .public)"
+            )
+        }
+        if isClearlyNonTextTarget(focusedElement) {
+            return .noTarget
+        }
+
+        return .unavailable(reason: "Compose Unavailable")
     }
 
     func inject(_ text: String, expectedTargetID: String? = nil) throws {
@@ -257,12 +283,73 @@ final class ClipboardComposeTarget {
         usleep(50_000)
     }
 
+    private func frontmostApplicationFocusedElement() -> AXUIElement? {
+        guard let processIdentifier = workspace.frontmostApplication?.processIdentifier, processIdentifier > 0 else {
+            return nil
+        }
+
+        let applicationElement = AXUIElementCreateApplication(processIdentifier)
+        if let focusedElement = axElementAttribute(kAXFocusedUIElementAttribute, on: applicationElement) {
+            return focusedElement
+        }
+
+        guard let focusedWindow = axElementAttribute(kAXFocusedWindowAttribute, on: applicationElement) else {
+            return nil
+        }
+
+        var visitedCount = 0
+        return firstEditableDescendant(of: focusedWindow, depth: 0, visitedCount: &visitedCount)
+    }
+
+    private func firstEditableDescendant(
+        of element: AXUIElement,
+        depth: Int,
+        visitedCount: inout Int
+    ) -> AXUIElement? {
+        guard depth <= 8, visitedCount <= 250 else {
+            return nil
+        }
+
+        visitedCount += 1
+
+        if isEditableTextElement(element) {
+            return element
+        }
+
+        let children = axElementArrayAttribute(kAXChildrenAttribute, on: element)
+        for child in children where boolAttribute(kAXFocusedAttribute, on: child) == true {
+            if let focusedEditableChild = firstEditableDescendant(
+                of: child,
+                depth: depth + 1,
+                visitedCount: &visitedCount
+            ) {
+                return focusedEditableChild
+            }
+        }
+
+        for child in children {
+            if let editableChild = firstEditableDescendant(
+                of: child,
+                depth: depth + 1,
+                visitedCount: &visitedCount
+            ) {
+                return editableChild
+            }
+        }
+
+        return nil
+    }
+
     private func isEditableTextElement(_ element: AXUIElement) -> Bool {
         guard boolAttribute(kAXEnabledAttribute, on: element) ?? true else {
             return false
         }
 
         if boolAttribute("AXEditable", on: element) == true {
+            return true
+        }
+
+        if isAttributeSettable(kAXSelectedTextRangeAttribute as CFString, on: element) == true {
             return true
         }
 
@@ -327,6 +414,26 @@ final class ClipboardComposeTarget {
         }
 
         return (value as? NSNumber)?.boolValue
+    }
+
+    private func axElementAttribute(_ attribute: String, on element: AXUIElement) -> AXUIElement? {
+        var value: CFTypeRef?
+        let error = AXUIElementCopyAttributeValue(element, attribute as CFString, &value)
+        guard error == .success, let value else {
+            return nil
+        }
+
+        return (value as! AXUIElement)
+    }
+
+    private func axElementArrayAttribute(_ attribute: String, on element: AXUIElement) -> [AXUIElement] {
+        var value: CFTypeRef?
+        let error = AXUIElementCopyAttributeValue(element, attribute as CFString, &value)
+        guard error == .success, let value else {
+            return []
+        }
+
+        return (value as? [AXUIElement]) ?? []
     }
 
     private func isAttributeSettable(_ attribute: CFString, on element: AXUIElement) -> Bool? {
