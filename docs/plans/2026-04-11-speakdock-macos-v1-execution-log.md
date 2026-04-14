@@ -648,7 +648,7 @@
 
 #### Hotfix: 为微信启用受限 paste-only Compose fallback
 
-- 状态：`Ready for manual verification`
+- 状态：`Probe verified; pending Fn injection verification`
 - 用户反馈：
   - probe 能覆盖多个 App，但微信仍然返回 `availability=noTarget`
 - 诊断证据：
@@ -667,7 +667,8 @@
   - `make test TEST_FILTER=ComposeTargetFallbackPolicyTests` -> pass
   - `make test` -> pass，`55` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
   - `make build` -> pass
-  - 待真实微信 probe 与 `Fn` 注入验证
+  - 微信真实 probe -> pass，日志显示 `compose target capture using paste-only frontmost application fallback` 与 `availability=available`
+  - 待真实微信 `Fn` 注入验证
 
 ## 5. 下一步
 
