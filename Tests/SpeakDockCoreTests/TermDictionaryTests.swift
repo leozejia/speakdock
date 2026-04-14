@@ -43,4 +43,25 @@ final class TermDictionaryTests: XCTestCase {
             ])
         )
     }
+
+    func testNormalizerCanReadCurrentDictionaryFromProviderWithoutRecreation() {
+        var currentDictionary = TermDictionary.empty
+        let normalizer = CleanNormalizer(
+            termDictionaryProvider: { currentDictionary }
+        )
+
+        XCTAssertEqual(
+            normalizer.normalize("project atlas 进入下一步"),
+            "project atlas 进入下一步"
+        )
+
+        currentDictionary = TermDictionary(entries: [
+            TermDictionaryEntry(canonicalTerm: "Project Atlas", aliases: ["project atlas"]),
+        ])
+
+        XCTAssertEqual(
+            normalizer.normalize("project atlas 进入下一步"),
+            "Project Atlas 进入下一步"
+        )
+    }
 }

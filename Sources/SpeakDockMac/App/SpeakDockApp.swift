@@ -6,6 +6,7 @@ import SwiftUI
 struct SpeakDockApp: App {
     @NSApplicationDelegateAdaptor(AppRuntime.self) private var appRuntime
     @State private var settingsStore: SettingsStore
+    @State private var termDictionaryStore: TermDictionaryStore
     @State private var triggerController: TriggerController
     @State private var audioCaptureEngine: AudioCaptureEngine
     @State private var composeTarget: ClipboardComposeTarget
@@ -17,6 +18,7 @@ struct SpeakDockApp: App {
     init() {
         let launchOptions = SpeakDockLaunchOptions()
         let settingsStore = SettingsStore()
+        let termDictionaryStore = TermDictionaryStore()
         let triggerController = TriggerController(settingsStore: settingsStore)
         let audioCaptureEngine = AudioCaptureEngine()
         let composeTarget = ClipboardComposeTarget()
@@ -30,7 +32,12 @@ struct SpeakDockApp: App {
             composeTarget: composeTarget,
             captureTarget: captureTarget,
             speechController: speechController,
-            overlayPanelController: overlayPanelController
+            overlayPanelController: overlayPanelController,
+            cleanNormalizer: CleanNormalizer(
+                termDictionaryProvider: {
+                    termDictionaryStore.confirmedDictionary
+                }
+            )
         )
         switch launchOptions.mode {
         case .normal:
@@ -48,6 +55,7 @@ struct SpeakDockApp: App {
         }
 
         _settingsStore = State(initialValue: settingsStore)
+        _termDictionaryStore = State(initialValue: termDictionaryStore)
         _triggerController = State(initialValue: triggerController)
         _audioCaptureEngine = State(initialValue: audioCaptureEngine)
         _composeTarget = State(initialValue: composeTarget)

@@ -743,18 +743,22 @@
   - 当前候选提取对候选长度与换行做保护，避免把整段文本当词条落盘
   - `TermDictionaryStore` 已可把 confirmed entries 和 pending candidates 保存到用户本地 `Application Support/SpeakDock/term-dictionary.json`
   - 存储层支持注入临时路径测试，不触碰仓库内文件，也不进入 Git 管理
+  - app 启动时已把本地 confirmed dictionary 接入 `Clean` 热路径，后续识别不需要重启 normalizer 也能读到最新词典
+  - 待确认候选现在可以被提升进 confirmed dictionary，并从 pending 列表移除
 - 未完成范围：
   - 用户手动填写词典 UI
   - 将用户手动修正事件接入候选词条生成流程
-  - 候选确认、撤回、删除和导出
+  - 候选撤回、删除和导出
   - 将词典条目传入 `RefineRequest` 上下文
-  - 将本地词典 store 接入运行时 `Clean` 热路径与 Settings
+  - 将本地词典 store 接入 Settings
 - Red / Green 记录：
   - `TermDictionaryTests/testConfirmedAliasesAreAppliedBeforeFinalCleanTextIsSubmitted`：RED -> GREEN
   - `TermDictionaryTests/testManualCorrectionCreatesCandidateWithoutMutatingConfirmedDictionary`：RED -> GREEN
+  - `TermDictionaryTests/testNormalizerCanReadCurrentDictionaryFromProviderWithoutRecreation`：RED -> GREEN
   - `TermDictionaryStoreTests/testPersistsAndReloadsConfirmedEntriesAndPendingCandidates`：RED -> GREEN
+  - `TermDictionaryStoreTests/testConfirmCandidatePromotesItIntoConfirmedDictionaryAndRemovesPendingEntry`：RED -> GREEN
 - 验证结果：
   - `make test TEST_FILTER=TermDictionaryTests` -> pass
   - `make test TEST_FILTER=ConservativeRefinePromptTests` -> pass
   - `make test TEST_FILTER=TermDictionaryStoreTests` -> pass
-  - `make test` -> pass，`59` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+  - `make test` -> pass，`61` 个 XCTest + `2` 个 Swift Testing smoke 全部通过

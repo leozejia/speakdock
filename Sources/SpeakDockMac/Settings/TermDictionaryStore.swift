@@ -75,6 +75,29 @@ final class TermDictionaryStore {
         pendingCandidates = snapshot.pendingCandidates
     }
 
+    func confirm(_ candidate: TermDictionaryCandidate) throws {
+        var entries = confirmedDictionary.entries
+
+        if let existingEntryIndex = entries.firstIndex(where: { $0.canonicalTerm == candidate.canonicalTerm }) {
+            var aliases = entries[existingEntryIndex].aliases
+            if !aliases.contains(candidate.alias) {
+                aliases.append(candidate.alias)
+            }
+            entries[existingEntryIndex].aliases = aliases
+        } else {
+            entries.append(
+                TermDictionaryEntry(
+                    canonicalTerm: candidate.canonicalTerm,
+                    aliases: [candidate.alias]
+                )
+            )
+        }
+
+        confirmedDictionary = TermDictionary(entries: entries)
+        pendingCandidates.removeAll { $0 == candidate }
+        try save()
+    }
+
     private func persistIfReady() {
         guard isReady else {
             return

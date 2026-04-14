@@ -54,6 +54,38 @@ final class TermDictionaryStoreTests: XCTestCase {
         XCTAssertTrue(fileManager.fileExists(atPath: storageURL.path))
     }
 
+    func testConfirmCandidatePromotesItIntoConfirmedDictionaryAndRemovesPendingEntry() throws {
+        let rootDirectory = try makeTemporaryDirectory(named: "term-dictionary-store")
+        let storageURL = rootDirectory
+            .appendingPathComponent("Application Support", isDirectory: true)
+            .appendingPathComponent("SpeakDock", isDirectory: true)
+            .appendingPathComponent("term-dictionary.json")
+
+        let candidate = TermDictionaryCandidate(
+            canonicalTerm: "Project Atlas",
+            alias: "project adults",
+            source: .manualCorrection
+        )
+        let store = TermDictionaryStore(
+            storageURL: storageURL,
+            fileManager: fileManager
+        )
+        store.pendingCandidates = [candidate]
+
+        try store.confirm(candidate)
+
+        XCTAssertEqual(
+            store.confirmedDictionary,
+            TermDictionary(entries: [
+                TermDictionaryEntry(
+                    canonicalTerm: "Project Atlas",
+                    aliases: ["project adults"]
+                ),
+            ])
+        )
+        XCTAssertEqual(store.pendingCandidates, [])
+    }
+
     private func makeTemporaryDirectory(named prefix: String) throws -> URL {
         let url = fileManager.temporaryDirectory
             .appendingPathComponent("\(prefix)-\(UUID().uuidString)", isDirectory: true)
