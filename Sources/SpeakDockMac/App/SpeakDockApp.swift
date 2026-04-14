@@ -66,12 +66,14 @@ struct SpeakDockApp: App {
     }
 
     var body: some Scene {
-        MenuBarExtra("SpeakDock", systemImage: "mic.circle.fill") {
+        MenuBarExtra {
             MenuBarRoot(
                 settingsStore: settingsStore,
                 triggerController: triggerController,
                 hotPathCoordinator: hotPathCoordinator
             )
+        } label: {
+            SpeakDockMenuBarIcon(availability: triggerController.availability)
         }
         .menuBarExtraStyle(.window)
 

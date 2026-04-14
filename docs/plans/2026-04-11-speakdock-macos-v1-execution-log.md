@@ -762,3 +762,20 @@
   - `make test TEST_FILTER=ConservativeRefinePromptTests` -> pass
   - `make test TEST_FILTER=TermDictionaryStoreTests` -> pass
   - `make test` -> pass，`61` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+
+### 5.4 菜单栏与设置界面视觉基线重构
+
+- 状态：`Complete`
+- 目标：
+  - 把菜单栏面板、设置页、overlay 和菜单栏图标从工程占位态提升到可长期迭代的 macOS 基线
+- 已完成行为：
+  - 菜单栏图标从系统默认 `mic.circle.fill` 改为品牌化单色 waveform glyph
+  - 菜单栏面板改为状态优先的紧凑控制面板，不再是原始表单堆叠
+  - 设置页改为分组卡片和清晰层级，触发键替代项不再要求用户手输内部标识字符串
+  - overlay 调整为更接近原生 utility HUD 的层级、按钮和状态色
+- 未完成范围：
+  - bundle 级 app icon 资产
+  - 词典 Settings UI
+  - 视觉层人工验收与细节微调
+- 验证结果：
+  - `make test` -> pass，`61` 个 XCTest + `2` 个 Swift Testing smoke 全部通过

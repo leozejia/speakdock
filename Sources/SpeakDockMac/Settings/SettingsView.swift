@@ -20,99 +20,235 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        Form {
-            Section("General") {
-                Picker("Language", selection: $settingsStore.settings.languageCode) {
-                    Text("简体中文").tag("zh-CN")
-                    Text("English").tag("en-US")
-                    Text("繁體中文").tag("zh-TW")
-                    Text("日本語").tag("ja-JP")
-                    Text("한국어").tag("ko-KR")
-                }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                header
 
-                triggerSelectionView
+                SpeakDockPanel(
+                    title: "Input",
+                    subtitle: "Language and trigger should feel predictable."
+                ) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        LabeledContent("Language") {
+                            Picker("Language", selection: $settingsStore.settings.languageCode) {
+                                Text("简体中文").tag("zh-CN")
+                                Text("English").tag("en-US")
+                                Text("繁體中文").tag("zh-TW")
+                                Text("日本語").tag("ja-JP")
+                                Text("한국어").tag("ko-KR")
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                            .frame(width: 150)
+                        }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Capture Root")
+                        Divider()
 
-                    HStack(alignment: .top, spacing: 12) {
-                        TextField(
-                            "Capture Root",
-                            text: .constant(settingsStore.settings.captureRootPath)
-                        )
-                        .disabled(true)
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack(alignment: .firstTextBaseline) {
+                                Text("Trigger")
+                                    .font(.system(size: 13, weight: .medium))
 
-                        Button("Choose & Migrate…") {
-                            chooseCaptureRoot()
+                                Spacer()
+
+                                Picker("Trigger", selection: triggerModeBinding) {
+                                    Text("Fn").tag("fn")
+                                    Text("Alternative").tag("alternative")
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.segmented)
+                                .frame(width: 220)
+                            }
+
+                            if isAlternativeTriggerSelected {
+                                LabeledContent("Alternative Key") {
+                                    Picker("Alternative Key", selection: alternativeTriggerBinding) {
+                                        ForEach(alternativeTriggerOptions, id: \.rawValue) { option in
+                                            Text(option.displayName).tag(option.rawValue)
+                                        }
+                                    }
+                                    .labelsHidden()
+                                    .pickerStyle(.menu)
+                                    .frame(width: 170)
+                                }
+                            }
+
+                            Text("If Fn becomes unavailable, SpeakDock warns in the menu bar and only switches when you choose an alternative here.")
+                                .font(.system(size: 11.5))
+                                .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
+                }
 
-                    if let captureRootMessage {
-                        statusText(captureRootMessage)
+                SpeakDockPanel(
+                    title: "Capture",
+                    subtitle: "Markdown files stay local and migrate with the folder."
+                ) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Capture Root")
+                            .font(.system(size: 13, weight: .medium))
+
+                        HStack(spacing: 12) {
+                            Text(settingsStore.settings.captureRootPath)
+                                .font(.system(size: 12.5, weight: .medium, design: .monospaced))
+                                .foregroundStyle(Color.primary.opacity(0.82))
+                                .lineLimit(2)
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 11)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .fill(SpeakDockVisualStyle.panelInset)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .stroke(SpeakDockVisualStyle.line, lineWidth: 1)
+                                )
+
+                            Button("Choose & Migrate…") {
+                                chooseCaptureRoot()
+                            }
+                            .buttonStyle(SpeakDockActionButtonStyle(kind: .secondary))
+                        }
+
+                        if let captureRootMessage {
+                            messageView(captureRootMessage, tone: .neutral)
+                        }
+                    }
+                }
+
+                SpeakDockPanel(
+                    title: "Refine",
+                    subtitle: "Optional cleanup path. Keep it off unless you need it."
+                ) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Toggle(isOn: $settingsStore.settings.refineEnabled) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Enable Refine")
+                                    .font(.system(size: 13, weight: .medium))
+                                Text("Use the configured model after deterministic cleanup.")
+                                    .font(.system(size: 11.5))
+                                    .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+                            }
+                        }
+                        .toggleStyle(.switch)
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            LabeledContent("Base URL") {
+                                TextField("https://example.com/v1", text: $settingsStore.settings.refineBaseURL)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 280)
+                            }
+
+                            LabeledContent("API Key") {
+                                SecureField("sk-...", text: $settingsStore.settings.refineAPIKey)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 280)
+                            }
+
+                            LabeledContent("Model") {
+                                TextField("gpt-5.4", text: $settingsStore.settings.refineModel)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 200)
+                            }
+                        }
+                        .disabled(!settingsStore.settings.refineEnabled)
+                    }
+                }
+
+                SpeakDockPanel(
+                    title: "Actions",
+                    subtitle: "Validate the refine connection before trusting the output."
+                ) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack(spacing: 10) {
+                            Button(isTestingRefine ? "Testing…" : "Test Connection") {
+                                runRefineConnectionTest()
+                            }
+                            .buttonStyle(SpeakDockActionButtonStyle(kind: .primary))
+                            .disabled(isTestingRefine)
+
+                            Button("Save") {
+                                saveSettings()
+                            }
+                            .buttonStyle(SpeakDockActionButtonStyle(kind: .secondary))
+                        }
+
+                        if let refineTestMessage {
+                            messageView(
+                                refineTestMessage,
+                                tone: refineTestMessage.hasPrefix("Test Passed") ? .success : .neutral
+                            )
+                        }
+
+                        if let saveMessage {
+                            messageView(
+                                saveMessage,
+                                tone: saveMessage == "Saved" ? .success : .neutral
+                            )
+                        }
                     }
                 }
             }
-
-            Section("Refine") {
-                Toggle("Enable Refine", isOn: $settingsStore.settings.refineEnabled)
-                TextField("Base URL", text: $settingsStore.settings.refineBaseURL)
-                TextField("API Key", text: $settingsStore.settings.refineAPIKey)
-                TextField("Model", text: $settingsStore.settings.refineModel)
-            }
-
-            Section("Actions") {
-                HStack(spacing: 12) {
-                    Button(isTestingRefine ? "Testing..." : "Test") {
-                        runRefineConnectionTest()
-                    }
-                    .disabled(isTestingRefine)
-
-                    Button("Save") {
-                        saveSettings()
-                    }
-                }
-
-                if let refineTestMessage {
-                    statusText(refineTestMessage)
-                }
-
-                if let saveMessage {
-                    statusText(saveMessage)
-                }
-            }
+            .padding(24)
         }
-        .formStyle(.grouped)
-        .frame(minWidth: 420, minHeight: 320)
-        .padding()
+        .background(settingsBackground.ignoresSafeArea())
+        .frame(minWidth: 720, minHeight: 620)
     }
 
-    @ViewBuilder
-    private var triggerSelectionView: some View {
-        switch settingsStore.settings.triggerSelection {
-        case .fn:
-            Picker("Trigger", selection: fnTriggerBinding) {
-                Text("Fn").tag("fn")
-                Text("Alternative").tag("alternative")
-            }
-        case let .alternative(identifier):
-            VStack(alignment: .leading, spacing: 8) {
-                Picker("Trigger", selection: alternativeTriggerModeBinding) {
-                    Text("Fn").tag("fn")
-                    Text("Alternative").tag("alternative")
-                }
+    private var header: some View {
+        HStack(alignment: .center, spacing: 16) {
+            SpeakDockBrandGlyph(size: 54)
 
-                TextField(
-                    "Alternative Trigger Identifier",
-                    text: Binding(
-                        get: { identifier },
-                        set: { settingsStore.settings.triggerSelection = .alternative($0) }
-                    )
+            VStack(alignment: .leading, spacing: 6) {
+                Text("SpeakDock")
+                    .font(.system(size: 24, weight: .semibold))
+                    .tracking(-0.3)
+
+                Text("AI voice input for macOS. Fast capture, careful cleanup, local-first memory.")
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 8) {
+                SpeakDockStatusBadge(
+                    title: settingsStore.settings.refineEnabled ? "Refine On" : "Refine Off",
+                    tone: settingsStore.settings.refineEnabled ? .accent : .neutral
                 )
+                SpeakDockStatusBadge(title: "Capture Local", tone: .success)
             }
         }
+        .padding(4)
     }
 
-    private var fnTriggerBinding: Binding<String> {
+    private var settingsBackground: some View {
+        LinearGradient(
+            colors: [
+                SpeakDockVisualStyle.canvas,
+                SpeakDockVisualStyle.panelInset.opacity(0.9),
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+
+    private var isAlternativeTriggerSelected: Bool {
+        if case .alternative = settingsStore.settings.triggerSelection {
+            return true
+        }
+        return false
+    }
+
+    private var alternativeTriggerOptions: [ModifierTriggerKey] {
+        ModifierTriggerKey.allCases.filter { $0 != .fn }
+    }
+
+    private var triggerModeBinding: Binding<String> {
         Binding(
             get: {
                 switch settingsStore.settings.triggerSelection {
@@ -123,15 +259,29 @@ struct SettingsView: View {
                 }
             },
             set: { newValue in
-                settingsStore.settings.triggerSelection = newValue == "fn"
-                    ? .fn
-                    : .alternative("")
+                if newValue == "fn" {
+                    settingsStore.settings.triggerSelection = .fn
+                } else {
+                    settingsStore.settings.triggerSelection = .alternative(alternativeTriggerBinding.wrappedValue)
+                }
             }
         )
     }
 
-    private var alternativeTriggerModeBinding: Binding<String> {
-        fnTriggerBinding
+    private var alternativeTriggerBinding: Binding<String> {
+        Binding(
+            get: {
+                switch settingsStore.settings.triggerSelection {
+                case let .alternative(identifier) where ModifierTriggerKey(rawValue: identifier) != nil:
+                    identifier
+                case .alternative, .fn:
+                    ModifierTriggerKey.rightOption.rawValue
+                }
+            },
+            set: { newValue in
+                settingsStore.settings.triggerSelection = .alternative(newValue)
+            }
+        )
     }
 
     private func chooseCaptureRoot() {
@@ -161,7 +311,7 @@ struct SettingsView: View {
 
     private func runRefineConnectionTest() {
         isTestingRefine = true
-        refineTestMessage = "Testing..."
+        refineTestMessage = "Testing…"
 
         let configuration = RefineConfiguration(
             enabled: true,
@@ -201,10 +351,27 @@ struct SettingsView: View {
     }
 
     @ViewBuilder
-    private func statusText(_ message: String) -> some View {
-        Text(message)
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-            .textSelection(.enabled)
+    private func messageView(_ message: String, tone: SpeakDockBadgeTone) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            Circle()
+                .fill(tone.textColor)
+                .frame(width: 7, height: 7)
+
+            Text(message)
+                .font(.system(size: 11.5))
+                .foregroundStyle(Color.primary.opacity(0.8))
+                .textSelection(.enabled)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(tone.fillColor)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(tone.strokeColor, lineWidth: 1)
+        )
     }
 }
