@@ -10,9 +10,9 @@
 
 ## 2. 当前状态
 
-- 当前阶段：`Task 10` 已完成
-- 当前目标：进入图形环境执行人工验收清单
-- 当前策略：代码与文档先保持同步，剩余风险统一通过手动验收逐项确认
+- 当前阶段：P1 `AI 语音输入法` 体验增强
+- 当前目标：先落地 `TermDictionary`，再进入用户确认式候选词条与本地存储
+- 当前策略：每个行为按 RED / GREEN 小步推进；词典不记录完整转写、聊天内容或剪贴板内容
 
 ## 3. 任务看板
 
@@ -729,4 +729,24 @@
 2. 优先重新运行 `make run`，确认 Accessibility 不再重复弹；如果仍弹，移除旧授权项后重新添加 `.build/debug/SpeakDock.app`
 3. 验证 `Fn / 替代 trigger / overlay 第二按钮 / Compose / Capture / UndoWindow`
 4. 在具备网络条件的环境里验证 refine `Test` 与真实 `Refining...` 往返
-5. 开始 P1 `TermDictionary` 实现
+5. P1 `TermDictionary` 已开始实现，先接入已确认别名的 Clean 确定性替换
+
+### 5.3 P1 TermDictionary 实现记录
+
+- 状态：`In Progress`
+- 已完成行为：
+  - 已确认的 `TermDictionary` 别名可注入 `CleanNormalizer`
+  - Clean 输出前会把命中的别名替换成用户确认过的标准术语
+  - 默认 `CleanNormalizer()` 继续使用空词典，不改变现有热路径默认行为
+- 未完成范围：
+  - 用户手动填写词典 UI
+  - 本地 Application Support 词典存储
+  - 用户手动修正后的候选词条生成
+  - 候选确认、撤回、删除和导出
+  - 将词典条目传入 `RefineRequest` 上下文
+- Red / Green 记录：
+  - `TermDictionaryTests/testConfirmedAliasesAreAppliedBeforeFinalCleanTextIsSubmitted`：RED -> GREEN
+- 验证结果：
+  - `make test TEST_FILTER=TermDictionaryTests` -> pass
+  - `make test TEST_FILTER=ConservativeRefinePromptTests` -> pass
+  - `make test` -> pass，`57` 个 XCTest + `2` 个 Swift Testing smoke 全部通过

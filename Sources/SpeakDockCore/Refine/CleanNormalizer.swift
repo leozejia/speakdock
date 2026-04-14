@@ -1,12 +1,17 @@
 import Foundation
 
 public struct CleanNormalizer: Sendable {
-    public init() {}
+    private let termDictionary: TermDictionary
+
+    public init(termDictionary: TermDictionary = .empty) {
+        self.termDictionary = termDictionary
+    }
 
     public func normalize(_ text: String) -> String {
         var normalized = text.trimmingCharacters(in: .whitespacesAndNewlines)
         normalized = collapseWhitespace(in: normalized)
         normalized = removeLeadingFillers(in: normalized)
+        normalized = termDictionary.applying(to: normalized)
         normalized = collapseRepeatedPunctuation(in: normalized)
         return normalized.trimmingCharacters(in: .whitespacesAndNewlines)
     }
