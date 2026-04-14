@@ -1,6 +1,7 @@
 SHELL := /bin/zsh
 CONFIGURATION ?= debug
 LOG_WINDOW ?= 20m
+PROBE_SECONDS ?= 30
 ROOT_DIR := $(CURDIR)
 SWIFT_HOME := $(ROOT_DIR)/.swift-home
 SWIFT_CACHE := $(ROOT_DIR)/.swift-cache
@@ -8,7 +9,7 @@ CLANG_MODULE_CACHE := $(SWIFT_CACHE)/clang/ModuleCache
 SWIFT_ENV := HOME=$(SWIFT_HOME) XDG_CACHE_HOME=$(SWIFT_CACHE) CLANG_MODULE_CACHE_PATH=$(CLANG_MODULE_CACHE) SWIFTPM_MODULECACHE_OVERRIDE=$(CLANG_MODULE_CACHE)
 TEST_FILTER ?=
 
-.PHONY: build run clean test logs
+.PHONY: build run clean test logs probe-compose
 
 build:
 	./scripts/build-app.sh $(CONFIGURATION)
@@ -18,6 +19,9 @@ run:
 
 logs:
 	./scripts/show-logs.sh $(LOG_WINDOW)
+
+probe-compose:
+	./scripts/run-compose-probe.sh $(CONFIGURATION) $(PROBE_SECONDS)
 
 test:
 	mkdir -p $(SWIFT_HOME) $(CLANG_MODULE_CACHE)

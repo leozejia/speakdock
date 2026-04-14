@@ -620,6 +620,32 @@
   - `make test` -> pass，`49` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
   - `make build` -> pass
 
+#### Hotfix: 扩展微信类 App 的 Compose fallback 与兼容性 probe
+
+- 状态：`Complete`
+- 用户反馈：
+  - VS Code 已经可以正常 Compose，但微信聊天窗口仍然失败
+  - 单个 App 逐个真实录音测试效率过低，需要更大面积覆盖方式
+- 诊断证据：
+  - VS Code 段日志已经出现 `compose target capture using frontmost application fallback`、`compose target capture succeeded`、`compose commit succeeded`
+  - 微信段日志显示 `frontmost=com.tencent.xinWeChat`
+  - 同样出现 system-wide `AXFocusedUIElement` 的 `error=-25212`
+  - 但没有出现 `using frontmost application fallback`，说明 frontmost fallback 没有找到可编辑元素，最终落到 `capture commit succeeded`
+- 修复：
+  - frontmost fallback 不再只查 frontmost app 的 `AXFocusedUIElement` 与 `AXFocusedWindow`
+  - 如果 app focused element 不是可编辑目标，会继续在该元素子树内查找可编辑后代
+  - fallback 扩展为依次扫描 `focusedWindow`、`mainWindow`、`AXWindows`、app `AXChildren`
+  - 递归子树除 `AXChildren` 外，额外尝试 `AXContents` 与 `AXVisibleChildren`
+  - 访问上限调整为深度 8、最多 500 个元素，避免复杂第三方 App 无界遍历
+  - 失败日志补充 app focused / focused window / main window / windows / children 的 AX 错误码与数量，仍不记录标题、文本、剪贴板、转写内容
+  - 新增 `make probe-compose PROBE_SECONDS=30`，以 `SpeakDock.app` 自身身份启动 probe mode，定时检查当前前台 App 的 Compose target，不录音、不注入、不改剪贴板
+- 验证结果：
+  - `make test TEST_FILTER=SpeakDockLaunchOptionsTests` -> pass
+  - `make test TEST_FILTER=BuildScriptTests` -> pass
+  - `make test TEST_FILTER=ComposeTarget` -> pass
+  - `make test` -> pass，`53` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+  - `make build` -> pass
+
 ## 5. 下一步
 
 - 按 `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md` 在真实图形环境里逐项验收

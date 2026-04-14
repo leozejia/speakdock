@@ -328,7 +328,8 @@ macOS v1 的工程化定义写死为：
 
 - 只有在拿到 `Accessibility` 的聚焦元素，且该元素被判定为可编辑文本目标时，才进入 `Compose`
 - 可以把 `AXFocusedUIElement` 作为默认判定入口
-- `AXFocusedUIElement` 不允许只查 system-wide object；VS Code / Electron 类 app 可能返回 `kAXErrorNoValue`，必须 fallback 到 frontmost application / focused window 的 AX tree
+- `AXFocusedUIElement` 不允许只查 system-wide object；VS Code / Electron / 微信类 app 可能返回 `kAXErrorNoValue` 或不暴露 focused window，必须 fallback 到 frontmost application、focused/main window、window list 与 app children 的 AX tree
+- frontmost fallback 必须有深度与访问数量上限，避免复杂第三方 App 的 AX tree 无界遍历
 - “可安全注入”是 `Compose` 成立条件的一部分，不只是附加优化
 
 失败边界：
@@ -704,6 +705,7 @@ macOS v1 的工程收口写死为：
   - 不记录音频内容、转写正文、剪贴板内容、API Key、完整 refine 请求正文
   - CoreAudio realtime tap 回调内不直接写日志；只在录音启动、停止、失败等边界记录
   - 本地调试入口优先通过 `make logs` 或等价的 `log show --predicate 'subsystem == "com.leozejia.speakdock"'`
+  - 第三方 App `Compose` 兼容性扫测优先通过 `make probe-compose` 执行；probe 只检查前台 App 的可编辑目标，不录音、不注入、不改剪贴板
 
 ### 10.4 与 README_CN 的反向映射
 

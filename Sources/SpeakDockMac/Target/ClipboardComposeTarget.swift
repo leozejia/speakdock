@@ -86,7 +86,10 @@ final class ClipboardComposeTarget {
 
         case .noValue, .attributeUnsupported:
             if ComposeTargetFallbackPolicy.shouldQueryFrontmostApplication(afterSystemWideFocusedElementError: error),
-                let focusedElement = frontmostApplicationFocusedElement()
+                let focusedElement = frontmostApplicationFocusedElement(
+                    captureTarget: captureTarget,
+                    frontmostBundleIdentifier: frontmostBundleIdentifier
+                )
             {
                 if captureTarget {
                     SpeakDockLog.compose.notice(
@@ -283,22 +286,82 @@ final class ClipboardComposeTarget {
         usleep(50_000)
     }
 
-    private func frontmostApplicationFocusedElement() -> AXUIElement? {
+    private func frontmostApplicationFocusedElement(
+        captureTarget: Bool,
+        frontmostBundleIdentifier: String
+    ) -> AXUIElement? {
         guard let processIdentifier = workspace.frontmostApplication?.processIdentifier, processIdentifier > 0 else {
+            if captureTarget {
+                SpeakDockLog.compose.notice(
+                    "compose target frontmost fallback skipped: missing frontmost process identifier"
+                )
+            }
             return nil
         }
 
         let applicationElement = AXUIElementCreateApplication(processIdentifier)
-        if let focusedElement = axElementAttribute(kAXFocusedUIElementAttribute, on: applicationElement) {
-            return focusedElement
-        }
-
-        guard let focusedWindow = axElementAttribute(kAXFocusedWindowAttribute, on: applicationElement) else {
-            return nil
-        }
-
         var visitedCount = 0
-        return firstEditableDescendant(of: focusedWindow, depth: 0, visitedCount: &visitedCount)
+        let appFocusedElement = axElementLookup(kAXFocusedUIElementAttribute, on: applicationElement)
+        if let focusedElement = appFocusedElement.element {
+            if let editableElement = firstEditableDescendant(
+                of: focusedElement,
+                depth: 0,
+                visitedCount: &visitedCount
+            ) {
+                if captureTarget {
+                    SpeakDockLog.compose.notice(
+                        "compose target frontmost fallback found editable descendant: source=appFocusedElement, visited=\(visitedCount, privacy: .public), frontmost=\(frontmostBundleIdentifier, privacy: .public)"
+                    )
+                }
+                return editableElement
+            }
+        }
+
+        let focusedWindow = axElementLookup(kAXFocusedWindowAttribute, on: applicationElement)
+        let mainWindow = axElementLookup(kAXMainWindowAttribute, on: applicationElement)
+        let windows = axElementArrayLookup(kAXWindowsAttribute, on: applicationElement)
+        let children = axElementArrayLookup(kAXChildrenAttribute, on: applicationElement)
+
+        let primaryContainers: [(source: String, element: AXUIElement?)] = [
+            ("focusedWindow", focusedWindow.element),
+            ("mainWindow", mainWindow.element),
+        ]
+        let containerCandidates: [(source: String, element: AXUIElement)] =
+            primaryContainers.compactMap { candidate in
+                guard let element = candidate.element else {
+                    return nil
+                }
+                return (candidate.source, element)
+            }
+            + windows.elements.enumerated().map { index, element in
+                ("windows[\(index)]", element)
+            }
+            + children.elements.enumerated().map { index, element in
+                ("appChildren[\(index)]", element)
+            }
+
+        for candidate in containerCandidates {
+            if let editableElement = firstEditableDescendant(
+                of: candidate.element,
+                depth: 0,
+                visitedCount: &visitedCount
+            ) {
+                if captureTarget {
+                    SpeakDockLog.compose.notice(
+                        "compose target frontmost fallback found editable descendant: source=\(candidate.source, privacy: .public), visited=\(visitedCount, privacy: .public), frontmost=\(frontmostBundleIdentifier, privacy: .public)"
+                    )
+                }
+                return editableElement
+            }
+        }
+
+        if captureTarget {
+            SpeakDockLog.compose.notice(
+                "compose target frontmost fallback failed: appFocusedError=\(appFocusedElement.error.rawValue, privacy: .public), focusedWindowError=\(focusedWindow.error.rawValue, privacy: .public), mainWindowError=\(mainWindow.error.rawValue, privacy: .public), windowsError=\(windows.error.rawValue, privacy: .public), windowsCount=\(windows.elements.count, privacy: .public), childrenError=\(children.error.rawValue, privacy: .public), childrenCount=\(children.elements.count, privacy: .public), visited=\(visitedCount, privacy: .public), frontmost=\(frontmostBundleIdentifier, privacy: .public)"
+            )
+        }
+
+        return nil
     }
 
     private func firstEditableDescendant(
@@ -306,7 +369,7 @@ final class ClipboardComposeTarget {
         depth: Int,
         visitedCount: inout Int
     ) -> AXUIElement? {
-        guard depth <= 8, visitedCount <= 250 else {
+        guard depth <= 8, visitedCount < 500 else {
             return nil
         }
 
@@ -316,10 +379,14 @@ final class ClipboardComposeTarget {
             return element
         }
 
-        let children = axElementArrayAttribute(kAXChildrenAttribute, on: element)
-        for child in children where boolAttribute(kAXFocusedAttribute, on: child) == true {
+        let children = axDescendantCandidateElements(of: element)
+        let prioritizedChildren = children.map { child in
+            (element: child, isFocused: boolAttribute(kAXFocusedAttribute, on: child) == true)
+        }
+
+        for child in prioritizedChildren where child.isFocused {
             if let focusedEditableChild = firstEditableDescendant(
-                of: child,
+                of: child.element,
                 depth: depth + 1,
                 visitedCount: &visitedCount
             ) {
@@ -327,9 +394,9 @@ final class ClipboardComposeTarget {
             }
         }
 
-        for child in children {
+        for child in prioritizedChildren where !child.isFocused {
             if let editableChild = firstEditableDescendant(
-                of: child,
+                of: child.element,
                 depth: depth + 1,
                 visitedCount: &visitedCount
             ) {
@@ -416,14 +483,27 @@ final class ClipboardComposeTarget {
         return (value as? NSNumber)?.boolValue
     }
 
-    private func axElementAttribute(_ attribute: String, on element: AXUIElement) -> AXUIElement? {
+    private func axElementLookup(_ attribute: String, on element: AXUIElement) -> (element: AXUIElement?, error: AXError) {
         var value: CFTypeRef?
         let error = AXUIElementCopyAttributeValue(element, attribute as CFString, &value)
         guard error == .success, let value else {
-            return nil
+            return (nil, error)
         }
 
-        return (value as! AXUIElement)
+        return ((value as! AXUIElement), error)
+    }
+
+    private func axElementArrayLookup(
+        _ attribute: String,
+        on element: AXUIElement
+    ) -> (elements: [AXUIElement], error: AXError) {
+        var value: CFTypeRef?
+        let error = AXUIElementCopyAttributeValue(element, attribute as CFString, &value)
+        guard error == .success, let value else {
+            return ([], error)
+        }
+
+        return ((value as? [AXUIElement]) ?? [], error)
     }
 
     private func axElementArrayAttribute(_ attribute: String, on element: AXUIElement) -> [AXUIElement] {
@@ -434,6 +514,12 @@ final class ClipboardComposeTarget {
         }
 
         return (value as? [AXUIElement]) ?? []
+    }
+
+    private func axDescendantCandidateElements(of element: AXUIElement) -> [AXUIElement] {
+        axElementArrayAttribute(kAXChildrenAttribute, on: element)
+            + axElementArrayAttribute("AXContents", on: element)
+            + axElementArrayAttribute("AXVisibleChildren", on: element)
     }
 
     private func isAttributeSettable(_ attribute: CFString, on element: AXUIElement) -> Bool? {

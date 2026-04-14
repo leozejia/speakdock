@@ -10,6 +10,7 @@ make build
 make run
 make test
 make logs
+make probe-compose PROBE_SECONDS=30
 ```
 
 常用文档：
@@ -83,4 +84,12 @@ make logs
 make logs LOG_WINDOW=2h
 ```
 
+- 快速扫测第三方 App 的 `Compose` 兼容性：
+
+```bash
+make probe-compose PROBE_SECONDS=30
+make logs LOG_WINDOW=2m
+```
+
+- `probe-compose` 只检查前台 App 的可编辑目标，不录音、不注入、不改剪贴板
 - 日志不得记录音频内容、转写正文、剪贴板内容或 API Key

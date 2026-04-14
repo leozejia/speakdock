@@ -15,6 +15,7 @@ struct SpeakDockApp: App {
     @State private var hotPathCoordinator: HotPathCoordinator
 
     init() {
+        let launchOptions = SpeakDockLaunchOptions()
         let settingsStore = SettingsStore()
         let triggerController = TriggerController(settingsStore: settingsStore)
         let audioCaptureEngine = AudioCaptureEngine()
@@ -31,8 +32,19 @@ struct SpeakDockApp: App {
             speechController: speechController,
             overlayPanelController: overlayPanelController
         )
-        AppRuntime.onDidFinishLaunching = {
-            triggerController.start()
+        switch launchOptions.mode {
+        case .normal:
+            AppRuntime.onDidFinishLaunching = {
+                triggerController.start()
+            }
+        case .composeProbe:
+            let composeProbeRunner = ComposeProbeRunner(
+                composeTarget: composeTarget,
+                duration: launchOptions.composeProbeDuration
+            )
+            AppRuntime.onDidFinishLaunching = {
+                composeProbeRunner.start()
+            }
         }
 
         _settingsStore = State(initialValue: settingsStore)

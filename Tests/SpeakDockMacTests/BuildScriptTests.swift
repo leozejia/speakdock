@@ -22,4 +22,14 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("--debug"))
         XCTAssertTrue(script.contains("--last"))
     }
+
+    func testComposeProbeScriptLaunchesSpeakDockBundleWithProbeArguments() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-compose-probe.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("scripts/build-app.sh"))
+        XCTAssertTrue(script.contains("open -n -W"))
+        XCTAssertTrue(script.contains("--args --probe-compose --probe-compose-duration"))
+    }
 }

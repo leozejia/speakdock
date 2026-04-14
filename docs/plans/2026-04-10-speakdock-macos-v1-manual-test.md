@@ -59,6 +59,15 @@
 3. 当前目标不可可靠注入时，直接提示 `Compose` 不可用。
 4. `Compose` 失败时不会静默改写成 `Capture`。
 
+## 8.1 Compose 兼容性扫测
+
+1. 运行 `make probe-compose PROBE_SECONDS=30`。
+2. 在 probe 运行期间依次聚焦待测 App 的真实输入框，例如 VS Code、微信、浏览器、Notes。
+3. probe 结束后运行 `make logs LOG_WINDOW=2m`。
+4. 日志中目标 App 出现 `compose probe result ... availability=available`，并且前面有 `compose target capture succeeded`，可视为该输入框通过 Compose target 捕获。
+5. 如果出现 `compose target frontmost fallback failed` 或 `availability=noTarget`，把该 App 的 bundle id 与同段日志作为兼容性缺口记录。
+6. probe 不替代最终注入验收；通过 probe 后，仍需对重点 App 做一次真实 `Fn` 录音注入。
+
 ## 9. Capture
 
 1. 当前无输入框时，首句会生成 `speakdock-YYYYMMDD-HHMMSS.md`。
