@@ -671,6 +671,25 @@
   - 微信真实 `Fn` 注入 -> pass，第二次录音日志显示 `using compose target captured at press start` 与 `compose commit succeeded`
   - 第一次录音未提交是 `speech recognition task reported error`，不是 Compose target fallback 失败；如果后续复现，需要转入 ASR warm-up / error-code 诊断
 
+#### Hotfix: 增强 Apple Speech 错误观测
+
+- 状态：`Complete`
+- 用户反馈：
+  - 微信真实 `Fn` 测试中，第一次录音未提交，日志只有 `speech recognition task reported error`
+- 诊断判断：
+  - 该次失败发生在 Speech Recognition 阶段，Compose target 已在按下时捕获成功
+  - 旧日志缺少 `NSError.domain` 和 `NSError.code`，无法区分 Apple Speech 系统错误、权限错误、会话错误、短音频或 warm-up 类问题
+- 修复：
+  - 新增 `SpeechRecognitionErrorDiagnostics`
+  - Apple Speech 任务错误日志现在记录脱敏的 `domain/code`
+  - 不记录转写正文、音频内容、剪贴板内容或用户聊天内容
+- 验证结果：
+  - `SpeechRecognitionErrorDiagnosticsTests/testExtractsNSErrorDomainAndCode` -> RED 后 GREEN
+  - `make test TEST_FILTER=SpeechRecognitionErrorDiagnosticsTests` -> pass
+  - `make test TEST_FILTER=ComposeTargetFallbackPolicyTests` -> pass
+  - `make test` -> pass，`56` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+  - `make build` -> pass
+
 ## 5. 下一步
 
 - 按 `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md` 在真实图形环境里逐项验收

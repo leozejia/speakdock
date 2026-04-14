@@ -150,8 +150,11 @@ final class AppleSpeechEngine: @unchecked Sendable {
                 }
             }
 
-            if error != nil {
-                SpeakDockLog.speech.error("speech recognition task reported error")
+            if let error {
+                let diagnostics = SpeechRecognitionErrorDiagnostics(error: error)
+                SpeakDockLog.speech.error(
+                    "speech recognition task reported error: domain=\(diagnostics.domain, privacy: .public), code=\(diagnostics.code, privacy: .public)"
+                )
                 self.queue.async {
                     let shouldReport = self.wantsRecognition
                     self.resetRecognition(cancelTask: false)
