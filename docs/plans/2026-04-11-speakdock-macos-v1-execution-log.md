@@ -692,7 +692,41 @@
 
 ## 5. 下一步
 
-- 按 `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md` 在真实图形环境里逐项验收
-- 优先重新运行 `make run`，确认 Accessibility 不再重复弹；如果仍弹，移除旧授权项后重新添加 `.build/debug/SpeakDock.app`
-- 然后验证 `Fn / 替代 trigger / overlay 第二按钮 / Compose / Capture / UndoWindow`
-- 在具备网络条件的环境里验证 refine `Test` 与真实 `Refining...` 往返
+### 5.1 主线调整：AI 语音输入法优先
+
+- 状态：`Planned`
+- 背景：
+  - 公开 README 已从“本地语音工作流”调整为“AI 语音输入法 + 本地记忆 + LLM Wiki”
+  - 新增 `docs/research/2026-04-14-typeless-shandianshuo-research.md`，对比 Typeless / 闪电说后确认下一阶段不应直接跳 Wiki 或硬件
+- 结论：
+  - P1 先把“AI 语音输入法”体验做稳
+  - 不在 P1 引入常驻端侧小模型
+  - 不在 P1 做完整 Wiki compiler
+  - 不在 P1 做 DJI 或其他硬件 adapter
+- P1 范围：
+  - 更新架构文档，补齐 `TermDictionary / StyleProfile / VoiceCommandIntent / Skill` 的边界
+  - 第一版只实现 `TermDictionary`
+  - `TermDictionary` 支持用户手动填写
+  - 用户手动改正 SpeakDock 输出后，只生成候选词条，不静默写入词典
+  - 词典配置不进入 Git，默认保存在用户本地配置目录
+  - 词典先用于 `Clean`、ASR 后处理和 `RefineRequest` 上下文
+  - `StyleProfile / VoiceCommandIntent / Skill / WikiCompiler / DJI` 后置
+- 模型策略：
+  - 当前继续使用 Apple Speech 作为 ASR
+  - 当前继续保留 OpenAI-compatible refine 作为验证通道
+  - 端侧小模型选型后置到 P2/P3
+  - 端侧模型研究必须基于真实 ASR 失败样本、术语词典误伤样本、refine 延迟与质量样本、内存和热量测量
+- 风险边界：
+  - 词典不能自动污染
+  - 词典不能记录完整转写正文、聊天内容、剪贴板内容
+  - 用户手动修正不等于词条事实
+  - 模型失败不能阻断热路径
+  - Wiki 仍然是冷路径
+
+### 5.2 验收与实现顺序
+
+1. 按 `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md` 在真实图形环境里逐项验收
+2. 优先重新运行 `make run`，确认 Accessibility 不再重复弹；如果仍弹，移除旧授权项后重新添加 `.build/debug/SpeakDock.app`
+3. 验证 `Fn / 替代 trigger / overlay 第二按钮 / Compose / Capture / UndoWindow`
+4. 在具备网络条件的环境里验证 refine `Test` 与真实 `Refining...` 往返
+5. 开始 P1 `TermDictionary` 实现
