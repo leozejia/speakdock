@@ -88,6 +88,7 @@
 - Dock 可见性已收敛为默认行为，`显示 Dock 图标` / `保存` / `操作` 残留控件已从设置页移除
 - Settings 窗口宽度与次级信息栏宽度已固定，pane 切换不再依赖内容自然撑开
 - 品牌图形调研笔记已补到 `docs/research/2026-04-15-brand-icon-research.md`
+- Swift/macOS 唯一踩坑记录已补到 `docs/technical/SWIFT_MACOS_PITFALLS.md`
 - `Settings` 与 `menu popup` 现在直接复用生成后的 app icon 资源，不再各画一套品牌图
 - app icon 已重画为更明确的麦克风主体，`icns` 与运行时 `png` 均已重新生成
 - menu bar glyph 已收敛为独立模板化麦克风图形，不再尝试直接缩小 app icon

@@ -14,6 +14,7 @@
 ## 技术
 
 - `docs/technical/ARCHITECTURE.md`
+- `docs/technical/SWIFT_MACOS_PITFALLS.md`
 
 ## 当前
 
