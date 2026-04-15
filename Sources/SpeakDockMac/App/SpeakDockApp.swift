@@ -2,7 +2,6 @@ import AppKit
 import SpeakDockCore
 import SwiftUI
 
-@main
 struct SpeakDockApp: App {
     @NSApplicationDelegateAdaptor(AppRuntime.self) private var appRuntime
     @State private var settingsStore: SettingsStore

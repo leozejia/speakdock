@@ -37,6 +37,13 @@ for bundle_path in "${RESOURCE_BUNDLES[@]}"; do
   cp -R "$bundle_path" "$RESOURCES_DIR/"
 done
 
+LOCALIZATION_DIRECTORIES=("$ROOT_DIR/Sources/SpeakDockMac/Resources/Localization"/*.lproj(N))
+for localization_path in "${LOCALIZATION_DIRECTORIES[@]}"; do
+  localization_name="$(basename "$localization_path")"
+  mkdir -p "$RESOURCES_DIR/$localization_name"
+  cp -R "$localization_path"/. "$RESOURCES_DIR/$localization_name/"
+done
+
 if [[ ! -f "$ICON_SOURCE_PATH" || "$ROOT_DIR/Artwork/AppIcon.svg" -nt "$ICON_SOURCE_PATH" || "$ROOT_DIR/scripts/generate-app-icon.sh" -nt "$ICON_SOURCE_PATH" || "$ROOT_DIR/scripts/render-app-icon.swift" -nt "$ICON_SOURCE_PATH" ]]; then
   zsh "$ROOT_DIR/scripts/generate-app-icon.sh" >/dev/null
 fi

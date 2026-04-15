@@ -31,6 +31,16 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("cp -R"))
     }
 
+    func testBuildScriptCopiesLocalizationDirectoriesIntoMainBundleResources() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/build-app.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("Resources/Localization"))
+        XCTAssertTrue(script.contains("*.lproj"))
+        XCTAssertTrue(script.contains("mkdir -p"))
+    }
+
     func testShowLogsScriptFiltersBySpeakDockSubsystem() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/show-logs.sh")

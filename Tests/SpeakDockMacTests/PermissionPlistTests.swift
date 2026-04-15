@@ -38,4 +38,16 @@ final class PermissionPlistTests: XCTestCase {
 
         XCTAssertNil(plist["LSUIElement"])
     }
+
+    func testInfoPlistDeclaresSupportedLocalizationsForMainBundle() throws {
+        let infoPlistURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Sources/SpeakDockMac/Resources/Info.plist")
+        let data = try Data(contentsOf: infoPlistURL)
+        let plist = try XCTUnwrap(
+            PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
+        )
+
+        let localizations = try XCTUnwrap(plist["CFBundleLocalizations"] as? [String])
+        XCTAssertEqual(localizations, ["en", "zh-Hans"])
+    }
 }

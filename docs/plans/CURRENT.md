@@ -70,6 +70,7 @@
 - overlay / compose unavailable / microphone unavailable / speech unavailable / 二级动作标题 已接入运行时本地化
 - Refine / Capture Root / Term Dictionary 的用户可见错误文案 已接入运行时本地化
 - Refine 设置区的 placeholder、中文菜单副标题与残留错误提示 已继续收口到本地化资源
+- 主 app bundle 已补齐 `en + zh-Hans` 本地化声明与 `.lproj` 同步，启动时会按保存的 `App Language` 预设 AppKit 语言
 - `build-app.sh` 已复制 SwiftPM 资源 bundle，`make build` 产物会带上本地化资源
 - `Term Dictionary` 已接入 Settings，并完成本地持久化与测试
 - README / 手动验收 / 执行日志的上一轮漂移已回收
