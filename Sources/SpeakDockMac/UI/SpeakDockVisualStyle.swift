@@ -299,19 +299,48 @@ struct SpeakDockActionButtonStyle: ButtonStyle {
 }
 
 extension ModifierTriggerKey {
-    var displayName: String {
+    func displayName(appLanguage: AppLanguageOption? = nil) -> String {
         switch self {
         case .fn:
             "Fn"
         case .rightControl:
-            "Right Control"
+            AppLocalizer.string(.modifierTriggerRightControl, appLanguage: appLanguage)
         case .rightOption:
-            "Right Option"
+            AppLocalizer.string(.modifierTriggerRightOption, appLanguage: appLanguage)
         case .rightCommand:
-            "Right Command"
+            AppLocalizer.string(.modifierTriggerRightCommand, appLanguage: appLanguage)
         case .rightShift:
-            "Right Shift"
+            AppLocalizer.string(.modifierTriggerRightShift, appLanguage: appLanguage)
         }
     }
 }
 
+extension InputLanguageOption {
+    func displayName(appLanguage: AppLanguageOption? = nil) -> String {
+        switch self {
+        case .english:
+            AppLocalizer.string(.inputLanguageEnglish, appLanguage: appLanguage)
+        case .simplifiedChinese:
+            AppLocalizer.string(.inputLanguageSimplifiedChinese, appLanguage: appLanguage)
+        case .traditionalChinese:
+            AppLocalizer.string(.inputLanguageTraditionalChinese, appLanguage: appLanguage)
+        case .japanese:
+            AppLocalizer.string(.inputLanguageJapanese, appLanguage: appLanguage)
+        case .korean:
+            AppLocalizer.string(.inputLanguageKorean, appLanguage: appLanguage)
+        }
+    }
+}
+
+extension AppLanguageOption {
+    func displayName(appLanguage: AppLanguageOption? = nil) -> String {
+        switch self {
+        case .followSystem:
+            AppLocalizer.string(.appLanguageFollowSystem, appLanguage: appLanguage)
+        case .english:
+            AppLocalizer.string(.appLanguageEnglish, appLanguage: appLanguage)
+        case .simplifiedChinese:
+            AppLocalizer.string(.appLanguageSimplifiedChinese, appLanguage: appLanguage)
+        }
+    }
+}

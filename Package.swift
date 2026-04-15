@@ -4,6 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "SpeakDock",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v14),
     ],
@@ -28,6 +29,9 @@ let package = Package(
             path: "Sources/SpeakDockMac",
             exclude: [
                 "Resources/Info.plist",
+            ],
+            resources: [
+                .process("Resources/Localization"),
             ]
         ),
         .testTarget(

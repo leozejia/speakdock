@@ -87,7 +87,8 @@ final class SettingsStore {
             let settings = try? decoder.decode(AppSettings.self, from: data)
         else {
             return AppSettings(
-                languageCode: LanguageOption.defaultOption.rawValue,
+                appLanguage: .followSystem,
+                inputLanguage: .defaultOption,
                 captureRootPath: defaultCaptureRootURL.path,
                 triggerSelection: .fn,
                 showDockIcon: true,

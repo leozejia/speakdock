@@ -21,6 +21,16 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("SpeakDock.icns"))
     }
 
+    func testBuildScriptCopiesSwiftPMResourceBundlesIntoAppResources() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/build-app.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains(".bundle"))
+        XCTAssertTrue(script.contains("Contents/Resources"))
+        XCTAssertTrue(script.contains("cp -R"))
+    }
+
     func testShowLogsScriptFiltersBySpeakDockSubsystem() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/show-logs.sh")

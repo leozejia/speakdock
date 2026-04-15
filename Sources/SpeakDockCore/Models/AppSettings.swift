@@ -40,7 +40,8 @@ public enum TriggerSelection: Equatable, Codable, Sendable {
 }
 
 public struct AppSettings: Equatable, Codable, Sendable {
-    public var languageCode: String
+    public var appLanguage: AppLanguageOption
+    public var inputLanguage: InputLanguageOption
     public var captureRootPath: String
     public var triggerSelection: TriggerSelection
     public var showDockIcon: Bool
@@ -50,6 +51,8 @@ public struct AppSettings: Equatable, Codable, Sendable {
     public var refineModel: String
 
     private enum CodingKeys: String, CodingKey {
+        case appLanguage
+        case inputLanguage
         case languageCode
         case captureRootPath
         case triggerSelection
@@ -61,7 +64,8 @@ public struct AppSettings: Equatable, Codable, Sendable {
     }
 
     public init(
-        languageCode: String,
+        appLanguage: AppLanguageOption,
+        inputLanguage: InputLanguageOption,
         captureRootPath: String,
         triggerSelection: TriggerSelection,
         showDockIcon: Bool,
@@ -70,7 +74,8 @@ public struct AppSettings: Equatable, Codable, Sendable {
         refineAPIKey: String,
         refineModel: String
     ) {
-        self.languageCode = languageCode
+        self.appLanguage = appLanguage
+        self.inputLanguage = inputLanguage
         self.captureRootPath = captureRootPath
         self.triggerSelection = triggerSelection
         self.showDockIcon = showDockIcon
@@ -82,7 +87,11 @@ public struct AppSettings: Equatable, Codable, Sendable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        languageCode = try container.decode(String.self, forKey: .languageCode)
+        appLanguage = try container.decodeIfPresent(AppLanguageOption.self, forKey: .appLanguage) ?? .followSystem
+        inputLanguage =
+            try container.decodeIfPresent(InputLanguageOption.self, forKey: .inputLanguage)
+            ?? container.decodeIfPresent(InputLanguageOption.self, forKey: .languageCode)
+            ?? .defaultOption
         captureRootPath = try container.decode(String.self, forKey: .captureRootPath)
         triggerSelection = try container.decode(TriggerSelection.self, forKey: .triggerSelection)
         showDockIcon = try container.decodeIfPresent(Bool.self, forKey: .showDockIcon) ?? true
@@ -94,7 +103,8 @@ public struct AppSettings: Equatable, Codable, Sendable {
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(languageCode, forKey: .languageCode)
+        try container.encode(appLanguage, forKey: .appLanguage)
+        try container.encode(inputLanguage, forKey: .inputLanguage)
         try container.encode(captureRootPath, forKey: .captureRootPath)
         try container.encode(triggerSelection, forKey: .triggerSelection)
         try container.encode(showDockIcon, forKey: .showDockIcon)

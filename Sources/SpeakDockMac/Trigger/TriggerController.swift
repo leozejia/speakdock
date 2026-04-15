@@ -6,7 +6,7 @@ import SpeakDockCore
 @MainActor
 @Observable
 final class TriggerController {
-    var availability: TriggerAvailability = .unavailable(label: "Trigger Not Started")
+    var availability: TriggerAvailability = .unavailable(label: AppLocalizer.string(.triggerNotStarted))
     var isPressed = false
     var lastAction: TriggerAction?
 
@@ -56,7 +56,7 @@ final class TriggerController {
 
         guard let triggerKey = ModifierTriggerKey(selection: settingsStore.settings.triggerSelection) else {
             SpeakDockLog.trigger.error("unsupported trigger selection")
-            availability = .unavailable(label: "Unsupported Trigger")
+            availability = .unavailable(label: AppLocalizer.string(.triggerUnsupported))
             return
         }
 

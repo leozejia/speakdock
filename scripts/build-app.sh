@@ -7,7 +7,7 @@ CONFIGURATION="${1:-debug}"
 APP_DIR="$ROOT_DIR/.build/$CONFIGURATION/SpeakDock.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
-RESOURCES_DIR="$CONTENTS_DIR/Resources"
+RESOURCES_DIR="$APP_DIR/Contents/Resources"
 ICON_SOURCE_PATH="$ROOT_DIR/.build/icon-work/SpeakDock.icns"
 SWIFT_HOME="$ROOT_DIR/.swift-home"
 SWIFT_CACHE="$ROOT_DIR/.swift-cache"
@@ -31,6 +31,11 @@ mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
 cp "$ROOT_DIR/Sources/SpeakDockMac/Resources/Info.plist" "$CONTENTS_DIR/Info.plist"
 cp "$EXECUTABLE_PATH" "$MACOS_DIR/SpeakDock"
+
+RESOURCE_BUNDLES=("$BUILD_BIN_DIR"/*.bundle(N))
+for bundle_path in "${RESOURCE_BUNDLES[@]}"; do
+  cp -R "$bundle_path" "$RESOURCES_DIR/"
+done
 
 if [[ ! -f "$ICON_SOURCE_PATH" || "$ROOT_DIR/Artwork/AppIcon.svg" -nt "$ICON_SOURCE_PATH" || "$ROOT_DIR/scripts/generate-app-icon.sh" -nt "$ICON_SOURCE_PATH" || "$ROOT_DIR/scripts/render-app-icon.swift" -nt "$ICON_SOURCE_PATH" ]]; then
   zsh "$ROOT_DIR/scripts/generate-app-icon.sh" >/dev/null

@@ -16,7 +16,8 @@ final class SettingsStoreTests: XCTestCase {
             migrator: CaptureRootMigrator()
         )
 
-        XCTAssertEqual(store.settings.languageCode, "zh-CN")
+        XCTAssertEqual(store.settings.appLanguage, .followSystem)
+        XCTAssertEqual(store.settings.inputLanguage, .simplifiedChinese)
         XCTAssertEqual(store.settings.triggerSelection, .fn)
         XCTAssertTrue(store.settings.showDockIcon)
         XCTAssertFalse(store.settings.refineEnabled)
@@ -36,7 +37,8 @@ final class SettingsStoreTests: XCTestCase {
             migrator: CaptureRootMigrator()
         )
 
-        store.settings.languageCode = "en-US"
+        store.settings.appLanguage = .english
+        store.settings.inputLanguage = .english
         store.settings.triggerSelection = .alternative("right-command")
         store.settings.showDockIcon = false
         store.settings.refineEnabled = true
@@ -53,13 +55,44 @@ final class SettingsStoreTests: XCTestCase {
             migrator: CaptureRootMigrator()
         )
 
-        XCTAssertEqual(reloadedStore.settings.languageCode, "en-US")
+        XCTAssertEqual(reloadedStore.settings.appLanguage, .english)
+        XCTAssertEqual(reloadedStore.settings.inputLanguage, .english)
         XCTAssertEqual(reloadedStore.settings.triggerSelection, .alternative("right-command"))
         XCTAssertFalse(reloadedStore.settings.showDockIcon)
         XCTAssertTrue(reloadedStore.settings.refineEnabled)
         XCTAssertEqual(reloadedStore.settings.refineBaseURL, "https://example.com/v1")
         XCTAssertEqual(reloadedStore.settings.refineAPIKey, "")
         XCTAssertEqual(reloadedStore.settings.refineModel, "gpt-4.1-mini")
+    }
+
+    func testLegacyPersistedSettingsReloadIntoSplitLanguageModel() {
+        let suiteName = "speakdock-tests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+
+        let legacyPayload = """
+        {
+          "languageCode": "ko-KR",
+          "captureRootPath": "/tmp",
+          "triggerSelection": {
+            "kind": "fn"
+          },
+          "showDockIcon": true,
+          "refineEnabled": false,
+          "refineBaseURL": "",
+          "refineAPIKey": "",
+          "refineModel": ""
+        }
+        """.data(using: .utf8)!
+        defaults.set(legacyPayload, forKey: "appSettings")
+
+        let store = SettingsStore(
+            defaults: defaults,
+            migrator: CaptureRootMigrator()
+        )
+
+        XCTAssertEqual(store.settings.appLanguage, .followSystem)
+        XCTAssertEqual(store.settings.inputLanguage, .korean)
     }
 
     func testMultipleSettingsObserversReceiveChanges() {

@@ -7,13 +7,13 @@ final class SpeechController {
     var onAvailabilityChanged: ((SpeechRecognitionAvailability) -> Void)?
 
     private let settingsStore: SettingsStore
-    private let speechEngine: AppleSpeechEngine
+    private let speechEngine: any SpeechEngine
 
     private(set) var latestTranscript = ""
 
     init(
         settingsStore: SettingsStore,
-        speechEngine: AppleSpeechEngine = AppleSpeechEngine()
+        speechEngine: any SpeechEngine = AppleSpeechEngine()
     ) {
         self.settingsStore = settingsStore
         self.speechEngine = speechEngine
@@ -29,7 +29,7 @@ final class SpeechController {
 
     func startSession() {
         latestTranscript = ""
-        speechEngine.start(language: currentLanguageOption)
+        speechEngine.start(language: currentInputLanguage)
     }
 
     func finishSession() {
@@ -48,7 +48,7 @@ final class SpeechController {
         }
     }
 
-    private var currentLanguageOption: LanguageOption {
-        LanguageOption(rawValue: settingsStore.settings.languageCode) ?? .defaultOption
+    private var currentInputLanguage: InputLanguageOption {
+        settingsStore.settings.inputLanguage
     }
 }

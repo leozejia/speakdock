@@ -9,7 +9,17 @@ enum SpeechRecognitionAvailability: Equatable, Sendable {
     case unavailable(label: String)
 }
 
-final class AppleSpeechEngine: @unchecked Sendable {
+protocol SpeechEngine: AnyObject {
+    var onResult: ((RecognitionResult) -> Void)? { get set }
+    var onAvailabilityChanged: ((SpeechRecognitionAvailability) -> Void)? { get set }
+
+    func start(language: InputLanguageOption)
+    func appendAudioBuffer(_ buffer: AVAudioPCMBuffer)
+    func finish()
+    func cancel()
+}
+
+final class AppleSpeechEngine: SpeechEngine, @unchecked Sendable {
     var onResult: ((RecognitionResult) -> Void)?
     var onAvailabilityChanged: ((SpeechRecognitionAvailability) -> Void)?
 
@@ -18,9 +28,9 @@ final class AppleSpeechEngine: @unchecked Sendable {
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private var wantsRecognition = false
-    private var currentLanguage = LanguageOption.defaultOption
+    private var currentLanguage = InputLanguageOption.defaultOption
 
-    func start(language: LanguageOption) {
+    func start(language: InputLanguageOption) {
         SpeakDockLog.speech.notice("speech recognition start requested: language=\(language.rawValue, privacy: .public)")
         queue.async { [weak self] in
             guard let self else {
@@ -104,7 +114,7 @@ final class AppleSpeechEngine: @unchecked Sendable {
         }
     }
 
-    private func startRecognitionIfNeeded(language: LanguageOption) {
+    private func startRecognitionIfNeeded(language: InputLanguageOption) {
         guard wantsRecognition else {
             return
         }

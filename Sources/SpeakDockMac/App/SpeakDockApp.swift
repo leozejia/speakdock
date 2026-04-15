@@ -19,8 +19,10 @@ struct SpeakDockApp: App {
         let launchOptions = SpeakDockLaunchOptions()
         let settingsStore = SettingsStore()
         let termDictionaryStore = TermDictionaryStore()
+        AppLocalizer.setCurrentAppLanguage(settingsStore.settings.appLanguage)
         AppRuntime.configureInitialVisibility(showDockIcon: settingsStore.settings.showDockIcon)
         _ = settingsStore.addSettingsObserver { settings in
+            AppLocalizer.setCurrentAppLanguage(settings.appLanguage)
             AppRuntime.updateActivationPolicy(showDockIcon: settings.showDockIcon)
         }
         let triggerController = TriggerController(settingsStore: settingsStore)

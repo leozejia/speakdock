@@ -53,33 +53,11 @@ enum ModifierTriggerKey: String, CaseIterable, Sendable {
     }
 
     var readyLabel: String {
-        switch self {
-        case .fn:
-            "Fn Ready"
-        case .rightControl:
-            "Right Control Ready"
-        case .rightOption:
-            "Right Option Ready"
-        case .rightCommand:
-            "Right Command Ready"
-        case .rightShift:
-            "Right Shift Ready"
-        }
+        AppLocalizer.formatted(.triggerReadyFormat, [displayName()])
     }
 
     var unavailableLabel: String {
-        switch self {
-        case .fn:
-            "Fn Unavailable"
-        case .rightControl:
-            "Right Control Unavailable"
-        case .rightOption:
-            "Right Option Unavailable"
-        case .rightCommand:
-            "Right Command Unavailable"
-        case .rightShift:
-            "Right Shift Unavailable"
-        }
+        AppLocalizer.formatted(.triggerUnavailableFormat, [displayName()])
     }
 }
 
@@ -121,7 +99,7 @@ final class FnKeyTriggerAdapter: TriggerAdapter {
             permissionChecker.isAccessibilityTrusted(prompt: true)
         else {
             SpeakDockLog.permission.warning("accessibility permission required for trigger: \(self.triggerKey.rawValue, privacy: .public)")
-            onAvailabilityChanged?(.unavailable(label: "\(triggerKey.unavailableLabel): Accessibility Required"))
+            onAvailabilityChanged?(.unavailable(label: unavailableLabel(reason: .triggerAccessibilityRequired)))
             return
         }
 
@@ -146,7 +124,7 @@ final class FnKeyTriggerAdapter: TriggerAdapter {
             userInfo: refcon
         ) else {
             SpeakDockLog.trigger.error("event tap unavailable for trigger: \(self.triggerKey.rawValue, privacy: .public)")
-            onAvailabilityChanged?(.unavailable(label: "\(triggerKey.unavailableLabel): Event Tap Unavailable"))
+            onAvailabilityChanged?(.unavailable(label: unavailableLabel(reason: .triggerEventTapUnavailable)))
             return
         }
 
@@ -214,5 +192,9 @@ final class FnKeyTriggerAdapter: TriggerAdapter {
         }
 
         return Unmanaged.passRetained(event)
+    }
+
+    private func unavailableLabel(reason: AppLocalizedStringKey) -> String {
+        "\(triggerKey.unavailableLabel): \(AppLocalizer.string(reason))"
     }
 }

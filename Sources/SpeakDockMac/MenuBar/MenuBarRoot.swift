@@ -8,18 +8,20 @@ struct MenuBarRoot: View {
     @Bindable var hotPathCoordinator: HotPathCoordinator
 
     var body: some View {
+        let appLanguage = settingsStore.settings.appLanguage
+
         VStack(alignment: .leading, spacing: 16) {
             header
 
             SpeakDockPanel(
-                title: "Quick Controls",
-                subtitle: "Keep the hot path simple and ready."
+                title: localized(.menuQuickControlsTitle),
+                subtitle: localized(.menuQuickControlsSubtitle)
             ) {
                 VStack(alignment: .leading, spacing: 14) {
-                    LabeledContent("Language") {
-                        Picker("Language", selection: $settingsStore.settings.languageCode) {
-                            ForEach(LanguageOption.allCases, id: \.rawValue) { option in
-                                Text(option.displayName).tag(option.rawValue)
+                    LabeledContent(localized(.settingsInputLanguageLabel)) {
+                        Picker(localized(.settingsInputLanguageLabel), selection: $settingsStore.settings.inputLanguage) {
+                            ForEach(InputLanguageOption.allCases, id: \.rawValue) { option in
+                                Text(option.displayName(appLanguage: appLanguage)).tag(option)
                             }
                         }
                         .labelsHidden()
@@ -31,9 +33,9 @@ struct MenuBarRoot: View {
 
                     Toggle(isOn: $settingsStore.settings.refineEnabled) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Refine")
+                            Text(localized(.menuRefineTitle))
                                 .font(.system(size: 12.5, weight: .medium))
-                            Text("Optional cleanup after transcription.")
+                            Text(localized(.menuRefineSubtitle))
                                 .font(.system(size: 11.5))
                                 .foregroundStyle(SpeakDockVisualStyle.secondaryText)
                         }
@@ -43,10 +45,10 @@ struct MenuBarRoot: View {
             }
 
             SpeakDockPanel(
-                title: "Actions",
+                title: localized(.menuActionsTitle),
                 subtitle: triggerIsUnavailable
-                    ? "Fn is unavailable. Switch trigger in Settings."
-                    : "Open settings or run the secondary action."
+                    ? localized(.menuActionsUnavailableSubtitle)
+                    : localized(.menuActionsReadySubtitle)
             ) {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 10) {
@@ -57,14 +59,14 @@ struct MenuBarRoot: View {
                         .disabled(!hotPathCoordinator.secondaryActionEnabled)
 
                         SettingsLink {
-                            Text("Settings")
+                            Text(localized(.menuSettings))
                         }
                         .buttonStyle(SpeakDockActionButtonStyle(kind: .secondary))
                     }
 
                     if triggerIsUnavailable {
                         SettingsLink {
-                            Text("Configure Trigger")
+                            Text(localized(.menuConfigureTrigger))
                         }
                         .buttonStyle(SpeakDockActionButtonStyle(kind: .secondary))
                     }
@@ -72,13 +74,13 @@ struct MenuBarRoot: View {
             }
 
             HStack {
-                Text("Voice input for Mac")
+                Text(localized(.menuVoiceInputForMac))
                     .font(.system(size: 11.5))
                     .foregroundStyle(SpeakDockVisualStyle.secondaryText)
 
                 Spacer()
 
-                Button("Quit") {
+                Button(localized(.menuQuit)) {
                     NSApp.terminate(nil)
                 }
                 .buttonStyle(SpeakDockActionButtonStyle(kind: .subtle))
@@ -107,7 +109,7 @@ struct MenuBarRoot: View {
                 Text("SpeakDock")
                     .font(.system(size: 16, weight: .semibold))
 
-                Text("AI voice input, tuned for the Mac.")
+                Text(localized(.menuHeaderTagline))
                     .font(.system(size: 11.5))
                     .foregroundStyle(SpeakDockVisualStyle.secondaryText)
             }
@@ -142,5 +144,9 @@ struct MenuBarRoot: View {
         case .unavailable:
             .critical
         }
+    }
+
+    private func localized(_ key: AppLocalizedStringKey) -> String {
+        AppLocalizer.string(key, appLanguage: settingsStore.settings.appLanguage)
     }
 }

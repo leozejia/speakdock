@@ -4,6 +4,16 @@ import SpeakDockCore
 
 @MainActor
 final class TriggerControllerLifecycleTests: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        AppLocalizer.setCurrentAppLanguage(.english)
+    }
+
+    override func tearDown() {
+        AppLocalizer.setCurrentAppLanguage(.followSystem)
+        super.tearDown()
+    }
+
     func testInitDoesNotStartAdapterUntilStartIsCalled() {
         let defaults = makeDefaults()
         let factory = TriggerAdapterFactorySpy()
@@ -15,7 +25,7 @@ final class TriggerControllerLifecycleTests: XCTestCase {
         )
 
         XCTAssertTrue(factory.adapters.isEmpty)
-        XCTAssertEqual(controller.availability, .unavailable(label: "Trigger Not Started"))
+        XCTAssertEqual(controller.availability, .unavailable(label: "Not Started"))
 
         controller.start()
 
@@ -38,6 +48,20 @@ final class TriggerControllerLifecycleTests: XCTestCase {
         XCTAssertEqual(factory.adapters.count, 2)
         XCTAssertEqual(factory.adapters[0].stopCount, 1)
         XCTAssertEqual(factory.adapters[1].startCount, 1)
+    }
+
+    func testInitUsesLocalizedNotStartedAvailabilityWhenAppLanguageIsChinese() {
+        AppLocalizer.setCurrentAppLanguage(.simplifiedChinese)
+        let defaults = makeDefaults()
+        let factory = TriggerAdapterFactorySpy()
+        let store = SettingsStore(defaults: defaults, migrator: CaptureRootMigrator())
+
+        let controller = TriggerController(
+            settingsStore: store,
+            adapterFactory: factory.makeAdapter
+        )
+
+        XCTAssertEqual(controller.availability, .unavailable(label: "未启动"))
     }
 
     private func makeDefaults() -> UserDefaults {

@@ -7,7 +7,9 @@ struct SettingsView: View {
     @Bindable var termDictionaryStore: TermDictionaryStore
     @State private var captureRootMessage: String?
     @State private var refineTestMessage: String?
+    @State private var refineTestMessageTone: SpeakDockBadgeTone = .neutral
     @State private var saveMessage: String?
+    @State private var saveMessageTone: SpeakDockBadgeTone = .neutral
     @State private var termCanonicalTerm = ""
     @State private var termAliasesText = ""
     @State private var termDictionaryMessage: String?
@@ -27,22 +29,33 @@ struct SettingsView: View {
     }
 
     var body: some View {
+        let appLanguage = settingsStore.settings.appLanguage
+
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 header
 
                 SpeakDockPanel(
-                    title: "Input",
-                    subtitle: "Language and trigger should feel predictable."
+                    title: localized(.settingsInputTitle),
+                    subtitle: localized(.settingsInputSubtitle)
                 ) {
                     VStack(alignment: .leading, spacing: 16) {
-                        LabeledContent("Language") {
-                            Picker("Language", selection: $settingsStore.settings.languageCode) {
-                                Text("简体中文").tag("zh-CN")
-                                Text("English").tag("en-US")
-                                Text("繁體中文").tag("zh-TW")
-                                Text("日本語").tag("ja-JP")
-                                Text("한국어").tag("ko-KR")
+                        LabeledContent(localized(.settingsAppLanguageLabel)) {
+                            Picker(localized(.settingsAppLanguageLabel), selection: $settingsStore.settings.appLanguage) {
+                                ForEach(AppLanguageOption.allCases, id: \.rawValue) { option in
+                                    Text(option.displayName(appLanguage: appLanguage)).tag(option)
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                            .frame(width: 170)
+                        }
+
+                        LabeledContent(localized(.settingsInputLanguageLabel)) {
+                            Picker(localized(.settingsInputLanguageLabel), selection: $settingsStore.settings.inputLanguage) {
+                                ForEach(InputLanguageOption.allCases, id: \.rawValue) { option in
+                                    Text(option.displayName(appLanguage: appLanguage)).tag(option)
+                                }
                             }
                             .labelsHidden()
                             .pickerStyle(.menu)
@@ -53,14 +66,14 @@ struct SettingsView: View {
 
                         VStack(alignment: .leading, spacing: 10) {
                             HStack(alignment: .firstTextBaseline) {
-                                Text("Trigger")
+                                Text(localized(.settingsTriggerLabel))
                                     .font(.system(size: 13, weight: .medium))
 
                                 Spacer()
 
-                                Picker("Trigger", selection: triggerModeBinding) {
-                                    Text("Fn").tag("fn")
-                                    Text("Alternative").tag("alternative")
+                                Picker(localized(.settingsTriggerLabel), selection: triggerModeBinding) {
+                                    Text(localized(.settingsTriggerFn)).tag("fn")
+                                    Text(localized(.settingsTriggerAlternative)).tag("alternative")
                                 }
                                 .labelsHidden()
                                 .pickerStyle(.segmented)
@@ -68,10 +81,10 @@ struct SettingsView: View {
                             }
 
                             if isAlternativeTriggerSelected {
-                                LabeledContent("Alternative Key") {
-                                    Picker("Alternative Key", selection: alternativeTriggerBinding) {
+                                LabeledContent(localized(.settingsAlternativeKeyLabel)) {
+                                    Picker(localized(.settingsAlternativeKeyLabel), selection: alternativeTriggerBinding) {
                                         ForEach(alternativeTriggerOptions, id: \.rawValue) { option in
-                                            Text(option.displayName).tag(option.rawValue)
+                                            Text(option.displayName(appLanguage: appLanguage)).tag(option.rawValue)
                                         }
                                     }
                                     .labelsHidden()
@@ -80,7 +93,7 @@ struct SettingsView: View {
                                 }
                             }
 
-                            Text("If Fn becomes unavailable, SpeakDock warns in the menu bar and only switches when you choose an alternative here.")
+                            Text(localized(.settingsFnWarning))
                                 .font(.system(size: 11.5))
                                 .foregroundStyle(SpeakDockVisualStyle.secondaryText)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -90,9 +103,9 @@ struct SettingsView: View {
 
                         Toggle(isOn: $settingsStore.settings.showDockIcon) {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Show Dock Icon")
+                                Text(localized(.settingsShowDockIconTitle))
                                     .font(.system(size: 13, weight: .medium))
-                                Text("Keep a visible app icon in the Dock when the menu bar gets crowded.")
+                                Text(localized(.settingsShowDockIconSubtitle))
                                     .font(.system(size: 11.5))
                                     .foregroundStyle(SpeakDockVisualStyle.secondaryText)
                             }
@@ -102,11 +115,11 @@ struct SettingsView: View {
                 }
 
                 SpeakDockPanel(
-                    title: "Capture",
-                    subtitle: "Markdown files stay local and migrate with the folder."
+                    title: localized(.settingsCaptureTitle),
+                    subtitle: localized(.settingsCaptureSubtitle)
                 ) {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Capture Root")
+                        Text(localized(.settingsCaptureRootLabel))
                             .font(.system(size: 13, weight: .medium))
 
                         HStack(spacing: 12) {
@@ -127,7 +140,7 @@ struct SettingsView: View {
                                         .stroke(SpeakDockVisualStyle.line, lineWidth: 1)
                                 )
 
-                            Button("Choose & Migrate…") {
+                            Button(localized(.settingsChooseAndMigrate)) {
                                 chooseCaptureRoot()
                             }
                             .buttonStyle(SpeakDockActionButtonStyle(kind: .secondary))
@@ -140,28 +153,28 @@ struct SettingsView: View {
                 }
 
                 SpeakDockPanel(
-                    title: "Term Dictionary",
-                    subtitle: "Keep names and jargon stable with local-only replacements."
+                    title: localized(.settingsTermDictionaryTitle),
+                    subtitle: localized(.settingsTermDictionarySubtitle)
                 ) {
                     VStack(alignment: .leading, spacing: 18) {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Add Entry")
+                            Text(localized(.settingsTermDictionaryAddEntry))
                                 .font(.system(size: 13, weight: .medium))
 
-                            TextField("Canonical term", text: $termCanonicalTerm)
+                            TextField(localized(.settingsTermDictionaryCanonicalPlaceholder), text: $termCanonicalTerm)
                                 .textFieldStyle(.roundedBorder)
 
-                            TextField("Aliases, separated by commas", text: $termAliasesText)
+                            TextField(localized(.settingsTermDictionaryAliasesPlaceholder), text: $termAliasesText)
                                 .textFieldStyle(.roundedBorder)
 
                             HStack(alignment: .center, spacing: 12) {
-                                Button("Add Entry") {
+                                Button(localized(.settingsTermDictionaryAddButton)) {
                                     addTermEntry()
                                 }
                                 .buttonStyle(SpeakDockActionButtonStyle(kind: .primary))
                                 .disabled(!canAddTermEntry)
 
-                                Text("Saved only on this Mac. Not committed to Git.")
+                                Text(localized(.settingsTermDictionarySavedLocalOnly))
                                     .font(.system(size: 11.5))
                                     .foregroundStyle(SpeakDockVisualStyle.secondaryText)
                             }
@@ -175,19 +188,22 @@ struct SettingsView: View {
 
                         VStack(alignment: .leading, spacing: 10) {
                             HStack(alignment: .center, spacing: 12) {
-                                Text("Confirmed Terms")
+                                Text(localized(.settingsTermDictionaryConfirmedTerms))
                                     .font(.system(size: 13, weight: .medium))
 
                                 Spacer()
 
                                 SpeakDockStatusBadge(
-                                    title: "\(termDictionaryStore.confirmedDictionary.entries.count) Saved",
+                                    title: localizedFormat(
+                                        .settingsTermDictionarySavedCount,
+                                        termDictionaryStore.confirmedDictionary.entries.count
+                                    ),
                                     tone: termDictionaryStore.confirmedDictionary.entries.isEmpty ? .neutral : .success
                                 )
                             }
 
                             if termDictionaryStore.confirmedDictionary.entries.isEmpty {
-                                emptyStateView("No confirmed terms yet.")
+                                emptyStateView(localized(.settingsTermDictionaryNoConfirmed))
                             } else {
                                 VStack(alignment: .leading, spacing: 10) {
                                     ForEach(
@@ -204,20 +220,23 @@ struct SettingsView: View {
 
                         VStack(alignment: .leading, spacing: 10) {
                             HStack(alignment: .center, spacing: 12) {
-                                Text("Pending Candidates")
+                                Text(localized(.settingsTermDictionaryPendingCandidates))
                                     .font(.system(size: 13, weight: .medium))
 
                                 Spacer()
 
                                 SpeakDockStatusBadge(
-                                    title: "\(termDictionaryStore.pendingCandidates.count) Pending",
+                                    title: localizedFormat(
+                                        .settingsTermDictionaryPendingCount,
+                                        termDictionaryStore.pendingCandidates.count
+                                    ),
                                     tone: termDictionaryStore.pendingCandidates.isEmpty ? .neutral : .warning
                                 )
                             }
 
                             if termDictionaryStore.pendingCandidates.isEmpty {
                                 emptyStateView(
-                                    "No pending candidates yet. Manual correction capture is not wired into the app flow yet."
+                                    localized(.settingsTermDictionaryNoPending)
                                 )
                             } else {
                                 VStack(alignment: .leading, spacing: 10) {
@@ -234,15 +253,15 @@ struct SettingsView: View {
                 }
 
                 SpeakDockPanel(
-                    title: "Refine",
-                    subtitle: "Optional cleanup path. Keep it off unless you need it."
+                    title: localized(.settingsRefineTitle),
+                    subtitle: localized(.settingsRefineSubtitle)
                 ) {
                     VStack(alignment: .leading, spacing: 16) {
                         Toggle(isOn: $settingsStore.settings.refineEnabled) {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Enable Refine")
+                                Text(localized(.settingsEnableRefineTitle))
                                     .font(.system(size: 13, weight: .medium))
-                                Text("Use the configured model after deterministic cleanup.")
+                                Text(localized(.settingsEnableRefineSubtitle))
                                     .font(.system(size: 11.5))
                                     .foregroundStyle(SpeakDockVisualStyle.secondaryText)
                             }
@@ -250,19 +269,19 @@ struct SettingsView: View {
                         .toggleStyle(.switch)
 
                         VStack(alignment: .leading, spacing: 12) {
-                            LabeledContent("Base URL") {
+                            LabeledContent(localized(.settingsBaseURLLabel)) {
                                 TextField("https://example.com/v1", text: $settingsStore.settings.refineBaseURL)
                                     .textFieldStyle(.roundedBorder)
                                     .frame(width: 280)
                             }
 
-                            LabeledContent("API Key") {
+                            LabeledContent(localized(.settingsAPIKeyLabel)) {
                                 SecureField("sk-...", text: $settingsStore.settings.refineAPIKey)
                                     .textFieldStyle(.roundedBorder)
                                     .frame(width: 280)
                             }
 
-                            LabeledContent("Model") {
+                            LabeledContent(localized(.settingsModelLabel)) {
                                 TextField("gpt-5.4", text: $settingsStore.settings.refineModel)
                                     .textFieldStyle(.roundedBorder)
                                     .frame(width: 200)
@@ -273,18 +292,18 @@ struct SettingsView: View {
                 }
 
                 SpeakDockPanel(
-                    title: "Actions",
-                    subtitle: "Validate the refine connection before trusting the output."
+                    title: localized(.settingsActionsTitle),
+                    subtitle: localized(.settingsActionsSubtitle)
                 ) {
                     VStack(alignment: .leading, spacing: 14) {
                         HStack(spacing: 10) {
-                            Button(isTestingRefine ? "Testing…" : "Test Connection") {
+                            Button(isTestingRefine ? localized(.settingsTestingConnection) : localized(.settingsTestConnection)) {
                                 runRefineConnectionTest()
                             }
                             .buttonStyle(SpeakDockActionButtonStyle(kind: .primary))
                             .disabled(isTestingRefine)
 
-                            Button("Save") {
+                            Button(localized(.settingsSave)) {
                                 saveSettings()
                             }
                             .buttonStyle(SpeakDockActionButtonStyle(kind: .secondary))
@@ -293,14 +312,14 @@ struct SettingsView: View {
                         if let refineTestMessage {
                             messageView(
                                 refineTestMessage,
-                                tone: refineTestMessage.hasPrefix("Test Passed") ? .success : .neutral
+                                tone: refineTestMessageTone
                             )
                         }
 
                         if let saveMessage {
                             messageView(
                                 saveMessage,
-                                tone: saveMessage == "Saved" ? .success : .neutral
+                                tone: saveMessageTone
                             )
                         }
                     }
@@ -313,7 +332,7 @@ struct SettingsView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .center, spacing: 16) {
+        return HStack(alignment: .center, spacing: 16) {
             SpeakDockBrandGlyph(size: 54)
 
             VStack(alignment: .leading, spacing: 6) {
@@ -321,7 +340,7 @@ struct SettingsView: View {
                     .font(.system(size: 24, weight: .semibold))
                     .tracking(-0.3)
 
-                Text("AI voice input for macOS. Fast capture, careful cleanup, local-first memory.")
+                Text(localized(.settingsHeaderTagline))
                     .font(.system(size: 12.5))
                     .foregroundStyle(SpeakDockVisualStyle.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
@@ -331,11 +350,15 @@ struct SettingsView: View {
 
             VStack(alignment: .trailing, spacing: 8) {
                 SpeakDockStatusBadge(
-                    title: settingsStore.settings.refineEnabled ? "Refine On" : "Refine Off",
+                    title: settingsStore.settings.refineEnabled
+                        ? localized(.settingsRefineOn)
+                        : localized(.settingsRefineOff),
                     tone: settingsStore.settings.refineEnabled ? .accent : .neutral
                 )
                 SpeakDockStatusBadge(
-                    title: settingsStore.settings.showDockIcon ? "Dock On" : "Dock Off",
+                    title: settingsStore.settings.showDockIcon
+                        ? localized(.settingsDockOn)
+                        : localized(.settingsDockOff),
                     tone: settingsStore.settings.showDockIcon ? .success : .neutral
                 )
             }
@@ -412,8 +435,8 @@ struct SettingsView: View {
         panel.canChooseDirectories = true
         panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false
-        panel.prompt = "Migrate"
-        panel.message = "Choose a new Capture root. SpeakDock will migrate existing files."
+        panel.prompt = localized(.settingsOpenPanelMigrate)
+        panel.message = localized(.settingsOpenPanelMessage)
         panel.directoryURL = URL(
             fileURLWithPath: settingsStore.settings.captureRootPath,
             isDirectory: true
@@ -425,7 +448,7 @@ struct SettingsView: View {
 
         do {
             try settingsStore.updateCaptureRoot(to: url)
-            captureRootMessage = "Capture Root Migrated"
+            captureRootMessage = localized(.settingsCaptureRootMigrated)
         } catch {
             captureRootMessage = userFacingMessage(for: error)
         }
@@ -439,7 +462,7 @@ struct SettingsView: View {
             )
             termCanonicalTerm = ""
             termAliasesText = ""
-            setTermDictionaryMessage("Term entry saved.", tone: .success)
+            setTermDictionaryMessage(localized(.settingsTermEntrySaved), tone: .success)
         } catch {
             setTermDictionaryMessage(userFacingMessage(for: error), tone: .critical)
         }
@@ -448,7 +471,10 @@ struct SettingsView: View {
     private func removeTermEntry(_ entry: TermDictionaryEntry) {
         do {
             try termDictionaryStore.removeEntry(canonicalTerm: entry.canonicalTerm)
-            setTermDictionaryMessage("Removed \(entry.canonicalTerm).", tone: .success)
+            setTermDictionaryMessage(
+                localizedFormat(.settingsTermEntryRemoved, entry.canonicalTerm),
+                tone: .success
+            )
         } catch {
             setTermDictionaryMessage(userFacingMessage(for: error), tone: .critical)
         }
@@ -457,7 +483,7 @@ struct SettingsView: View {
     private func confirmTermCandidate(_ candidate: TermDictionaryCandidate) {
         do {
             try termDictionaryStore.confirm(candidate)
-            setTermDictionaryMessage("Candidate promoted to confirmed terms.", tone: .success)
+            setTermDictionaryMessage(localized(.settingsTermCandidatePromoted), tone: .success)
         } catch {
             setTermDictionaryMessage(userFacingMessage(for: error), tone: .critical)
         }
@@ -466,7 +492,7 @@ struct SettingsView: View {
     private func dismissTermCandidate(_ candidate: TermDictionaryCandidate) {
         do {
             try termDictionaryStore.dismiss(candidate)
-            setTermDictionaryMessage("Candidate dismissed.", tone: .neutral)
+            setTermDictionaryMessage(localized(.settingsTermCandidateDismissed), tone: .neutral)
         } catch {
             setTermDictionaryMessage(userFacingMessage(for: error), tone: .critical)
         }
@@ -474,7 +500,8 @@ struct SettingsView: View {
 
     private func runRefineConnectionTest() {
         isTestingRefine = true
-        refineTestMessage = "Testing…"
+        refineTestMessage = localized(.settingsTestingConnection)
+        refineTestMessageTone = .neutral
 
         let configuration = RefineConfiguration(
             enabled: true,
@@ -487,12 +514,14 @@ struct SettingsView: View {
             do {
                 let response = try await refineTester.test(configuration: configuration)
                 await MainActor.run {
-                    refineTestMessage = "Test Passed: \(response)"
+                    refineTestMessage = localizedFormat(.settingsTestPassed, response)
+                    refineTestMessageTone = .success
                     isTestingRefine = false
                 }
             } catch {
                 await MainActor.run {
                     refineTestMessage = userFacingMessage(for: error)
+                    refineTestMessageTone = .critical
                     isTestingRefine = false
                 }
             }
@@ -502,9 +531,11 @@ struct SettingsView: View {
     private func saveSettings() {
         do {
             try settingsStore.save()
-            saveMessage = "Saved"
+            saveMessage = localized(.settingsSaved)
+            saveMessageTone = .success
         } catch {
             saveMessage = userFacingMessage(for: error)
+            saveMessageTone = .critical
         }
     }
 
@@ -524,6 +555,18 @@ struct SettingsView: View {
         termDictionaryMessageTone = tone
     }
 
+    private func localized(_ key: AppLocalizedStringKey) -> String {
+        AppLocalizer.string(key, appLanguage: settingsStore.settings.appLanguage)
+    }
+
+    private func localizedFormat(_ key: AppLocalizedStringKey, _ arguments: CVarArg...) -> String {
+        AppLocalizer.formatted(
+            key,
+            appLanguage: settingsStore.settings.appLanguage,
+            arguments
+        )
+    }
+
     @ViewBuilder
     private func confirmedEntryRow(_ entry: TermDictionaryEntry) -> some View {
         HStack(alignment: .top, spacing: 12) {
@@ -541,7 +584,7 @@ struct SettingsView: View {
 
             Spacer(minLength: 12)
 
-            Button("Remove") {
+            Button(localized(.settingsRemove)) {
                 removeTermEntry(entry)
             }
             .buttonStyle(SpeakDockActionButtonStyle(kind: .subtle))
@@ -566,12 +609,12 @@ struct SettingsView: View {
                     .font(.system(size: 12.5, weight: .semibold))
                     .foregroundStyle(Color.primary.opacity(0.9))
 
-                Text("Alias: \(candidate.alias)")
+                Text("\(localized(.settingsAliasLabel)): \(candidate.alias)")
                     .font(.system(size: 11.5))
                     .foregroundStyle(SpeakDockVisualStyle.secondaryText)
                     .textSelection(.enabled)
 
-                Text("Source: \(candidateSourceLabel(candidate.source))")
+                Text("\(localized(.settingsSourceLabel)): \(candidateSourceLabel(candidate.source))")
                     .font(.system(size: 11))
                     .foregroundStyle(SpeakDockVisualStyle.tertiaryText)
             }
@@ -579,12 +622,12 @@ struct SettingsView: View {
             Spacer(minLength: 12)
 
             HStack(spacing: 8) {
-                Button("Confirm") {
+                Button(localized(.settingsConfirm)) {
                     confirmTermCandidate(candidate)
                 }
                 .buttonStyle(SpeakDockActionButtonStyle(kind: .primary))
 
-                Button("Dismiss") {
+                Button(localized(.settingsDismiss)) {
                     dismissTermCandidate(candidate)
                 }
                 .buttonStyle(SpeakDockActionButtonStyle(kind: .subtle))
@@ -623,7 +666,7 @@ struct SettingsView: View {
     private func candidateSourceLabel(_ source: TermDictionaryCandidateSource) -> String {
         switch source {
         case .manualCorrection:
-            "Manual correction"
+            localized(.settingsManualCorrection)
         }
     }
 

@@ -4,6 +4,16 @@ import SpeakDockCore
 
 @MainActor
 final class FnKeyTriggerAdapterPermissionTests: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        AppLocalizer.setCurrentAppLanguage(.english)
+    }
+
+    override func tearDown() {
+        AppLocalizer.setCurrentAppLanguage(.followSystem)
+        super.tearDown()
+    }
+
     func testRequestsAccessibilityBeforeReportingUnavailable() {
         let permissionChecker = StubEventTapPermissionChecker(
             trustedWithoutPrompt: false,
@@ -24,6 +34,29 @@ final class FnKeyTriggerAdapterPermissionTests: XCTestCase {
         XCTAssertEqual(
             reportedAvailability,
             .unavailable(label: "Fn Unavailable: Accessibility Required")
+        )
+    }
+
+    func testReportsLocalizedUnavailableMessageWhenAppLanguageIsChinese() {
+        AppLocalizer.setCurrentAppLanguage(.simplifiedChinese)
+        let permissionChecker = StubEventTapPermissionChecker(
+            trustedWithoutPrompt: false,
+            trustedWithPrompt: false
+        )
+        let adapter = FnKeyTriggerAdapter(
+            triggerKey: .fn,
+            permissionChecker: permissionChecker
+        )
+        var reportedAvailability: TriggerAvailability?
+        adapter.onAvailabilityChanged = { availability in
+            reportedAvailability = availability
+        }
+
+        adapter.start()
+
+        XCTAssertEqual(
+            reportedAvailability,
+            .unavailable(label: "Fn 不可用: 需要辅助功能权限")
         )
     }
 }

@@ -12,7 +12,7 @@
 
 - 阶段：P1 `AI 语音输入法`
 - 当前 focus：拆分 `App Language` 与 `Input Language`，纠正现有单一 `languageCode` 模型
-- 状态：`Ready`
+- 状态：`In Progress`
 
 ## 3. 为什么现在做
 
@@ -65,6 +65,9 @@
 
 ## 9. 最近完成
 
+- `App Language` / `Input Language` 设置模型已拆分，ASR 已只消费 `Input Language`
+- Settings / Menu Bar / trigger 状态文案已接入原生本地化入口，当前提供 `English + 简体中文`
+- `build-app.sh` 已复制 SwiftPM 资源 bundle，`make build` 产物会带上本地化资源
 - `Term Dictionary` 已接入 Settings，并完成本地持久化与测试
 - README / 手动验收 / 执行日志的上一轮漂移已回收
 - dated 计划与执行日志已移入 `docs/plans/archive/`
