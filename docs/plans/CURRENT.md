@@ -92,5 +92,7 @@
 - `Settings` 与 `menu popup` 现在直接复用生成后的 app icon 资源，不再各画一套品牌图
 - app icon 已重画为更明确的麦克风主体，`icns` 与运行时 `png` 均已重新生成
 - menu bar glyph 已收敛为独立模板化麦克风图形，不再尝试直接缩小 app icon
+- Settings 主壳已改为统一窗体表面，detail 不再是壳里再套一个独立大卡片
+- `General / Dictionary / Refine` 已收敛到统一双列节奏，减少 pane 切换时的壳体割裂感
 - 新的 Settings 视觉层级已落地第一版，当前人工验收仍需继续收口：
   窗口一致性、menu bar 可见性、品牌图形主观验收

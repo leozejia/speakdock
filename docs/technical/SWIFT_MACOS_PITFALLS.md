@@ -264,6 +264,37 @@
 - 切 `App Language` 只影响界面
 - 切 `Input Language` 只影响识别
 
+### 3.9 macOS `Settings` 不要做成“外壳里再套一个网页壳”
+
+现象：
+
+- 用户会感觉窗体外壳和里面内容像两套分离的 UI
+- pane 切换时虽然窗口尺寸没变，但视觉重心和填充感在漂
+- 整个设置页更像网页后台，而不是 macOS 原生设置窗
+
+错误做法：
+
+- 外层先画一个大壳体，里面再放一个独立的大圆角 detail 卡片
+- detail 内部继续用很多浮起的大卡片强调每个 section
+- 不同 pane 各自用不同版式，导致切换时内容密度和留白节奏不一致
+
+正确做法：
+
+- 把窗体先定义成一个统一的 `sidebar + detail` 结构
+- detail 应该是连续内容区，不要再套第二层大壳
+- section 只做轻量分组，不要每层都强调自己是独立面板
+- `General / Dictionary / Refine` 使用同一套双列节奏和相近的信息密度
+
+当前落实位置：
+
+- `Sources/SpeakDockMac/Settings/SettingsView.swift`
+
+验收方式：
+
+- 切换 pane 时，用户不会再明显感觉“外壳一层、内容另一层”
+- 三个 pane 都沿用同一套整体布局节奏
+- detail 内容区视觉上能自然填满整个设置窗右侧
+
 ## 4. 每轮结束前的固定检查
 
 所有涉及 Swift/macOS 行为改动的任务，结束前至少检查：
