@@ -19,7 +19,6 @@ struct SpeakDockApp: App {
         let settingsStore = SettingsStore()
         let termDictionaryStore = TermDictionaryStore()
         AppLocalizer.setCurrentAppLanguage(settingsStore.settings.appLanguage)
-        AppRuntime.configureInitialVisibility()
         _ = settingsStore.addSettingsObserver { settings in
             AppLocalizer.setCurrentAppLanguage(settings.appLanguage)
         }
