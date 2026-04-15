@@ -12,6 +12,12 @@
 "modifier_trigger.right_shift" = "Right Shift";
 "settings.input.title" = "Input";
 "settings.input.subtitle" = "Separate what the app shows from what speech recognition listens for.";
+"settings.pane.general.title" = "General";
+"settings.pane.general.subtitle" = "Language, trigger, dock, and capture behavior.";
+"settings.pane.dictionary.title" = "Dictionary";
+"settings.pane.dictionary.subtitle" = "Confirmed terms and pending corrections.";
+"settings.pane.refine.title" = "Refine";
+"settings.pane.refine.subtitle" = "Optional cleanup before SpeakDock commits text.";
 "settings.app_language.label" = "App Language";
 "settings.input_language.label" = "Input Language";
 "settings.trigger.label" = "Trigger";

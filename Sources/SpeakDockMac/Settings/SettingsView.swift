@@ -15,6 +15,7 @@ struct SettingsView: View {
     @State private var termDictionaryMessage: String?
     @State private var termDictionaryMessageTone: SpeakDockBadgeTone = .neutral
     @State private var isTestingRefine = false
+    @State private var selectedPane: SettingsPane = .defaultPane
 
     private let refineTester: any RefineConnectionTesting
 
@@ -31,15 +32,280 @@ struct SettingsView: View {
     var body: some View {
         let appLanguage = settingsStore.settings.appLanguage
 
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                header
+        HStack(spacing: 18) {
+            sidebar(appLanguage: appLanguage)
+            detailPane(appLanguage: appLanguage)
+        }
+        .background(settingsBackground.ignoresSafeArea())
+        .padding(18)
+        .frame(minWidth: 1040, minHeight: 780)
+    }
 
-                SpeakDockPanel(
+    private var settingsBackground: some View {
+        LinearGradient(
+            colors: [
+                SpeakDockVisualStyle.settingsBackdropTop,
+                SpeakDockVisualStyle.settingsBackdropBottom,
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottom
+        )
+    }
+
+    private func sidebar(appLanguage: AppLanguageOption) -> some View {
+        VStack(alignment: .leading, spacing: 22) {
+            sidebarHeader
+
+            HStack(spacing: 8) {
+                SpeakDockStatusBadge(
+                    title: settingsStore.settings.refineEnabled
+                        ? localized(.settingsRefineOn)
+                        : localized(.settingsRefineOff),
+                    tone: settingsStore.settings.refineEnabled ? .accent : .neutral
+                )
+
+                SpeakDockStatusBadge(
+                    title: settingsStore.settings.showDockIcon
+                        ? localized(.settingsDockOn)
+                        : localized(.settingsDockOff),
+                    tone: settingsStore.settings.showDockIcon ? .success : .neutral
+                )
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(SettingsPane.allCases, id: \.rawValue) { pane in
+                    sidebarItem(for: pane, appLanguage: appLanguage)
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(localized(.settingsCaptureRootLabel))
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(SpeakDockVisualStyle.tertiaryText)
+                    .textCase(.uppercase)
+
+                Text(settingsStore.settings.captureRootPath)
+                    .font(.system(size: 11.5, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Color.primary.opacity(0.7))
+                    .lineLimit(3)
+                    .textSelection(.enabled)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(SpeakDockVisualStyle.settingsCardStrong.opacity(0.72))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(SpeakDockVisualStyle.settingsLine, lineWidth: 1)
+            )
+        }
+        .padding(22)
+        .frame(width: 282)
+        .frame(maxHeight: .infinity, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .fill(SpeakDockVisualStyle.settingsSidebar)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .stroke(SpeakDockVisualStyle.settingsLine, lineWidth: 1)
+        )
+        .shadow(color: SpeakDockVisualStyle.settingsShadow, radius: 22, x: 0, y: 16)
+    }
+
+    private var sidebarHeader: some View {
+        HStack(alignment: .center, spacing: 14) {
+            SpeakDockBrandGlyph(size: 50)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("SpeakDock")
+                    .font(.system(size: 25, weight: .bold))
+                    .tracking(-0.4)
+
+                Text(localized(.settingsHeaderTagline))
+                    .font(.system(size: 12.5, weight: .medium))
+                    .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func sidebarItem(for pane: SettingsPane, appLanguage: AppLanguageOption) -> some View {
+        Button {
+            selectedPane = pane
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: pane.symbolName)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(selectedPane == pane ? SpeakDockVisualStyle.accent : Color.primary.opacity(0.72))
+                    .frame(width: 18)
+                    .padding(.top, 2)
+
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(pane.title(appLanguage: appLanguage))
+                        .font(.system(size: 13.5, weight: .semibold))
+                        .foregroundStyle(Color.primary.opacity(0.9))
+
+                    Text(sidebarSummary(for: pane, appLanguage: appLanguage))
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(
+                        selectedPane == pane
+                            ? SpeakDockVisualStyle.settingsSelectionFill
+                            : SpeakDockVisualStyle.settingsCard.opacity(0.32)
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(
+                        selectedPane == pane
+                            ? SpeakDockVisualStyle.settingsSelectionLine
+                            : Color.clear,
+                        lineWidth: 1
+                    )
+            )
+            .shadow(
+                color: selectedPane == pane ? SpeakDockVisualStyle.settingsShadow.opacity(0.55) : .clear,
+                radius: 16,
+                x: 0,
+                y: 10
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func detailPane(appLanguage: AppLanguageOption) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            paneHeader(appLanguage: appLanguage)
+
+            Rectangle()
+                .fill(SpeakDockVisualStyle.settingsLine)
+                .frame(height: 1)
+
+            ScrollView {
+                paneContent(appLanguage: appLanguage)
+                    .padding(28)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .fill(SpeakDockVisualStyle.settingsContent)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .stroke(SpeakDockVisualStyle.settingsLine, lineWidth: 1)
+        )
+        .shadow(color: SpeakDockVisualStyle.settingsShadow, radius: 26, x: 0, y: 18)
+    }
+
+    private func paneHeader(appLanguage: AppLanguageOption) -> some View {
+        HStack(alignment: .top, spacing: 20) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(selectedPane.title(appLanguage: appLanguage))
+                    .font(.system(size: 30, weight: .bold))
+                    .tracking(-0.6)
+                    .foregroundStyle(Color.primary.opacity(0.92))
+
+                Text(selectedPane.subtitle(appLanguage: appLanguage))
+                    .font(.system(size: 13.5, weight: .medium))
+                    .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 20)
+
+            paneHeaderBadges(appLanguage: appLanguage)
+        }
+        .padding(28)
+    }
+
+    @ViewBuilder
+    private func paneHeaderBadges(appLanguage: AppLanguageOption) -> some View {
+        HStack(spacing: 8) {
+            switch selectedPane {
+            case .general:
+                SpeakDockStatusBadge(
+                    title: "\(localized(.settingsAppLanguageLabel)): \(settingsStore.settings.appLanguage.displayName(appLanguage: appLanguage))",
+                    tone: .neutral
+                )
+
+                SpeakDockStatusBadge(
+                    title: "\(localized(.settingsInputLanguageLabel)): \(settingsStore.settings.inputLanguage.displayName(appLanguage: appLanguage))",
+                    tone: .accent
+                )
+
+            case .dictionary:
+                SpeakDockStatusBadge(
+                    title: localizedFormat(
+                        .settingsTermDictionarySavedCount,
+                        termDictionaryStore.confirmedDictionary.entries.count
+                    ),
+                    tone: termDictionaryStore.confirmedDictionary.entries.isEmpty ? .neutral : .success
+                )
+
+                SpeakDockStatusBadge(
+                    title: localizedFormat(
+                        .settingsTermDictionaryPendingCount,
+                        termDictionaryStore.pendingCandidates.count
+                    ),
+                    tone: termDictionaryStore.pendingCandidates.isEmpty ? .neutral : .warning
+                )
+
+            case .refine:
+                SpeakDockStatusBadge(
+                    title: settingsStore.settings.refineEnabled
+                        ? localized(.settingsRefineOn)
+                        : localized(.settingsRefineOff),
+                    tone: settingsStore.settings.refineEnabled ? .accent : .neutral
+                )
+
+                if !settingsStore.settings.refineModel.isEmpty {
+                    SpeakDockStatusBadge(
+                        title: settingsStore.settings.refineModel,
+                        tone: .neutral
+                    )
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func paneContent(appLanguage: AppLanguageOption) -> some View {
+        switch selectedPane {
+        case .general:
+            generalPane(appLanguage: appLanguage)
+        case .dictionary:
+            dictionaryPane
+        case .refine:
+            refinePane
+        }
+    }
+
+    private func generalPane(appLanguage: AppLanguageOption) -> some View {
+        HStack(alignment: .top, spacing: 20) {
+            VStack(alignment: .leading, spacing: 20) {
+                SettingsShellSection(
                     title: localized(.settingsInputTitle),
                     subtitle: localized(.settingsInputSubtitle)
                 ) {
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 18) {
                         LabeledContent(localized(.settingsAppLanguageLabel)) {
                             Picker(localized(.settingsAppLanguageLabel), selection: $settingsStore.settings.appLanguage) {
                                 ForEach(AppLanguageOption.allCases, id: \.rawValue) { option in
@@ -62,7 +328,7 @@ struct SettingsView: View {
                             .frame(width: 150)
                         }
 
-                        Divider()
+                        dividerLine
 
                         VStack(alignment: .leading, spacing: 10) {
                             HStack(alignment: .firstTextBaseline) {
@@ -98,23 +364,28 @@ struct SettingsView: View {
                                 .foregroundStyle(SpeakDockVisualStyle.secondaryText)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-
-                        Divider()
-
-                        Toggle(isOn: $settingsStore.settings.showDockIcon) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(localized(.settingsShowDockIconTitle))
-                                    .font(.system(size: 13, weight: .medium))
-                                Text(localized(.settingsShowDockIconSubtitle))
-                                    .font(.system(size: 11.5))
-                                    .foregroundStyle(SpeakDockVisualStyle.secondaryText)
-                            }
-                        }
-                        .toggleStyle(.switch)
                     }
                 }
+            }
 
-                SpeakDockPanel(
+            VStack(alignment: .leading, spacing: 20) {
+                SettingsShellSection(
+                    title: localized(.settingsShowDockIconTitle),
+                    subtitle: localized(.settingsShowDockIconSubtitle)
+                ) {
+                    Toggle(isOn: $settingsStore.settings.showDockIcon) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(settingsStore.settings.showDockIcon ? localized(.settingsDockOn) : localized(.settingsDockOff))
+                                .font(.system(size: 12.5, weight: .semibold))
+                            Text(localized(.settingsShowDockIconSubtitle))
+                                .font(.system(size: 11.5))
+                                .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+                        }
+                    }
+                    .toggleStyle(.switch)
+                }
+
+                SettingsShellSection(
                     title: localized(.settingsCaptureTitle),
                     subtitle: localized(.settingsCaptureSubtitle)
                 ) {
@@ -122,29 +393,27 @@ struct SettingsView: View {
                         Text(localized(.settingsCaptureRootLabel))
                             .font(.system(size: 13, weight: .medium))
 
-                        HStack(spacing: 12) {
-                            Text(settingsStore.settings.captureRootPath)
-                                .font(.system(size: 12.5, weight: .medium, design: .monospaced))
-                                .foregroundStyle(Color.primary.opacity(0.82))
-                                .lineLimit(2)
-                                .textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 11)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .fill(SpeakDockVisualStyle.panelInset)
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .stroke(SpeakDockVisualStyle.line, lineWidth: 1)
-                                )
+                        Text(settingsStore.settings.captureRootPath)
+                            .font(.system(size: 12.5, weight: .medium, design: .monospaced))
+                            .foregroundStyle(Color.primary.opacity(0.82))
+                            .lineLimit(3)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 11)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(SpeakDockVisualStyle.settingsCardStrong)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(SpeakDockVisualStyle.settingsLine, lineWidth: 1)
+                            )
 
-                            Button(localized(.settingsChooseAndMigrate)) {
-                                chooseCaptureRoot()
-                            }
-                            .buttonStyle(SpeakDockActionButtonStyle(kind: .secondary))
+                        Button(localized(.settingsChooseAndMigrate)) {
+                            chooseCaptureRoot()
                         }
+                        .buttonStyle(SpeakDockActionButtonStyle(kind: .secondary))
 
                         if let captureRootMessage {
                             messageView(captureRootMessage, tone: .neutral)
@@ -152,107 +421,107 @@ struct SettingsView: View {
                     }
                 }
 
-                SpeakDockPanel(
-                    title: localized(.settingsTermDictionaryTitle),
-                    subtitle: localized(.settingsTermDictionarySubtitle)
+                SettingsShellSection(
+                    title: localized(.settingsActionsTitle),
+                    subtitle: localized(.settingsActionsSubtitle)
                 ) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(localized(.settingsTermDictionaryAddEntry))
-                                .font(.system(size: 13, weight: .medium))
-
-                            TextField(localized(.settingsTermDictionaryCanonicalPlaceholder), text: $termCanonicalTerm)
-                                .textFieldStyle(.roundedBorder)
-
-                            TextField(localized(.settingsTermDictionaryAliasesPlaceholder), text: $termAliasesText)
-                                .textFieldStyle(.roundedBorder)
-
-                            HStack(alignment: .center, spacing: 12) {
-                                Button(localized(.settingsTermDictionaryAddButton)) {
-                                    addTermEntry()
-                                }
-                                .buttonStyle(SpeakDockActionButtonStyle(kind: .primary))
-                                .disabled(!canAddTermEntry)
-
-                                Text(localized(.settingsTermDictionarySavedLocalOnly))
-                                    .font(.system(size: 11.5))
-                                    .foregroundStyle(SpeakDockVisualStyle.secondaryText)
-                            }
+                    VStack(alignment: .leading, spacing: 14) {
+                        Button(localized(.settingsSave)) {
+                            saveSettings()
                         }
+                        .buttonStyle(SpeakDockActionButtonStyle(kind: .primary))
 
-                        if let termDictionaryMessage {
-                            messageView(termDictionaryMessage, tone: termDictionaryMessageTone)
+                        if let saveMessage {
+                            messageView(saveMessage, tone: saveMessageTone)
                         }
+                    }
+                }
+            }
+            .frame(width: 320)
+        }
+    }
 
-                        Divider()
+    private var dictionaryPane: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            SettingsShellSection(
+                title: localized(.settingsTermDictionaryAddEntry),
+                subtitle: localized(.settingsTermDictionarySavedLocalOnly)
+            ) {
+                VStack(alignment: .leading, spacing: 12) {
+                    TextField(localized(.settingsTermDictionaryCanonicalPlaceholder), text: $termCanonicalTerm)
+                        .textFieldStyle(.roundedBorder)
 
+                    TextField(localized(.settingsTermDictionaryAliasesPlaceholder), text: $termAliasesText)
+                        .textFieldStyle(.roundedBorder)
+
+                    HStack(alignment: .center, spacing: 12) {
+                        Button(localized(.settingsTermDictionaryAddButton)) {
+                            addTermEntry()
+                        }
+                        .buttonStyle(SpeakDockActionButtonStyle(kind: .primary))
+                        .disabled(!canAddTermEntry)
+
+                        Text(localized(.settingsTermDictionarySavedLocalOnly))
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+                    }
+
+                    if let termDictionaryMessage {
+                        messageView(termDictionaryMessage, tone: termDictionaryMessageTone)
+                    }
+                }
+            }
+
+            HStack(alignment: .top, spacing: 20) {
+                SettingsShellSection(
+                    title: localized(.settingsTermDictionaryConfirmedTerms),
+                    subtitle: localizedFormat(
+                        .settingsTermDictionarySavedCount,
+                        termDictionaryStore.confirmedDictionary.entries.count
+                    )
+                ) {
+                    if termDictionaryStore.confirmedDictionary.entries.isEmpty {
+                        emptyStateView(localized(.settingsTermDictionaryNoConfirmed))
+                    } else {
                         VStack(alignment: .leading, spacing: 10) {
-                            HStack(alignment: .center, spacing: 12) {
-                                Text(localized(.settingsTermDictionaryConfirmedTerms))
-                                    .font(.system(size: 13, weight: .medium))
-
-                                Spacer()
-
-                                SpeakDockStatusBadge(
-                                    title: localizedFormat(
-                                        .settingsTermDictionarySavedCount,
-                                        termDictionaryStore.confirmedDictionary.entries.count
-                                    ),
-                                    tone: termDictionaryStore.confirmedDictionary.entries.isEmpty ? .neutral : .success
-                                )
-                            }
-
-                            if termDictionaryStore.confirmedDictionary.entries.isEmpty {
-                                emptyStateView(localized(.settingsTermDictionaryNoConfirmed))
-                            } else {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    ForEach(
-                                        Array(termDictionaryStore.confirmedDictionary.entries.enumerated()),
-                                        id: \.offset
-                                    ) { _, entry in
-                                        confirmedEntryRow(entry)
-                                    }
-                                }
-                            }
-                        }
-
-                        Divider()
-
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack(alignment: .center, spacing: 12) {
-                                Text(localized(.settingsTermDictionaryPendingCandidates))
-                                    .font(.system(size: 13, weight: .medium))
-
-                                Spacer()
-
-                                SpeakDockStatusBadge(
-                                    title: localizedFormat(
-                                        .settingsTermDictionaryPendingCount,
-                                        termDictionaryStore.pendingCandidates.count
-                                    ),
-                                    tone: termDictionaryStore.pendingCandidates.isEmpty ? .neutral : .warning
-                                )
-                            }
-
-                            if termDictionaryStore.pendingCandidates.isEmpty {
-                                emptyStateView(
-                                    localized(.settingsTermDictionaryNoPending)
-                                )
-                            } else {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    ForEach(
-                                        Array(termDictionaryStore.pendingCandidates.enumerated()),
-                                        id: \.offset
-                                    ) { _, candidate in
-                                        pendingCandidateRow(candidate)
-                                    }
-                                }
+                            ForEach(
+                                Array(termDictionaryStore.confirmedDictionary.entries.enumerated()),
+                                id: \.offset
+                            ) { _, entry in
+                                confirmedEntryRow(entry)
                             }
                         }
                     }
                 }
 
-                SpeakDockPanel(
+                SettingsShellSection(
+                    title: localized(.settingsTermDictionaryPendingCandidates),
+                    subtitle: localizedFormat(
+                        .settingsTermDictionaryPendingCount,
+                        termDictionaryStore.pendingCandidates.count
+                    )
+                ) {
+                    if termDictionaryStore.pendingCandidates.isEmpty {
+                        emptyStateView(localized(.settingsTermDictionaryNoPending))
+                    } else {
+                        VStack(alignment: .leading, spacing: 10) {
+                            ForEach(
+                                Array(termDictionaryStore.pendingCandidates.enumerated()),
+                                id: \.offset
+                            ) { _, candidate in
+                                pendingCandidateRow(candidate)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var refinePane: some View {
+        HStack(alignment: .top, spacing: 20) {
+            VStack(alignment: .leading, spacing: 20) {
+                SettingsShellSection(
                     title: localized(.settingsRefineTitle),
                     subtitle: localized(.settingsRefineSubtitle)
                 ) {
@@ -268,30 +537,32 @@ struct SettingsView: View {
                         }
                         .toggleStyle(.switch)
 
+                        dividerLine
+
                         VStack(alignment: .leading, spacing: 12) {
                             LabeledContent(localized(.settingsBaseURLLabel)) {
                                 TextField(localized(.settingsBaseURLPlaceholder), text: $settingsStore.settings.refineBaseURL)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(width: 280)
+                                    .frame(width: 320)
                             }
 
                             LabeledContent(localized(.settingsAPIKeyLabel)) {
                                 SecureField(localized(.settingsAPIKeyPlaceholder), text: $settingsStore.settings.refineAPIKey)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(width: 280)
+                                    .frame(width: 320)
                             }
 
                             LabeledContent(localized(.settingsModelLabel)) {
                                 TextField(localized(.settingsModelPlaceholder), text: $settingsStore.settings.refineModel)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(width: 200)
+                                    .frame(width: 220)
                             }
                         }
                         .disabled(!settingsStore.settings.refineEnabled)
                     }
                 }
 
-                SpeakDockPanel(
+                SettingsShellSection(
                     title: localized(.settingsActionsTitle),
                     subtitle: localized(.settingsActionsSubtitle)
                 ) {
@@ -310,71 +581,77 @@ struct SettingsView: View {
                         }
 
                         if let refineTestMessage {
-                            messageView(
-                                refineTestMessage,
-                                tone: refineTestMessageTone
-                            )
+                            messageView(refineTestMessage, tone: refineTestMessageTone)
                         }
 
                         if let saveMessage {
-                            messageView(
-                                saveMessage,
-                                tone: saveMessageTone
-                            )
+                            messageView(saveMessage, tone: saveMessageTone)
                         }
                     }
                 }
             }
-            .padding(24)
+
+            SettingsShellSection(
+                title: localized(.settingsRefineTitle),
+                subtitle: settingsStore.settings.refineEnabled
+                    ? localized(.settingsRefineOn)
+                    : localized(.settingsRefineOff)
+            ) {
+                VStack(alignment: .leading, spacing: 12) {
+                    SpeakDockStatusBadge(
+                        title: settingsStore.settings.refineEnabled
+                            ? localized(.settingsRefineOn)
+                            : localized(.settingsRefineOff),
+                        tone: settingsStore.settings.refineEnabled ? .accent : .neutral
+                    )
+
+                    dividerLine
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(localized(.settingsBaseURLLabel))
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(SpeakDockVisualStyle.tertiaryText)
+                            .textCase(.uppercase)
+
+                        Text(settingsStore.settings.refineBaseURL.isEmpty ? localized(.settingsBaseURLPlaceholder) : settingsStore.settings.refineBaseURL)
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundStyle(settingsStore.settings.refineBaseURL.isEmpty ? SpeakDockVisualStyle.secondaryText : Color.primary.opacity(0.84))
+                            .textSelection(.enabled)
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(localized(.settingsModelLabel))
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(SpeakDockVisualStyle.tertiaryText)
+                            .textCase(.uppercase)
+
+                        Text(settingsStore.settings.refineModel.isEmpty ? localized(.settingsModelPlaceholder) : settingsStore.settings.refineModel)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(settingsStore.settings.refineModel.isEmpty ? SpeakDockVisualStyle.secondaryText : Color.primary.opacity(0.9))
+                    }
+                }
+            }
+            .frame(width: 280)
         }
-        .background(settingsBackground.ignoresSafeArea())
-        .frame(minWidth: 720, minHeight: 760)
     }
 
-    private var header: some View {
-        return HStack(alignment: .center, spacing: 16) {
-            SpeakDockBrandGlyph(size: 54)
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("SpeakDock")
-                    .font(.system(size: 24, weight: .semibold))
-                    .tracking(-0.3)
-
-                Text(localized(.settingsHeaderTagline))
-                    .font(.system(size: 12.5))
-                    .foregroundStyle(SpeakDockVisualStyle.secondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer()
-
-            VStack(alignment: .trailing, spacing: 8) {
-                SpeakDockStatusBadge(
-                    title: settingsStore.settings.refineEnabled
-                        ? localized(.settingsRefineOn)
-                        : localized(.settingsRefineOff),
-                    tone: settingsStore.settings.refineEnabled ? .accent : .neutral
-                )
-                SpeakDockStatusBadge(
-                    title: settingsStore.settings.showDockIcon
-                        ? localized(.settingsDockOn)
-                        : localized(.settingsDockOff),
-                    tone: settingsStore.settings.showDockIcon ? .success : .neutral
-                )
-            }
-        }
-        .padding(4)
+    private var dividerLine: some View {
+        Rectangle()
+            .fill(SpeakDockVisualStyle.settingsLine)
+            .frame(height: 1)
     }
 
-    private var settingsBackground: some View {
-        LinearGradient(
-            colors: [
-                SpeakDockVisualStyle.canvas,
-                SpeakDockVisualStyle.panelInset.opacity(0.9),
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
+    private func sidebarSummary(for pane: SettingsPane, appLanguage: AppLanguageOption) -> String {
+        switch pane {
+        case .general:
+            return "\(settingsStore.settings.appLanguage.displayName(appLanguage: appLanguage)) · \(settingsStore.settings.inputLanguage.displayName(appLanguage: appLanguage))"
+        case .dictionary:
+            return "\(localizedFormat(.settingsTermDictionarySavedCount, termDictionaryStore.confirmedDictionary.entries.count)) · \(localizedFormat(.settingsTermDictionaryPendingCount, termDictionaryStore.pendingCandidates.count))"
+        case .refine:
+            return settingsStore.settings.refineEnabled
+                ? localized(.settingsRefineOn)
+                : localized(.settingsRefineOff)
+        }
     }
 
     private var isAlternativeTriggerSelected: Bool {
@@ -693,5 +970,49 @@ struct SettingsView: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(tone.strokeColor, lineWidth: 1)
         )
+    }
+}
+
+private struct SettingsShellSection<Content: View>: View {
+    let title: String
+    let subtitle: String
+    @ViewBuilder let content: Content
+
+    init(
+        title: String,
+        subtitle: String,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(Color.primary.opacity(0.92))
+
+                Text(subtitle)
+                    .font(.system(size: 12.5, weight: .medium))
+                    .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            content
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .fill(SpeakDockVisualStyle.settingsCard)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .stroke(SpeakDockVisualStyle.settingsLine, lineWidth: 1)
+        )
+        .shadow(color: SpeakDockVisualStyle.settingsShadow.opacity(0.55), radius: 18, x: 0, y: 10)
     }
 }

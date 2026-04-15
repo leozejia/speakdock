@@ -11,67 +11,64 @@
 ## 2. 当前阶段
 
 - 阶段：P1 `AI 语音输入法`
-- 当前 focus：拆分 `App Language` 与 `Input Language`，纠正现有单一 `languageCode` 模型
+- 当前 focus：重构 `Settings` 信息架构，拆出独立 `Dictionary` pane，并把设置界面收敛成更稳定的 macOS app shell
 - 状态：`In Progress`
 
 ## 3. 为什么现在做
 
-当前实现把“界面语言”和“语音识别语言”混成了同一个设置：
+当前 `Settings` 还是旧的单页滚动结构：
 
-- UI 侧把它当成唯一语言入口
-- ASR 侧直接拿它决定识别 locale
-- 这会让产品语义继续漂移，并阻碍真正的界面本地化
+- `Term Dictionary` 已经不是小设置项，而是会持续增长的数据面板
+- 继续把词典和通用设置堆在一起，会让信息层级继续恶化
+- 现有视觉语言也过于松散，无法支撑 SpeakDock 作为长期工具的产品质感
 
-这一轮要把模型一次拆正，不保留长期双轨语义。
+这一轮先把设置壳体做正，再继续推进词典自动增长与后续端侧 / LLM 能力。
 
 ## 4. 本轮范围
 
-1. 用新的设置模型替换单一 `languageCode`
-2. 引入独立的 `App Language`
-3. 保留独立的 `Input Language`
-4. 让菜单栏、Settings 和相关状态文案走统一本地化入口
-5. 同步测试、README、人工验收和执行归档
+1. 引入侧边栏 pane 架构：`General` / `Dictionary` / `Refine`
+2. 把 `Term Dictionary` 从通用设置页拆成独立工作面
+3. 重做 Settings 的层级、间距、材质和导航反馈
+4. 保持现有设置行为、本地化和已有功能不回归
+5. 同步 live plan、测试与人工验收
 
 ## 5. 明确不做
 
-- 不做自动识别说话语言
-- 不做跟随当前键盘输入法
-- 不做按 App 记忆输入语言
-- 不做混合语言自动切换
-- 不做端侧模型语言检测
+- 不做词典搜索、筛选和批量编辑
+- 不做自动学习词典闭环
+- 不做新的 refine 行为策略
+- 不做端侧模型接入
+- 不做整站级设计系统扩张
 
 ## 6. 执行顺序
 
-1. 重构设置模型：`App Language` / `Input Language`
-2. 调整 ASR 接线，只消费 `Input Language`
-3. 收敛 UI 文案入口，建立原生本地化资源
-4. 更新菜单栏、Settings、overlay 等可见文案
-5. 补齐测试与文档，完成一轮人工验收
+1. 建立 pane 模型与双语文案入口
+2. 拆分 `SettingsView` 为侧边栏 + pane 内容区
+3. 把 `Dictionary` 迁移成独立 pane
+4. 调整视觉层级与操作区布局
+5. 跑测试 / build，并做一轮人工界面验收
 
 ## 7. 完成定义
 
 满足以下条件才算这一轮完成：
 
-- `App Language` 只影响界面文案
-- `Input Language` 只影响语音识别
-- 不再存在运行时“一个字段双重语义”
-- 至少交付 `English + 简体中文` 界面本地化
-- 既有输入语言集合不回归
-- 文档索引和人工验收清单同步
+- Settings 不再是单页长滚动结构
+- `Dictionary` 成为独立 pane
+- `General` / `Dictionary` / `Refine` 的信息边界清晰
+- 英文和简体中文界面文案不回归
+- 现有设置能力、词典能力、refine 配置能力都可正常使用
+- 文档与当前实现保持一致
 
 ## 8. 阻塞项
 
 - 当前无外部阻塞
+- 仍需要一轮人工视觉验收来确认新壳体的观感和密度
 
 ## 9. 最近完成
 
 - `App Language` / `Input Language` 设置模型已拆分，ASR 已只消费 `Input Language`
-- Settings / Menu Bar / trigger 状态文案已接入原生本地化入口，当前提供 `English + 简体中文`
-- overlay / compose unavailable / microphone unavailable / speech unavailable / 二级动作标题 已接入运行时本地化
-- Refine / Capture Root / Term Dictionary 的用户可见错误文案 已接入运行时本地化
-- Refine 设置区的 placeholder、中文菜单副标题与残留错误提示 已继续收口到本地化资源
-- 主 app bundle 已补齐 `en + zh-Hans` 本地化声明与 `.lproj` 同步，启动时会按保存的 `App Language` 预设 AppKit 语言
-- `build-app.sh` 已复制 SwiftPM 资源 bundle，`make build` 产物会带上本地化资源
-- `Term Dictionary` 已接入 Settings，并完成本地持久化与测试
-- README / 手动验收 / 执行日志的上一轮漂移已回收
-- dated 计划与执行日志已移入 `docs/plans/archive/`
+- Settings / Menu Bar / overlay / 运行时错误文案 已完成 `English + 简体中文` 本地化
+- 主 app bundle 已补齐 `en + zh-Hans` 本地化声明，左上角菜单会跟随保存的 `App Language`
+- `SettingsPane` 模型已落地，当前固定为 `General / Dictionary / Refine`
+- `SettingsView` 已重构为侧边栏 pane 壳体，`Term Dictionary` 已从旧单页中拆出
+- 新的 Settings 视觉层级已落地第一版，当前需要人工验收决定下一轮细修

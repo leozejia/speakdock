@@ -12,6 +12,12 @@
 "modifier_trigger.right_shift" = "右 Shift";
 "settings.input.title" = "输入";
 "settings.input.subtitle" = "把界面显示语言和语音识别语言分开设置。";
+"settings.pane.general.title" = "通用";
+"settings.pane.general.subtitle" = "语言、触发方式、Dock 与 capture 行为。";
+"settings.pane.dictionary.title" = "词典";
+"settings.pane.dictionary.subtitle" = "已确认术语与待处理修正。";
+"settings.pane.refine.title" = "整理";
+"settings.pane.refine.subtitle" = "在 SpeakDock 提交前做可选整理。";
 "settings.app_language.label" = "界面语言";
 "settings.input_language.label" = "输入语言";
 "settings.trigger.label" = "触发方式";
