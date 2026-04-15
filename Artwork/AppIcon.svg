@@ -2,18 +2,27 @@
   <defs>
     <linearGradient id="shell" x1="184" y1="144" x2="840" y2="896" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FFFDFC"/>
-      <stop offset="0.56" stop-color="#F2F5FA"/>
-      <stop offset="1" stop-color="#E1E7F1"/>
+      <stop offset="0.58" stop-color="#F2F4F8"/>
+      <stop offset="1" stop-color="#E4EAF2"/>
     </linearGradient>
-    <radialGradient id="wash" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(330 250) rotate(38) scale(470 396)">
+    <radialGradient id="wash" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(310 258) rotate(36) scale(392 240)">
       <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.92"/>
-      <stop offset="0.46" stop-color="#FFFFFF" stop-opacity="0.32"/>
+      <stop offset="0.44" stop-color="#FFFFFF" stop-opacity="0.24"/>
       <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="capsule" x1="448" y1="240" x2="584" y2="520" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#44D7FF"/>
-      <stop offset="0.58" stop-color="#329BFF"/>
-      <stop offset="1" stop-color="#2C63FF"/>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(512 380) rotate(90) scale(113)">
+      <stop offset="0" stop-color="#4FC2FF" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#4FC2FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="mic-shell" x1="512" y1="214" x2="512" y2="530" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3F4C5C"/>
+      <stop offset="0.52" stop-color="#232A34"/>
+      <stop offset="1" stop-color="#121820"/>
+    </linearGradient>
+    <linearGradient id="signal" x1="510" y1="266" x2="510" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#76E0FF"/>
+      <stop offset="0.44" stop-color="#47B6FF"/>
+      <stop offset="1" stop-color="#3378FF"/>
     </linearGradient>
     <filter id="shadow" x="136" y="136" width="752" height="752" filterUnits="userSpaceOnUse">
       <feDropShadow dx="0" dy="18" stdDeviation="26" flood-color="#0F172A" flood-opacity="0.16"/>
@@ -25,14 +34,18 @@
     <rect x="96.5" y="96.5" width="831" height="831" rx="227.5" fill="none" stroke="#09111F" stroke-opacity="0.08"/>
   </g>
 
-  <path d="M176 218C176 177.131 209.131 144 250 144H606C677.797 144 736 202.203 736 274V274C736 314.869 702.869 348 662 348H306C234.203 348 176 289.797 176 218V218Z" fill="url(#wash)"/>
+  <path d="M187 243C187 205.997 216.997 176 254 176H536C597.856 176 648 226.144 648 288V288C648 325.003 618.003 355 581 355H299C237.144 355 187 304.856 187 243V243Z" fill="url(#wash)"/>
 
-  <path d="M382 432C382 558 439 642 512 642C585 642 642 558 642 432" fill="none" stroke="#28303D" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="512" cy="381" r="113" fill="url(#glow)"/>
 
-  <rect x="444" y="236" width="136" height="284" rx="68" fill="url(#capsule)"/>
-  <rect x="472" y="276" width="34" height="174" rx="17" fill="#FFFFFF" fill-opacity="0.28"/>
-  <rect x="444" y="236" width="136" height="284" rx="68" fill="none" stroke="#FFFFFF" stroke-opacity="0.28"/>
+  <path d="M387 428C387 580 444 647 512 647C580 647 637 580 637 428" fill="none" stroke="#29313B" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <rect x="492" y="640" width="40" height="104" rx="20" fill="#28303D"/>
-  <rect x="392" y="760" width="240" height="48" rx="24" fill="#28303D"/>
+  <rect x="413" y="214" width="198" height="324" rx="99" fill="url(#mic-shell)"/>
+  <rect x="413.75" y="214.75" width="196.5" height="322.5" rx="98.25" fill="none" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="1.5"/>
+
+  <rect x="486" y="266" width="49" height="214" rx="24.5" fill="url(#signal)"/>
+  <rect x="486.75" y="266.75" width="47.5" height="212.5" rx="23.75" fill="none" stroke="#FFFFFF" stroke-opacity="0.14" stroke-width="1.5"/>
+
+  <rect x="496" y="647" width="34" height="98" rx="17" fill="#29313B"/>
+  <rect x="406" y="772" width="213" height="42" rx="21" fill="#29313B"/>
 </svg>

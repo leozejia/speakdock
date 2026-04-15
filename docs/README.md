@@ -30,6 +30,8 @@
 - `docs/research/2026-04-10-llm-wiki-original.md`
 - `docs/research/2026-04-10-llm-wiki-zh.md`
 - `docs/research/2026-04-10-llm-wiki-methodology.md`
+- `docs/research/2026-04-14-typeless-shandianshuo-research.md`
+- `docs/research/2026-04-15-brand-icon-research.md`
 
 原则：
 

@@ -180,87 +180,19 @@ struct SpeakDockStatusBadge: View {
 }
 
 struct SpeakDockBrandGlyph: View {
-    @Environment(\.colorScheme) private var colorScheme
-
     var size: CGFloat = 44
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: shellGradientColors,
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                        .stroke(shellStrokeColor, lineWidth: 1)
-                )
-                .shadow(color: shellShadowColor, radius: size * 0.22, x: 0, y: size * 0.14)
-
-            Circle()
-                .fill(shellHighlightColor)
-                .blur(radius: size * 0.16)
-                .frame(width: size * 0.7, height: size * 0.7)
-                .offset(x: -size * 0.1, y: -size * 0.16)
-
-            SpeakDockMicMark(
-                bodyColor: .gradient(microphoneGradient),
-                scaffoldColor: scaffoldColor,
-                highlightColor: capsuleHighlightColor
-            )
-            .frame(width: size * 0.62, height: size * 0.7)
+        Group {
+            if let icon = SpeakDockBrandAssets.applicationIcon {
+                Image(nsImage: icon)
+                    .resizable()
+                    .aspectRatio(1, contentMode: .fit)
+            } else {
+                SpeakDockFallbackBrandGlyph(size: size)
+            }
         }
         .frame(width: size, height: size)
-    }
-
-    private var shellGradientColors: [Color] {
-        if colorScheme == .dark {
-            return [
-                Color(nsColor: NSColor(calibratedWhite: 0.22, alpha: 1)),
-                Color(nsColor: NSColor(calibratedWhite: 0.10, alpha: 1)),
-            ]
-        }
-
-        return [
-            Color(nsColor: NSColor(calibratedRed: 0.99, green: 0.99, blue: 0.98, alpha: 1)),
-            Color(nsColor: NSColor(calibratedRed: 0.90, green: 0.93, blue: 0.97, alpha: 1)),
-        ]
-    }
-
-    private var shellStrokeColor: Color {
-        colorScheme == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.10)
-    }
-
-    private var shellShadowColor: Color {
-        colorScheme == .dark ? .black.opacity(0.24) : .black.opacity(0.14)
-    }
-
-    private var shellHighlightColor: Color {
-        colorScheme == .dark ? Color.white.opacity(0.12) : Color.white.opacity(0.72)
-    }
-
-    private var microphoneGradient: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(nsColor: NSColor(calibratedRed: 0.27, green: 0.84, blue: 1.0, alpha: 1)),
-                Color(nsColor: NSColor(calibratedRed: 0.22, green: 0.45, blue: 1.0, alpha: 1)),
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-
-    private var scaffoldColor: Color {
-        colorScheme == .dark
-            ? Color.white.opacity(0.86)
-            : Color(nsColor: NSColor(calibratedRed: 0.19, green: 0.22, blue: 0.28, alpha: 0.92))
-    }
-
-    private var capsuleHighlightColor: Color {
-        Color.white.opacity(colorScheme == .dark ? 0.22 : 0.34)
     }
 }
 
@@ -270,12 +202,13 @@ struct SpeakDockMenuBarIcon: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             SpeakDockMicMark(
-                bodyColor: .solid(Color.primary.opacity(0.95)),
-                scaffoldColor: Color.primary.opacity(0.95),
-                highlightColor: .clear,
-                monochrome: true
+                shellFill: .color(Color.primary.opacity(0.95)),
+                signalFill: .none,
+                structureColor: Color.primary.opacity(0.95),
+                shellStrokeColor: .clear,
+                signalGlowColor: .clear
             )
-            .frame(width: 11, height: 14)
+            .frame(width: 12, height: 14.5)
 
             if case .unavailable = availability {
                 Circle()
@@ -289,16 +222,99 @@ struct SpeakDockMenuBarIcon: View {
     }
 }
 
-private enum SpeakDockMicBodyFill {
-    case solid(Color)
+private enum SpeakDockMicFill {
+    case color(Color)
     case gradient(LinearGradient)
+    case none
+}
+
+enum SpeakDockBrandAssets {
+    static let applicationIcon: NSImage? = {
+        guard let iconURL = Bundle.main.url(forResource: "SpeakDockIcon", withExtension: "png"),
+              let image = NSImage(contentsOf: iconURL) else {
+            return nil
+        }
+
+        image.isTemplate = false
+        return image
+    }()
+}
+
+private struct SpeakDockFallbackBrandGlyph: View {
+    var size: CGFloat = 44
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.26, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(nsColor: NSColor(calibratedRed: 1.0, green: 0.992, blue: 0.988, alpha: 1)),
+                            Color(nsColor: NSColor(calibratedRed: 0.948, green: 0.957, blue: 0.973, alpha: 1)),
+                            Color(nsColor: NSColor(calibratedRed: 0.894, green: 0.917, blue: 0.949, alpha: 1)),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: size * 0.26, style: .continuous)
+                        .stroke(Color.black.opacity(0.08), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.14), radius: size * 0.18, x: 0, y: size * 0.12)
+
+            RoundedRectangle(cornerRadius: size * 0.14, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            .white.opacity(0.94),
+                            .white.opacity(0.0),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: size * 0.56, height: size * 0.24)
+                .offset(x: -size * 0.12, y: -size * 0.22)
+                .blur(radius: size * 0.04)
+
+            SpeakDockMicMark(
+                shellFill: .gradient(
+                    LinearGradient(
+                        colors: [
+                            Color(nsColor: NSColor(calibratedRed: 0.25, green: 0.30, blue: 0.36, alpha: 1)),
+                            Color(nsColor: NSColor(calibratedRed: 0.08, green: 0.11, blue: 0.15, alpha: 1)),
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                ),
+                signalFill: .gradient(
+                    LinearGradient(
+                        colors: [
+                            Color(nsColor: NSColor(calibratedRed: 0.46, green: 0.88, blue: 1.0, alpha: 1)),
+                            Color(nsColor: NSColor(calibratedRed: 0.20, green: 0.58, blue: 1.0, alpha: 1)),
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                ),
+                structureColor: Color(nsColor: NSColor(calibratedRed: 0.17, green: 0.20, blue: 0.24, alpha: 0.96)),
+                shellStrokeColor: Color.white.opacity(0.12),
+                signalGlowColor: Color(nsColor: NSColor(calibratedRed: 0.34, green: 0.76, blue: 1.0, alpha: 0.20))
+            )
+            .frame(width: size * 0.64, height: size * 0.74)
+        }
+        .frame(width: size, height: size)
+    }
 }
 
 private struct SpeakDockMicMark: View {
-    let bodyColor: SpeakDockMicBodyFill
-    let scaffoldColor: Color
-    let highlightColor: Color
-    var monochrome = false
+    let shellFill: SpeakDockMicFill
+    let signalFill: SpeakDockMicFill
+    let structureColor: Color
+    let shellStrokeColor: Color
+    let signalGlowColor: Color
 
     var body: some View {
         GeometryReader { proxy in
@@ -307,36 +323,41 @@ private struct SpeakDockMicMark: View {
             let height = size.height
 
             ZStack {
+                Circle()
+                    .fill(signalGlowColor)
+                    .frame(width: width * 0.42, height: width * 0.42)
+                    .blur(radius: width * 0.12)
+                    .offset(y: -height * 0.09)
+
                 SpeakDockMicYoke()
                     .stroke(
-                        scaffoldColor,
+                        structureColor,
                         style: StrokeStyle(
-                            lineWidth: max(1.4, width * 0.12),
+                            lineWidth: max(1.4, width * 0.115),
                             lineCap: .round,
                             lineJoin: .round
                         )
                     )
-                    .frame(width: width * 0.74, height: height * 0.50)
-                    .offset(y: height * 0.02)
+                    .frame(width: width * 0.70, height: height * 0.46)
+                    .offset(y: height * 0.03)
 
-                capsuleFill
-                    .frame(width: width * 0.26, height: height * 0.42)
+                fillView(for: shellFill)
+                    .frame(width: width * 0.31, height: height * 0.46)
                     .overlay(
                         Capsule(style: .continuous)
-                            .fill(highlightColor)
-                            .frame(width: width * 0.06, height: height * 0.22)
-                            .offset(x: -width * 0.045, y: -height * 0.05)
+                            .stroke(shellStrokeColor, lineWidth: max(1, width * 0.025))
                     )
+                    .overlay(signalView(width: width, height: height))
                     .offset(y: -height * 0.13)
 
                 RoundedRectangle(cornerRadius: width * 0.04, style: .continuous)
-                    .fill(scaffoldColor)
+                    .fill(structureColor)
                     .frame(width: width * 0.08, height: height * 0.14)
-                    .offset(y: height * 0.17)
+                    .offset(y: height * 0.16)
 
                 Capsule(style: .continuous)
-                    .fill(scaffoldColor)
-                    .frame(width: width * 0.36, height: height * 0.07)
+                    .fill(structureColor)
+                    .frame(width: width * 0.36, height: height * 0.065)
                     .offset(y: height * 0.33)
             }
             .frame(width: width, height: height)
@@ -344,20 +365,39 @@ private struct SpeakDockMicMark: View {
     }
 
     @ViewBuilder
-    private var capsuleFill: some View {
-        switch bodyColor {
-        case let .solid(color):
+    private func fillView(for fill: SpeakDockMicFill) -> some View {
+        switch fill {
+        case let .color(color):
             Capsule(style: .continuous)
-                .fill(monochrome ? scaffoldColor : color)
-
+                .fill(color)
         case let .gradient(gradient):
-            if monochrome {
-                Capsule(style: .continuous)
-                    .fill(scaffoldColor)
-            } else {
-                Capsule(style: .continuous)
-                    .fill(gradient)
-            }
+            Capsule(style: .continuous)
+                .fill(gradient)
+        case .none:
+            Capsule(style: .continuous)
+                .fill(.clear)
+        }
+    }
+
+    @ViewBuilder
+    private func signalView(width: CGFloat, height: CGFloat) -> some View {
+        switch signalFill {
+        case .none:
+            EmptyView()
+        case let .color(color):
+            RoundedRectangle(cornerRadius: width * 0.04, style: .continuous)
+                .fill(color)
+                .frame(width: width * 0.08, height: height * 0.24)
+                .offset(y: -height * 0.12)
+        case let .gradient(gradient):
+            RoundedRectangle(cornerRadius: width * 0.04, style: .continuous)
+                .fill(gradient)
+                .frame(width: width * 0.08, height: height * 0.24)
+                .overlay(
+                    RoundedRectangle(cornerRadius: width * 0.04, style: .continuous)
+                        .stroke(Color.white.opacity(0.12), lineWidth: max(1, width * 0.015))
+                )
+                .offset(y: -height * 0.12)
         }
     }
 }
@@ -368,21 +408,21 @@ private struct SpeakDockMicYoke: Shape {
 
         let leftX = rect.minX + rect.width * 0.20
         let rightX = rect.maxX - rect.width * 0.20
-        let topY = rect.minY + rect.height * 0.12
-        let bottomY = rect.maxY - rect.height * 0.10
-        let innerLeft = rect.minX + rect.width * 0.34
-        let innerRight = rect.maxX - rect.width * 0.34
+        let topY = rect.minY + rect.height * 0.18
+        let bottomY = rect.maxY - rect.height * 0.08
+        let innerLeft = rect.minX + rect.width * 0.35
+        let innerRight = rect.maxX - rect.width * 0.35
 
         path.move(to: CGPoint(x: leftX, y: topY))
         path.addCurve(
             to: CGPoint(x: rect.midX, y: bottomY),
-            control1: CGPoint(x: leftX, y: rect.minY + rect.height * 0.62),
+            control1: CGPoint(x: leftX, y: rect.minY + rect.height * 0.72),
             control2: CGPoint(x: innerLeft, y: bottomY)
         )
         path.addCurve(
             to: CGPoint(x: rightX, y: topY),
             control1: CGPoint(x: innerRight, y: bottomY),
-            control2: CGPoint(x: rightX, y: rect.minY + rect.height * 0.62)
+            control2: CGPoint(x: rightX, y: rect.minY + rect.height * 0.72)
         )
 
         return path
