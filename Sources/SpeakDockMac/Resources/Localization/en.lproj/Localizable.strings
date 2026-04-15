@@ -57,6 +57,8 @@
 "settings.testing_connection" = "Testing...";
 "settings.connection.title" = "Connection Test";
 "settings.connection.subtitle" = "Verify the current refine endpoint before using it on the hot path.";
+"settings.overview.title" = "Current State";
+"settings.overview.subtitle" = "Review what SpeakDock will use on the hot path.";
 "settings.header.tagline" = "AI voice input, tuned for the Mac.";
 "settings.refine.on" = "Refine On";
 "settings.refine.off" = "Refine Off";

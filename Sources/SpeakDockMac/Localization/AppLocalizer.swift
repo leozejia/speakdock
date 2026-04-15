@@ -61,6 +61,8 @@ enum AppLocalizedStringKey: String {
     case settingsTestingConnection = "settings.testing_connection"
     case settingsConnectionTitle = "settings.connection.title"
     case settingsConnectionSubtitle = "settings.connection.subtitle"
+    case settingsOverviewTitle = "settings.overview.title"
+    case settingsOverviewSubtitle = "settings.overview.subtitle"
     case settingsHeaderTagline = "settings.header.tagline"
     case settingsRefineOn = "settings.refine.on"
     case settingsRefineOff = "settings.refine.off"

@@ -295,6 +295,35 @@
 - 三个 pane 都沿用同一套整体布局节奏
 - detail 内容区视觉上能自然填满整个设置窗右侧
 
+### 3.10 不要在自定义窄设置壳体里硬套 `LabeledContent`
+
+现象：
+
+- 中文 label 会出现挤压、错位或看起来像左侧单独裂开一块
+- `Refine` 这类页里容易出现重复区块、左侧渲染异常或局部撑宽
+- 同一份设置内容，放进系统 `Form` 看起来正常，放进自定义壳体就开始漂
+
+错误做法：
+
+- 在已经自定义了 `sidebar + detail + secondary rail` 的壳体里，继续把 `LabeledContent` 当成通用字段布局
+- 让系统自动 label 对齐逻辑和自定义窄卡片宽度互相打架
+
+正确做法：
+
+- 在自定义设置壳体里显式写字段结构：`label -> control -> footnote`
+- 对窄容器和双列布局使用自己的 `VStack` / `HStack` 结构，不再赌系统自动排版
+- 如果页面已经不是原生 `Form` 语义，就不要半套原生表单、半套自定义壳体混用
+
+当前落实位置：
+
+- `Sources/SpeakDockMac/Settings/SettingsView.swift`
+
+验收方式：
+
+- 切换 `General / Dictionary / Refine` 时不再出现局部撑宽和重复区块
+- 中英文下字段标题、输入框、说明文字都保持稳定
+- `Refine` 左侧不再出现异常渲染
+
 ## 4. 每轮结束前的固定检查
 
 所有涉及 Swift/macOS 行为改动的任务，结束前至少检查：

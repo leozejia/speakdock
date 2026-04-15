@@ -6,14 +6,12 @@ struct SettingsView: View {
     private enum Layout {
         static let windowWidth: CGFloat = 1040
         static let windowHeight: CGFloat = 780
-        static let sidebarWidth: CGFloat = 282
-        static let secondaryColumnWidth: CGFloat = 308
-        static let wideFieldWidth: CGFloat = 320
-        static let mediumFieldWidth: CGFloat = 220
+        static let sidebarWidth: CGFloat = 270
+        static let secondaryColumnWidth: CGFloat = 300
         static let outerPadding: CGFloat = 16
-        static let detailPadding: CGFloat = 30
+        static let detailPadding: CGFloat = 34
         static let paneSpacing: CGFloat = 24
-        static let sectionSpacing: CGFloat = 18
+        static let sectionSpacing: CGFloat = 20
     }
 
     @Bindable var settingsStore: SettingsStore
@@ -74,7 +72,7 @@ struct SettingsView: View {
     }
 
     private func sidebar(appLanguage: AppLanguageOption) -> some View {
-        VStack(alignment: .leading, spacing: 22) {
+        VStack(alignment: .leading, spacing: 20) {
             sidebarHeader
 
             HStack(spacing: 8) {
@@ -85,8 +83,9 @@ struct SettingsView: View {
                     tone: settingsStore.settings.refineEnabled ? .accent : .neutral
                 )
             }
+            .padding(.bottom, 4)
 
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 8) {
                 ForEach(SettingsPane.allCases, id: \.rawValue) { pane in
                     sidebarItem(for: pane, appLanguage: appLanguage)
                 }
@@ -111,20 +110,36 @@ struct SettingsView: View {
                     .textSelection(.enabled)
             }
         }
-        .padding(22)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 22)
         .frame(width: Layout.sidebarWidth)
         .frame(maxHeight: .infinity, alignment: .topLeading)
-        .background(SpeakDockVisualStyle.settingsSidebar)
+        .background(
+            ZStack(alignment: .topLeading) {
+                SpeakDockVisualStyle.settingsSidebar
+
+                LinearGradient(
+                    colors: [
+                        SpeakDockVisualStyle.highlightWash,
+                        .clear,
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .frame(height: 160)
+            }
+        )
     }
 
     private var sidebarHeader: some View {
-        HStack(alignment: .center, spacing: 14) {
-            SpeakDockBrandGlyph(size: 50)
+        HStack(alignment: .top, spacing: 14) {
+            SpeakDockBrandGlyph(size: 46)
+                .padding(.top, 1)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("SpeakDock")
-                    .font(.system(size: 25, weight: .bold))
-                    .tracking(-0.4)
+                    .font(.system(size: 24, weight: .semibold))
+                    .tracking(-0.5)
 
                 Text(localized(.settingsHeaderTagline))
                     .font(.system(size: 12.5, weight: .medium))
@@ -143,27 +158,27 @@ struct SettingsView: View {
                 Image(systemName: pane.symbolName)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(selectedPane == pane ? SpeakDockVisualStyle.accent : Color.primary.opacity(0.72))
-                    .frame(width: 18)
-                    .padding(.top, 2)
+                    .frame(width: 18, height: 18)
+                    .padding(.top, 1)
 
                 VStack(alignment: .leading, spacing: 5) {
                     Text(pane.title(appLanguage: appLanguage))
-                        .font(.system(size: 13.5, weight: .semibold))
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.primary.opacity(0.9))
 
                     Text(sidebarSummary(for: pane, appLanguage: appLanguage))
-                        .font(.system(size: 11.5))
+                        .font(.system(size: 11.5, weight: .medium))
                         .foregroundStyle(SpeakDockVisualStyle.secondaryText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 14)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(
                         selectedPane == pane
                             ? SpeakDockVisualStyle.settingsSelectionFill
@@ -172,7 +187,7 @@ struct SettingsView: View {
             )
             .contentShape(Rectangle())
             .overlay(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .stroke(
                         selectedPane == pane
                             ? SpeakDockVisualStyle.settingsSelectionLine
@@ -206,17 +221,17 @@ struct SettingsView: View {
     private func paneHeader(appLanguage: AppLanguageOption) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(selectedPane.title(appLanguage: appLanguage))
-                .font(.system(size: 30, weight: .bold))
-                .tracking(-0.6)
+                .font(.system(size: 32, weight: .bold))
+                .tracking(-0.8)
                 .foregroundStyle(Color.primary.opacity(0.92))
 
             Text(selectedPane.subtitle(appLanguage: appLanguage))
-                .font(.system(size: 13.5, weight: .medium))
+                .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(SpeakDockVisualStyle.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text(paneSummaryLine(appLanguage: appLanguage))
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 11.5, weight: .semibold))
                 .foregroundStyle(SpeakDockVisualStyle.tertiaryText)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
@@ -244,66 +259,62 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: Layout.sectionSpacing) {
                 SettingsShellSection(
                     title: localized(.settingsInputTitle),
-                    subtitle: localized(.settingsInputSubtitle)
+                    subtitle: localized(.settingsInputSubtitle),
+                    style: .plain
                 ) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        LabeledContent(localized(.settingsAppLanguageLabel)) {
-                            Picker(localized(.settingsAppLanguageLabel), selection: $settingsStore.settings.appLanguage) {
-                                ForEach(AppLanguageOption.allCases, id: \.rawValue) { option in
-                                    Text(option.displayName(appLanguage: appLanguage)).tag(option)
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack(alignment: .top, spacing: 14) {
+                            SettingsFieldBlock(title: localized(.settingsAppLanguageLabel)) {
+                                Picker(localized(.settingsAppLanguageLabel), selection: $settingsStore.settings.appLanguage) {
+                                    ForEach(AppLanguageOption.allCases, id: \.rawValue) { option in
+                                        Text(option.displayName(appLanguage: appLanguage)).tag(option)
+                                    }
                                 }
+                                .labelsHidden()
+                                .pickerStyle(.menu)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            .labelsHidden()
-                            .pickerStyle(.menu)
-                            .frame(width: 170)
-                        }
 
-                        LabeledContent(localized(.settingsInputLanguageLabel)) {
-                            Picker(localized(.settingsInputLanguageLabel), selection: $settingsStore.settings.inputLanguage) {
-                                ForEach(InputLanguageOption.allCases, id: \.rawValue) { option in
-                                    Text(option.displayName(appLanguage: appLanguage)).tag(option)
+                            SettingsFieldBlock(title: localized(.settingsInputLanguageLabel)) {
+                                Picker(localized(.settingsInputLanguageLabel), selection: $settingsStore.settings.inputLanguage) {
+                                    ForEach(InputLanguageOption.allCases, id: \.rawValue) { option in
+                                        Text(option.displayName(appLanguage: appLanguage)).tag(option)
+                                    }
                                 }
+                                .labelsHidden()
+                                .pickerStyle(.menu)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            .labelsHidden()
-                            .pickerStyle(.menu)
-                            .frame(width: 150)
                         }
 
                         dividerLine
 
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack(alignment: .firstTextBaseline) {
-                                Text(localized(.settingsTriggerLabel))
-                                    .font(.system(size: 13, weight: .medium))
-
-                                Spacer()
-
+                        SettingsFieldBlock(
+                            title: localized(.settingsTriggerLabel),
+                            footnote: localized(.settingsFnWarning)
+                        ) {
+                            VStack(alignment: .leading, spacing: 12) {
                                 Picker(localized(.settingsTriggerLabel), selection: triggerModeBinding) {
                                     Text(localized(.settingsTriggerFn)).tag("fn")
                                     Text(localized(.settingsTriggerAlternative)).tag("alternative")
                                 }
                                 .labelsHidden()
                                 .pickerStyle(.segmented)
-                                .frame(width: 220)
-                            }
+                                .frame(width: 236)
 
-                            if isAlternativeTriggerSelected {
-                                LabeledContent(localized(.settingsAlternativeKeyLabel)) {
-                                    Picker(localized(.settingsAlternativeKeyLabel), selection: alternativeTriggerBinding) {
-                                        ForEach(alternativeTriggerOptions, id: \.rawValue) { option in
-                                            Text(option.displayName(appLanguage: appLanguage)).tag(option.rawValue)
+                                if isAlternativeTriggerSelected {
+                                    SettingsFieldBlock(title: localized(.settingsAlternativeKeyLabel)) {
+                                        Picker(localized(.settingsAlternativeKeyLabel), selection: alternativeTriggerBinding) {
+                                            ForEach(alternativeTriggerOptions, id: \.rawValue) { option in
+                                                Text(option.displayName(appLanguage: appLanguage)).tag(option.rawValue)
+                                            }
                                         }
+                                        .labelsHidden()
+                                        .pickerStyle(.menu)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                     }
-                                    .labelsHidden()
-                                    .pickerStyle(.menu)
-                                    .frame(width: 170)
                                 }
                             }
-
-                            Text(localized(.settingsFnWarning))
-                                .font(.system(size: 11.5))
-                                .foregroundStyle(SpeakDockVisualStyle.secondaryText)
-                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                 }
@@ -312,28 +323,28 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: Layout.sectionSpacing) {
                 SettingsShellSection(
                     title: localized(.settingsCaptureTitle),
-                    subtitle: localized(.settingsCaptureSubtitle)
+                    subtitle: localized(.settingsCaptureSubtitle),
+                    style: .panel
                 ) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(localized(.settingsCaptureRootLabel))
-                            .font(.system(size: 13, weight: .medium))
-
-                        Text(settingsStore.settings.captureRootPath)
-                            .font(.system(size: 12.5, weight: .medium, design: .monospaced))
-                            .foregroundStyle(Color.primary.opacity(0.82))
-                            .lineLimit(3)
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 11)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(SpeakDockVisualStyle.settingsCardStrong)
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .stroke(SpeakDockVisualStyle.settingsLine, lineWidth: 1)
-                            )
+                    VStack(alignment: .leading, spacing: 14) {
+                        SettingsFieldBlock(title: localized(.settingsCaptureRootLabel)) {
+                            Text(settingsStore.settings.captureRootPath)
+                                .font(.system(size: 12.5, weight: .medium, design: .monospaced))
+                                .foregroundStyle(Color.primary.opacity(0.82))
+                                .lineLimit(3)
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 11)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(SpeakDockVisualStyle.settingsCardStrong)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .stroke(SpeakDockVisualStyle.settingsLine, lineWidth: 1)
+                                )
+                        }
 
                         Button(localized(.settingsChooseAndMigrate)) {
                             chooseCaptureRoot()
@@ -354,14 +365,19 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: Layout.sectionSpacing) {
                 SettingsShellSection(
                     title: localized(.settingsTermDictionaryAddEntry),
-                    subtitle: localized(.settingsTermDictionarySavedLocalOnly)
+                    subtitle: localized(.settingsTermDictionarySavedLocalOnly),
+                    style: .plain
                 ) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        TextField(localized(.settingsTermDictionaryCanonicalPlaceholder), text: $termCanonicalTerm)
-                            .textFieldStyle(.roundedBorder)
+                    VStack(alignment: .leading, spacing: 14) {
+                        SettingsFieldBlock(title: localized(.settingsTermDictionaryCanonicalPlaceholder)) {
+                            TextField(localized(.settingsTermDictionaryCanonicalPlaceholder), text: $termCanonicalTerm)
+                                .textFieldStyle(.roundedBorder)
+                        }
 
-                        TextField(localized(.settingsTermDictionaryAliasesPlaceholder), text: $termAliasesText)
-                            .textFieldStyle(.roundedBorder)
+                        SettingsFieldBlock(title: localized(.settingsTermDictionaryAliasesPlaceholder)) {
+                            TextField(localized(.settingsTermDictionaryAliasesPlaceholder), text: $termAliasesText)
+                                .textFieldStyle(.roundedBorder)
+                        }
 
                         HStack(alignment: .center, spacing: 12) {
                             Button(localized(.settingsTermDictionaryAddButton)) {
@@ -386,7 +402,8 @@ struct SettingsView: View {
                     subtitle: localizedFormat(
                         .settingsTermDictionarySavedCount,
                         termDictionaryStore.confirmedDictionary.entries.count
-                    )
+                    ),
+                    style: .plain
                 ) {
                     if termDictionaryStore.confirmedDictionary.entries.isEmpty {
                         emptyStateView(localized(.settingsTermDictionaryNoConfirmed))
@@ -409,7 +426,8 @@ struct SettingsView: View {
                     subtitle: localizedFormat(
                         .settingsTermDictionaryPendingCount,
                         termDictionaryStore.pendingCandidates.count
-                    )
+                    ),
+                    style: .panel
                 ) {
                     if termDictionaryStore.pendingCandidates.isEmpty {
                         emptyStateView(localized(.settingsTermDictionaryNoPending))
@@ -433,7 +451,8 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: Layout.sectionSpacing) {
                 SettingsShellSection(
                     title: localized(.settingsRefineTitle),
-                    subtitle: localized(.settingsRefineSubtitle)
+                    subtitle: localized(.settingsRefineSubtitle),
+                    style: .plain
                 ) {
                     VStack(alignment: .leading, spacing: 16) {
                         Toggle(isOn: $settingsStore.settings.refineEnabled) {
@@ -450,22 +469,19 @@ struct SettingsView: View {
                         dividerLine
 
                         VStack(alignment: .leading, spacing: 12) {
-                            LabeledContent(localized(.settingsBaseURLLabel)) {
+                            SettingsFieldBlock(title: localized(.settingsBaseURLLabel)) {
                                 TextField(localized(.settingsBaseURLPlaceholder), text: $settingsStore.settings.refineBaseURL)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(width: Layout.wideFieldWidth)
                             }
 
-                            LabeledContent(localized(.settingsAPIKeyLabel)) {
+                            SettingsFieldBlock(title: localized(.settingsAPIKeyLabel)) {
                                 SecureField(localized(.settingsAPIKeyPlaceholder), text: $settingsStore.settings.refineAPIKey)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(width: Layout.wideFieldWidth)
                             }
 
-                            LabeledContent(localized(.settingsModelLabel)) {
+                            SettingsFieldBlock(title: localized(.settingsModelLabel)) {
                                 TextField(localized(.settingsModelPlaceholder), text: $settingsStore.settings.refineModel)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(width: Layout.mediumFieldWidth)
                             }
                         }
                         .disabled(!settingsStore.settings.refineEnabled)
@@ -474,7 +490,8 @@ struct SettingsView: View {
 
                 SettingsShellSection(
                     title: localized(.settingsConnectionTitle),
-                    subtitle: localized(.settingsConnectionSubtitle)
+                    subtitle: localized(.settingsConnectionSubtitle),
+                    style: .plain
                 ) {
                     VStack(alignment: .leading, spacing: 14) {
                         Button(isTestingRefine ? localized(.settingsTestingConnection) : localized(.settingsTestConnection)) {
@@ -491,12 +508,11 @@ struct SettingsView: View {
             }
         } secondary: {
             SettingsShellSection(
-                title: localized(.settingsConnectionTitle),
-                subtitle: settingsStore.settings.refineEnabled
-                    ? localized(.settingsRefineOn)
-                    : localized(.settingsRefineOff)
+                title: localized(.settingsOverviewTitle),
+                subtitle: localized(.settingsOverviewSubtitle),
+                style: .panel
             ) {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 14) {
                     SpeakDockStatusBadge(
                         title: settingsStore.settings.refineEnabled
                             ? localized(.settingsRefineOn)
@@ -506,28 +522,30 @@ struct SettingsView: View {
 
                     dividerLine
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(localized(.settingsBaseURLLabel))
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(SpeakDockVisualStyle.tertiaryText)
-                            .textCase(.uppercase)
+                    settingsOverviewRow(
+                        title: localized(.settingsBaseURLLabel),
+                        value: settingsStore.settings.refineBaseURL.isEmpty
+                            ? localized(.settingsBaseURLPlaceholder)
+                            : settingsStore.settings.refineBaseURL,
+                        monospace: true,
+                        isPlaceholder: settingsStore.settings.refineBaseURL.isEmpty
+                    )
 
-                        Text(settingsStore.settings.refineBaseURL.isEmpty ? localized(.settingsBaseURLPlaceholder) : settingsStore.settings.refineBaseURL)
-                            .font(.system(size: 12, weight: .medium, design: .monospaced))
-                            .foregroundStyle(settingsStore.settings.refineBaseURL.isEmpty ? SpeakDockVisualStyle.secondaryText : Color.primary.opacity(0.84))
-                            .textSelection(.enabled)
-                    }
+                    settingsOverviewRow(
+                        title: localized(.settingsAPIKeyLabel),
+                        value: settingsStore.settings.refineAPIKey.isEmpty ? localized(.settingsAPIKeyPlaceholder) : "••••••••",
+                        monospace: false,
+                        isPlaceholder: settingsStore.settings.refineAPIKey.isEmpty
+                    )
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(localized(.settingsModelLabel))
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(SpeakDockVisualStyle.tertiaryText)
-                            .textCase(.uppercase)
-
-                        Text(settingsStore.settings.refineModel.isEmpty ? localized(.settingsModelPlaceholder) : settingsStore.settings.refineModel)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(settingsStore.settings.refineModel.isEmpty ? SpeakDockVisualStyle.secondaryText : Color.primary.opacity(0.9))
-                    }
+                    settingsOverviewRow(
+                        title: localized(.settingsModelLabel),
+                        value: settingsStore.settings.refineModel.isEmpty
+                            ? localized(.settingsModelPlaceholder)
+                            : settingsStore.settings.refineModel,
+                        monospace: false,
+                        isPlaceholder: settingsStore.settings.refineModel.isEmpty
+                    )
                 }
             }
         }
@@ -896,6 +914,27 @@ struct SettingsView: View {
                 .stroke(tone.strokeColor, lineWidth: 1)
             )
     }
+
+    @ViewBuilder
+    private func settingsOverviewRow(
+        title: String,
+        value: String,
+        monospace: Bool,
+        isPlaceholder: Bool
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(SpeakDockVisualStyle.tertiaryText)
+                .textCase(.uppercase)
+
+            Text(value)
+                .font(.system(size: 12.5, weight: monospace ? .medium : .semibold, design: monospace ? .monospaced : .default))
+                .foregroundStyle(isPlaceholder ? SpeakDockVisualStyle.secondaryText : Color.primary.opacity(0.88))
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
 }
 
 private extension SettingsView {
@@ -918,18 +957,26 @@ private extension SettingsView {
     }
 }
 
+private enum SettingsShellSectionStyle {
+    case plain
+    case panel
+}
+
 private struct SettingsShellSection<Content: View>: View {
     let title: String
     let subtitle: String
+    let style: SettingsShellSectionStyle
     @ViewBuilder let content: Content
 
     init(
         title: String,
         subtitle: String,
+        style: SettingsShellSectionStyle = .panel,
         @ViewBuilder content: () -> Content
     ) {
         self.title = title
         self.subtitle = subtitle
+        self.style = style
         self.content = content()
     }
 
@@ -937,7 +984,7 @@ private struct SettingsShellSection<Content: View>: View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.primary.opacity(0.92))
 
                 Text(subtitle)
@@ -948,15 +995,77 @@ private struct SettingsShellSection<Content: View>: View {
 
             content
         }
-        .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(SpeakDockVisualStyle.settingsCardStrong.opacity(0.94))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(SpeakDockVisualStyle.settingsLine, lineWidth: 1)
-        )
+        .modifier(SettingsSectionSurface(style: style))
+    }
+}
+
+private struct SettingsFieldBlock<Content: View>: View {
+    let title: String
+    var footnote: String?
+    @ViewBuilder let content: Content
+
+    init(
+        title: String,
+        footnote: String? = nil,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.footnote = footnote
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 11.5, weight: .semibold))
+                .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+
+            content
+
+            if let footnote {
+                Text(footnote)
+                    .font(.system(size: 11.5, weight: .medium))
+                    .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct SettingsSectionSurface: ViewModifier {
+    let style: SettingsShellSectionStyle
+
+    func body(content: Content) -> some View {
+        switch style {
+        case .plain:
+            content
+                .padding(.vertical, 4)
+        case .panel:
+            content
+                .padding(18)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(SpeakDockVisualStyle.settingsCard)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            SpeakDockVisualStyle.highlightWash.opacity(0.55),
+                                            .clear,
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                        )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(SpeakDockVisualStyle.settingsLine, lineWidth: 1)
+                )
+        }
     }
 }

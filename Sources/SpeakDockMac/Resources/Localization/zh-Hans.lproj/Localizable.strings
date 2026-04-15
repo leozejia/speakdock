@@ -57,6 +57,8 @@
 "settings.testing_connection" = "测试中...";
 "settings.connection.title" = "连接测试";
 "settings.connection.subtitle" = "在主路径使用前，先验证当前整理接口是否可用。";
+"settings.overview.title" = "当前状态";
+"settings.overview.subtitle" = "查看 SpeakDock 在主路径上会使用什么配置。";
 "settings.header.tagline" = "为 Mac 打磨的 AI 语音输入。";
 "settings.refine.on" = "整理已开";
 "settings.refine.off" = "整理已关";

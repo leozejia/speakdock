@@ -19,83 +19,89 @@ enum SpeakDockVisualStyle {
     static let canvas = Color(
         nsColor: .speakDockDynamic(
             light: NSColor(calibratedRed: 0.95, green: 0.96, blue: 0.98, alpha: 1),
-            dark: NSColor(calibratedRed: 0.05, green: 0.06, blue: 0.08, alpha: 1)
+            dark: NSColor(calibratedRed: 0.08, green: 0.09, blue: 0.11, alpha: 1)
         )
     )
     static let panel = Color(
         nsColor: .speakDockDynamic(
             light: NSColor(calibratedRed: 0.99, green: 0.99, blue: 1.0, alpha: 1),
-            dark: NSColor(calibratedRed: 0.10, green: 0.12, blue: 0.15, alpha: 1)
+            dark: NSColor(calibratedRed: 0.18, green: 0.20, blue: 0.24, alpha: 1)
         )
     )
     static let panelInset = Color(
         nsColor: .speakDockDynamic(
             light: NSColor(calibratedRed: 0.93, green: 0.95, blue: 0.97, alpha: 1),
-            dark: NSColor(calibratedRed: 0.06, green: 0.08, blue: 0.11, alpha: 1)
+            dark: NSColor(calibratedRed: 0.11, green: 0.13, blue: 0.17, alpha: 1)
         )
     )
     static let line = Color(
         nsColor: .speakDockDynamic(
             light: NSColor(calibratedWhite: 0.0, alpha: 0.09),
-            dark: NSColor(calibratedWhite: 1.0, alpha: 0.08)
+            dark: NSColor(calibratedWhite: 1.0, alpha: 0.07)
         )
     )
     static let settingsBackdropTop = Color(
         nsColor: .speakDockDynamic(
             light: NSColor(calibratedRed: 0.94, green: 0.96, blue: 0.99, alpha: 1),
-            dark: NSColor(calibratedRed: 0.08, green: 0.10, blue: 0.13, alpha: 1)
+            dark: NSColor(calibratedRed: 0.10, green: 0.11, blue: 0.14, alpha: 1)
         )
     )
     static let settingsBackdropBottom = Color(
         nsColor: .speakDockDynamic(
             light: NSColor(calibratedRed: 0.90, green: 0.93, blue: 0.97, alpha: 1),
-            dark: NSColor(calibratedRed: 0.04, green: 0.05, blue: 0.07, alpha: 1)
+            dark: NSColor(calibratedRed: 0.07, green: 0.08, blue: 0.10, alpha: 1)
         )
     )
     static let settingsSidebar = Color(
         nsColor: .speakDockDynamic(
             light: NSColor(calibratedRed: 0.97, green: 0.98, blue: 0.99, alpha: 0.98),
-            dark: NSColor(calibratedRed: 0.09, green: 0.11, blue: 0.15, alpha: 0.98)
+            dark: NSColor(calibratedRed: 0.13, green: 0.15, blue: 0.19, alpha: 0.98)
         )
     )
     static let settingsContent = Color(
         nsColor: .speakDockDynamic(
             light: NSColor(calibratedRed: 0.99, green: 0.99, blue: 1.0, alpha: 0.98),
-            dark: NSColor(calibratedRed: 0.06, green: 0.08, blue: 0.11, alpha: 0.98)
+            dark: NSColor(calibratedRed: 0.09, green: 0.11, blue: 0.14, alpha: 0.98)
         )
     )
     static let settingsCard = Color(
         nsColor: .speakDockDynamic(
             light: NSColor(calibratedRed: 0.98, green: 0.99, blue: 1.0, alpha: 1),
-            dark: NSColor(calibratedRed: 0.10, green: 0.12, blue: 0.16, alpha: 1)
+            dark: NSColor(calibratedRed: 0.16, green: 0.18, blue: 0.22, alpha: 1)
         )
     )
     static let settingsCardStrong = Color(
         nsColor: .speakDockDynamic(
             light: NSColor(calibratedRed: 1.0, green: 1.0, blue: 1.0, alpha: 1),
-            dark: NSColor(calibratedRed: 0.12, green: 0.14, blue: 0.18, alpha: 1)
+            dark: NSColor(calibratedRed: 0.19, green: 0.22, blue: 0.27, alpha: 1)
         )
     )
-    static let settingsSelectionFill = accent.opacity(0.14)
-    static let settingsSelectionLine = accent.opacity(0.24)
+    static let settingsSelectionFill = accent.opacity(0.12)
+    static let settingsSelectionLine = accent.opacity(0.26)
     static let settingsLine = Color(
         nsColor: .speakDockDynamic(
             light: NSColor(calibratedWhite: 0.0, alpha: 0.08),
-            dark: NSColor(calibratedWhite: 1.0, alpha: 0.07)
+            dark: NSColor(calibratedWhite: 1.0, alpha: 0.06)
         )
     )
     static let settingsShadow = Color(
         nsColor: .speakDockDynamic(
             light: NSColor(calibratedWhite: 0.0, alpha: 0.10),
-            dark: NSColor(calibratedWhite: 0.0, alpha: 0.34)
+            dark: NSColor(calibratedWhite: 0.0, alpha: 0.28)
         )
     )
-    static let accent = Color(nsColor: NSColor(calibratedRed: 0.30, green: 0.55, blue: 1.0, alpha: 1))
+    static let accent = Color(nsColor: NSColor(calibratedRed: 0.40, green: 0.62, blue: 1.0, alpha: 1))
     static let success = Color(nsColor: .systemGreen)
     static let warning = Color(nsColor: .systemOrange)
     static let critical = Color(nsColor: .systemRed)
     static let secondaryText = Color(nsColor: .secondaryLabelColor)
     static let tertiaryText = Color(nsColor: .tertiaryLabelColor)
+    static let highlightWash = Color(
+        nsColor: .speakDockDynamic(
+            light: NSColor.white.withAlphaComponent(0.42),
+            dark: NSColor.white.withAlphaComponent(0.025)
+        )
+    )
 }
 
 enum SpeakDockBadgeTone {
@@ -167,7 +173,7 @@ struct SpeakDockStatusBadge: View {
                 .lineLimit(1)
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.vertical, 5)
         .background(
             Capsule(style: .continuous)
                 .fill(tone.fillColor)
@@ -487,16 +493,17 @@ struct SpeakDockActionButtonStyle: ButtonStyle {
             .font(.system(size: 12.5, weight: .semibold))
             .foregroundStyle(foregroundColor(isPressed: configuration.isPressed))
             .padding(.horizontal, horizontalPadding)
-            .padding(.vertical, 9)
+            .padding(.vertical, 8)
             .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .fill(backgroundColor(isPressed: configuration.isPressed))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .stroke(borderColor, lineWidth: 1)
             )
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .shadow(color: shadowColor.opacity(configuration.isPressed ? 0.0 : 1.0), radius: 8, x: 0, y: 4)
+            .scaleEffect(configuration.isPressed ? 0.96 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 
@@ -512,9 +519,9 @@ struct SpeakDockActionButtonStyle: ButtonStyle {
     private var borderColor: Color {
         switch kind {
         case .primary:
-            SpeakDockVisualStyle.accent.opacity(0.18)
+            SpeakDockVisualStyle.accent.opacity(0.24)
         case .secondary:
-            Color.black.opacity(0.08)
+            SpeakDockVisualStyle.settingsLine
         case .subtle:
             Color.clear
         }
@@ -523,11 +530,11 @@ struct SpeakDockActionButtonStyle: ButtonStyle {
     private func backgroundColor(isPressed: Bool) -> Color {
         switch kind {
         case .primary:
-            SpeakDockVisualStyle.accent.opacity(isPressed ? 0.82 : 0.94)
+            SpeakDockVisualStyle.accent.opacity(isPressed ? 0.80 : 0.92)
         case .secondary:
-            Color.primary.opacity(isPressed ? 0.1 : 0.07)
+            SpeakDockVisualStyle.settingsCardStrong.opacity(isPressed ? 0.76 : 0.92)
         case .subtle:
-            Color.primary.opacity(isPressed ? 0.08 : 0.04)
+            Color.primary.opacity(isPressed ? 0.10 : 0.05)
         }
     }
 
@@ -537,6 +544,17 @@ struct SpeakDockActionButtonStyle: ButtonStyle {
             .white.opacity(isPressed ? 0.92 : 1)
         case .secondary, .subtle:
             .primary.opacity(isPressed ? 0.78 : 0.88)
+        }
+    }
+
+    private var shadowColor: Color {
+        switch kind {
+        case .primary:
+            SpeakDockVisualStyle.accent.opacity(0.22)
+        case .secondary:
+            .black.opacity(0.10)
+        case .subtle:
+            .clear
         }
     }
 }
