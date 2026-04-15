@@ -4,6 +4,12 @@ import AppKit
 final class AppRuntime: NSObject, NSApplicationDelegate {
     static var onDidFinishLaunching: (() -> Void)?
     private static var currentActivationPolicy: NSApplication.ActivationPolicy?
+    private static var applicationIconLoader: @MainActor () -> NSImage? = {
+        guard let iconURL = Bundle.main.url(forResource: "SpeakDockIcon", withExtension: "png") else {
+            return nil
+        }
+        return NSImage(contentsOf: iconURL)
+    }
     private static var applicationResolver: @MainActor () -> NSApplication? = { NSApp }
     private static var activationPolicyApplier: @MainActor (NSApplication, NSApplication.ActivationPolicy) -> Void = { application, policy in
         application.setActivationPolicy(policy)
@@ -21,6 +27,10 @@ final class AppRuntime: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if let application = Self.applicationResolver(),
+           let applicationIcon = Self.applicationIconLoader() {
+            application.applicationIconImage = applicationIcon
+        }
         SpeakDockLog.lifecycle.notice("application did finish launching")
         Self.onDidFinishLaunching?()
     }
@@ -45,10 +55,12 @@ final class AppRuntime: NSObject, NSApplicationDelegate {
     }
 
     static func installTestingHooks(
+        applicationIconLoader: @escaping @MainActor () -> NSImage?,
         applicationResolver: @escaping @MainActor () -> NSApplication?,
         activationPolicyApplier: @escaping @MainActor (NSApplication, NSApplication.ActivationPolicy) -> Void,
         applicationActivator: @escaping @MainActor (NSApplication) -> Void
     ) {
+        self.applicationIconLoader = applicationIconLoader
         self.applicationResolver = applicationResolver
         self.activationPolicyApplier = activationPolicyApplier
         self.applicationActivator = applicationActivator
@@ -56,6 +68,12 @@ final class AppRuntime: NSObject, NSApplicationDelegate {
     }
 
     static func resetTestingHooks() {
+        applicationIconLoader = {
+            guard let iconURL = Bundle.main.url(forResource: "SpeakDockIcon", withExtension: "png") else {
+                return nil
+            }
+            return NSImage(contentsOf: iconURL)
+        }
         applicationResolver = { NSApp }
         activationPolicyApplier = { application, policy in
             application.setActivationPolicy(policy)

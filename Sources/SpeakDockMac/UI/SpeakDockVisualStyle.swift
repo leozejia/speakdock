@@ -2,22 +2,95 @@ import AppKit
 import SpeakDockCore
 import SwiftUI
 
+private extension NSColor {
+    static func speakDockDynamic(light: NSColor, dark: NSColor) -> NSColor {
+        NSColor(name: nil) { appearance in
+            switch appearance.bestMatch(from: [.darkAqua, .aqua]) {
+            case .some(.darkAqua):
+                dark
+            default:
+                light
+            }
+        }
+    }
+}
+
 enum SpeakDockVisualStyle {
-    static let canvas = Color(nsColor: .windowBackgroundColor)
-    static let panel = Color(nsColor: .controlBackgroundColor)
-    static let panelInset = Color(nsColor: .underPageBackgroundColor)
-    static let line = Color.black.opacity(0.08)
-    static let settingsBackdropTop = Color(nsColor: NSColor(calibratedRed: 0.85, green: 0.90, blue: 0.98, alpha: 1))
-    static let settingsBackdropBottom = Color(nsColor: NSColor(calibratedRed: 0.95, green: 0.96, blue: 0.98, alpha: 1))
-    static let settingsSidebar = Color(nsColor: NSColor(calibratedRed: 0.96, green: 0.97, blue: 1.0, alpha: 0.92))
-    static let settingsContent = Color(nsColor: NSColor(calibratedWhite: 1.0, alpha: 0.82))
-    static let settingsCard = Color(nsColor: NSColor(calibratedWhite: 1.0, alpha: 0.70))
-    static let settingsCardStrong = Color(nsColor: NSColor(calibratedWhite: 1.0, alpha: 0.94))
+    static let canvas = Color(
+        nsColor: .speakDockDynamic(
+            light: NSColor(calibratedRed: 0.95, green: 0.96, blue: 0.98, alpha: 1),
+            dark: NSColor(calibratedRed: 0.05, green: 0.06, blue: 0.08, alpha: 1)
+        )
+    )
+    static let panel = Color(
+        nsColor: .speakDockDynamic(
+            light: NSColor(calibratedRed: 0.99, green: 0.99, blue: 1.0, alpha: 1),
+            dark: NSColor(calibratedRed: 0.10, green: 0.12, blue: 0.15, alpha: 1)
+        )
+    )
+    static let panelInset = Color(
+        nsColor: .speakDockDynamic(
+            light: NSColor(calibratedRed: 0.93, green: 0.95, blue: 0.97, alpha: 1),
+            dark: NSColor(calibratedRed: 0.06, green: 0.08, blue: 0.11, alpha: 1)
+        )
+    )
+    static let line = Color(
+        nsColor: .speakDockDynamic(
+            light: NSColor(calibratedWhite: 0.0, alpha: 0.09),
+            dark: NSColor(calibratedWhite: 1.0, alpha: 0.08)
+        )
+    )
+    static let settingsBackdropTop = Color(
+        nsColor: .speakDockDynamic(
+            light: NSColor(calibratedRed: 0.94, green: 0.96, blue: 0.99, alpha: 1),
+            dark: NSColor(calibratedRed: 0.08, green: 0.10, blue: 0.13, alpha: 1)
+        )
+    )
+    static let settingsBackdropBottom = Color(
+        nsColor: .speakDockDynamic(
+            light: NSColor(calibratedRed: 0.90, green: 0.93, blue: 0.97, alpha: 1),
+            dark: NSColor(calibratedRed: 0.04, green: 0.05, blue: 0.07, alpha: 1)
+        )
+    )
+    static let settingsSidebar = Color(
+        nsColor: .speakDockDynamic(
+            light: NSColor(calibratedRed: 0.97, green: 0.98, blue: 0.99, alpha: 0.98),
+            dark: NSColor(calibratedRed: 0.09, green: 0.11, blue: 0.15, alpha: 0.98)
+        )
+    )
+    static let settingsContent = Color(
+        nsColor: .speakDockDynamic(
+            light: NSColor(calibratedRed: 0.99, green: 0.99, blue: 1.0, alpha: 0.98),
+            dark: NSColor(calibratedRed: 0.06, green: 0.08, blue: 0.11, alpha: 0.98)
+        )
+    )
+    static let settingsCard = Color(
+        nsColor: .speakDockDynamic(
+            light: NSColor(calibratedRed: 0.98, green: 0.99, blue: 1.0, alpha: 1),
+            dark: NSColor(calibratedRed: 0.10, green: 0.12, blue: 0.16, alpha: 1)
+        )
+    )
+    static let settingsCardStrong = Color(
+        nsColor: .speakDockDynamic(
+            light: NSColor(calibratedRed: 1.0, green: 1.0, blue: 1.0, alpha: 1),
+            dark: NSColor(calibratedRed: 0.12, green: 0.14, blue: 0.18, alpha: 1)
+        )
+    )
     static let settingsSelectionFill = accent.opacity(0.14)
-    static let settingsSelectionLine = accent.opacity(0.22)
-    static let settingsLine = Color.black.opacity(0.07)
-    static let settingsShadow = Color.black.opacity(0.09)
-    static let accent = Color(nsColor: .controlAccentColor)
+    static let settingsSelectionLine = accent.opacity(0.24)
+    static let settingsLine = Color(
+        nsColor: .speakDockDynamic(
+            light: NSColor(calibratedWhite: 0.0, alpha: 0.08),
+            dark: NSColor(calibratedWhite: 1.0, alpha: 0.07)
+        )
+    )
+    static let settingsShadow = Color(
+        nsColor: .speakDockDynamic(
+            light: NSColor(calibratedWhite: 0.0, alpha: 0.10),
+            dark: NSColor(calibratedWhite: 0.0, alpha: 0.34)
+        )
+    )
+    static let accent = Color(nsColor: NSColor(calibratedRed: 0.30, green: 0.55, blue: 1.0, alpha: 1))
     static let success = Color(nsColor: .systemGreen)
     static let warning = Color(nsColor: .systemOrange)
     static let critical = Color(nsColor: .systemRed)
@@ -58,7 +131,7 @@ enum SpeakDockBadgeTone {
         case .critical:
             SpeakDockVisualStyle.critical.opacity(0.24)
         case .neutral:
-            Color.black.opacity(0.08)
+            SpeakDockVisualStyle.line
         }
     }
 
@@ -133,7 +206,12 @@ struct SpeakDockBrandGlyph: View {
                 .frame(width: size * 0.7, height: size * 0.7)
                 .offset(x: -size * 0.1, y: -size * 0.16)
 
-            microphoneGlyph
+            SpeakDockMicMark(
+                bodyColor: .gradient(microphoneGradient),
+                scaffoldColor: scaffoldColor,
+                highlightColor: capsuleHighlightColor
+            )
+            .frame(width: size * 0.62, height: size * 0.7)
         }
         .frame(width: size, height: size)
     }
@@ -148,7 +226,7 @@ struct SpeakDockBrandGlyph: View {
 
         return [
             Color(nsColor: NSColor(calibratedRed: 0.99, green: 0.99, blue: 0.98, alpha: 1)),
-            Color(nsColor: NSColor(calibratedRed: 0.90, green: 0.92, blue: 0.96, alpha: 1)),
+            Color(nsColor: NSColor(calibratedRed: 0.90, green: 0.93, blue: 0.97, alpha: 1)),
         ]
     }
 
@@ -167,50 +245,22 @@ struct SpeakDockBrandGlyph: View {
     private var microphoneGradient: LinearGradient {
         LinearGradient(
             colors: [
-                Color(nsColor: NSColor(calibratedRed: 0.14, green: 0.82, blue: 1.0, alpha: 1)),
-                Color(nsColor: NSColor(calibratedRed: 0.21, green: 0.38, blue: 1.0, alpha: 1)),
+                Color(nsColor: NSColor(calibratedRed: 0.27, green: 0.84, blue: 1.0, alpha: 1)),
+                Color(nsColor: NSColor(calibratedRed: 0.22, green: 0.45, blue: 1.0, alpha: 1)),
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
     }
 
-    private var microphoneStandColor: Color {
-        colorScheme == .dark ? Color.white.opacity(0.92) : Color.black.opacity(0.72)
+    private var scaffoldColor: Color {
+        colorScheme == .dark
+            ? Color.white.opacity(0.86)
+            : Color(nsColor: NSColor(calibratedRed: 0.19, green: 0.22, blue: 0.28, alpha: 0.92))
     }
 
-    private var microphoneGlyph: some View {
-        ZStack {
-            Capsule(style: .continuous)
-                .fill(microphoneGradient)
-                .frame(width: size * 0.26, height: size * 0.40)
-                .overlay(
-                    Capsule(style: .continuous)
-                        .stroke(Color.white.opacity(colorScheme == .dark ? 0.24 : 0.42), lineWidth: 0.9)
-                )
-                .shadow(
-                    color: Color(nsColor: NSColor(calibratedRed: 0.15, green: 0.60, blue: 1.0, alpha: colorScheme == .dark ? 0.34 : 0.18)),
-                    radius: size * 0.12,
-                    x: 0,
-                    y: size * 0.06
-                )
-                .offset(y: -size * 0.07)
-
-            RoundedRectangle(cornerRadius: size * 0.03, style: .continuous)
-                .fill(microphoneStandColor)
-                .frame(width: size * 0.06, height: size * 0.18)
-                .offset(y: size * 0.12)
-
-            Capsule(style: .continuous)
-                .fill(microphoneStandColor)
-                .frame(width: size * 0.30, height: size * 0.06)
-                .offset(y: size * 0.28)
-
-            Capsule(style: .continuous)
-                .fill(Color.white.opacity(colorScheme == .dark ? 0.20 : 0.38))
-                .frame(width: size * 0.05, height: size * 0.22)
-                .offset(x: -size * 0.06, y: -size * 0.09)
-        }
+    private var capsuleHighlightColor: Color {
+        Color.white.opacity(colorScheme == .dark ? 0.22 : 0.34)
     }
 }
 
@@ -219,9 +269,13 @@ struct SpeakDockMenuBarIcon: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            Image(systemName: "mic.fill")
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(Color.primary.opacity(0.95))
+            SpeakDockMicMark(
+                bodyColor: .solid(Color.primary.opacity(0.95)),
+                scaffoldColor: Color.primary.opacity(0.95),
+                highlightColor: .clear,
+                monochrome: true
+            )
+            .frame(width: 11, height: 14)
 
             if case .unavailable = availability {
                 Circle()
@@ -232,6 +286,106 @@ struct SpeakDockMenuBarIcon: View {
         }
         .frame(width: 16, height: 14)
         .accessibilityLabel("SpeakDock")
+    }
+}
+
+private enum SpeakDockMicBodyFill {
+    case solid(Color)
+    case gradient(LinearGradient)
+}
+
+private struct SpeakDockMicMark: View {
+    let bodyColor: SpeakDockMicBodyFill
+    let scaffoldColor: Color
+    let highlightColor: Color
+    var monochrome = false
+
+    var body: some View {
+        GeometryReader { proxy in
+            let size = proxy.size
+            let width = size.width
+            let height = size.height
+
+            ZStack {
+                SpeakDockMicYoke()
+                    .stroke(
+                        scaffoldColor,
+                        style: StrokeStyle(
+                            lineWidth: max(1.4, width * 0.12),
+                            lineCap: .round,
+                            lineJoin: .round
+                        )
+                    )
+                    .frame(width: width * 0.74, height: height * 0.50)
+                    .offset(y: height * 0.02)
+
+                capsuleFill
+                    .frame(width: width * 0.26, height: height * 0.42)
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .fill(highlightColor)
+                            .frame(width: width * 0.06, height: height * 0.22)
+                            .offset(x: -width * 0.045, y: -height * 0.05)
+                    )
+                    .offset(y: -height * 0.13)
+
+                RoundedRectangle(cornerRadius: width * 0.04, style: .continuous)
+                    .fill(scaffoldColor)
+                    .frame(width: width * 0.08, height: height * 0.14)
+                    .offset(y: height * 0.17)
+
+                Capsule(style: .continuous)
+                    .fill(scaffoldColor)
+                    .frame(width: width * 0.36, height: height * 0.07)
+                    .offset(y: height * 0.33)
+            }
+            .frame(width: width, height: height)
+        }
+    }
+
+    @ViewBuilder
+    private var capsuleFill: some View {
+        switch bodyColor {
+        case let .solid(color):
+            Capsule(style: .continuous)
+                .fill(monochrome ? scaffoldColor : color)
+
+        case let .gradient(gradient):
+            if monochrome {
+                Capsule(style: .continuous)
+                    .fill(scaffoldColor)
+            } else {
+                Capsule(style: .continuous)
+                    .fill(gradient)
+            }
+        }
+    }
+}
+
+private struct SpeakDockMicYoke: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+
+        let leftX = rect.minX + rect.width * 0.20
+        let rightX = rect.maxX - rect.width * 0.20
+        let topY = rect.minY + rect.height * 0.12
+        let bottomY = rect.maxY - rect.height * 0.10
+        let innerLeft = rect.minX + rect.width * 0.34
+        let innerRight = rect.maxX - rect.width * 0.34
+
+        path.move(to: CGPoint(x: leftX, y: topY))
+        path.addCurve(
+            to: CGPoint(x: rect.midX, y: bottomY),
+            control1: CGPoint(x: leftX, y: rect.minY + rect.height * 0.62),
+            control2: CGPoint(x: innerLeft, y: bottomY)
+        )
+        path.addCurve(
+            to: CGPoint(x: rightX, y: topY),
+            control1: CGPoint(x: innerRight, y: bottomY),
+            control2: CGPoint(x: rightX, y: rect.minY + rect.height * 0.62)
+        )
+
+        return path
     }
 }
 

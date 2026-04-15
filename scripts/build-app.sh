@@ -9,6 +9,7 @@ CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$APP_DIR/Contents/Resources"
 ICON_SOURCE_PATH="$ROOT_DIR/.build/icon-work/SpeakDock.icns"
+ICON_PNG_SOURCE_PATH="$ROOT_DIR/.build/icon-work/AppIcon-1024.png"
 SWIFT_HOME="$ROOT_DIR/.swift-home"
 SWIFT_CACHE="$ROOT_DIR/.swift-cache"
 CLANG_MODULE_CACHE="$SWIFT_CACHE/clang/ModuleCache"
@@ -50,6 +51,10 @@ fi
 
 if [[ -f "$ICON_SOURCE_PATH" ]]; then
   cp "$ICON_SOURCE_PATH" "$RESOURCES_DIR/SpeakDock.icns"
+fi
+
+if [[ -f "$ICON_PNG_SOURCE_PATH" ]]; then
+  cp "$ICON_PNG_SOURCE_PATH" "$RESOURCES_DIR/SpeakDockIcon.png"
 fi
 
 if command -v codesign >/dev/null 2>&1; then

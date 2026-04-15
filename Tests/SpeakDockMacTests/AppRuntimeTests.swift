@@ -11,6 +11,7 @@ final class AppRuntimeTests: XCTestCase {
         var activated = false
 
         AppRuntime.installTestingHooks(
+            applicationIconLoader: { nil },
             applicationResolver: { nil },
             activationPolicyApplier: { _, _ in
                 appliedPolicy = true
@@ -34,6 +35,7 @@ final class AppRuntimeTests: XCTestCase {
         var activated = false
 
         AppRuntime.installTestingHooks(
+            applicationIconLoader: { nil },
             applicationResolver: { application },
             activationPolicyApplier: { _, policy in
                 appliedPolicy = policy

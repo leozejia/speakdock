@@ -7,6 +7,7 @@ ARTWORK_DIR="$ROOT_DIR/Artwork"
 BUILD_DIR="$ROOT_DIR/.build/icon-work"
 ICONSET_DIR="$BUILD_DIR/SpeakDock.iconset"
 ICNS_PATH="$BUILD_DIR/SpeakDock.icns"
+TMP_ICNS_PATH="$BUILD_DIR/SpeakDock.generated.icns"
 RENDER_SCRIPT="$ROOT_DIR/scripts/render-app-icon.swift"
 BASE_PNG="$BUILD_DIR/AppIcon-1024.png"
 SWIFT_HOME="$ROOT_DIR/.swift-home"
@@ -58,6 +59,12 @@ make_icon 512 icon_256x256@2x.png
 make_icon 512 icon_512x512.png
 make_icon 1024 icon_512x512@2x.png
 
-iconutil --convert icns --output "$ICNS_PATH" "$ICONSET_DIR"
+rm -f "$TMP_ICNS_PATH"
+if iconutil --convert icns --output "$TMP_ICNS_PATH" "$ICONSET_DIR"; then
+  mv "$TMP_ICNS_PATH" "$ICNS_PATH"
+else
+  rm -f "$TMP_ICNS_PATH"
+  print -u2 -- "warning: iconutil could not refresh SpeakDock.icns; keeping the existing bundle icon file"
+fi
 
 print -- "$ICNS_PATH"
