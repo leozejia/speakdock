@@ -779,3 +779,20 @@
   - 视觉层人工验收与细节微调
 - 验证结果：
   - `make test` -> pass，`61` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+
+### 5.5 入口与浮层可感知性修正
+
+- 状态：`Complete`
+- 目标：
+  - 当菜单栏被挤掉时，仍然给用户可靠入口
+  - 缩小 `Thinking` 浮层并为卡住状态提供超时退出
+- 已完成行为：
+  - `AppSettings` 新增 `showDockIcon`，默认开启，并兼容旧配置解码
+  - Settings 新增 `Show Dock Icon` 开关
+  - app 启动与设置变更都会同步 `Dock` 可见性
+  - `SettingsStore` 改为支持多观察者，避免后续运行时接线互相覆盖
+  - overlay 缩小宽高与文案，禁用时隐藏右侧按钮
+  - 识别结束后若长时间拿不到最终结果，会显示 `Speech Timed Out`
+- 验证结果：
+  - `make test TEST_FILTER=SettingsStoreTests` -> pass
+  - `make test` -> pass，`63` 个 XCTest + `2` 个 Swift Testing smoke 全部通过

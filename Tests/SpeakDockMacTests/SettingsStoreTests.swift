@@ -1,4 +1,5 @@
 import XCTest
+import SpeakDockCore
 @testable import SpeakDockMac
 
 @MainActor
@@ -17,6 +18,7 @@ final class SettingsStoreTests: XCTestCase {
 
         XCTAssertEqual(store.settings.languageCode, "zh-CN")
         XCTAssertEqual(store.settings.triggerSelection, .fn)
+        XCTAssertTrue(store.settings.showDockIcon)
         XCTAssertFalse(store.settings.refineEnabled)
         XCTAssertEqual(
             store.settings.captureRootPath,
@@ -36,6 +38,7 @@ final class SettingsStoreTests: XCTestCase {
 
         store.settings.languageCode = "en-US"
         store.settings.triggerSelection = .alternative("right-command")
+        store.settings.showDockIcon = false
         store.settings.refineEnabled = true
         store.settings.refineBaseURL = "https://example.com/v1"
         store.settings.refineAPIKey = "secret"
@@ -52,10 +55,37 @@ final class SettingsStoreTests: XCTestCase {
 
         XCTAssertEqual(reloadedStore.settings.languageCode, "en-US")
         XCTAssertEqual(reloadedStore.settings.triggerSelection, .alternative("right-command"))
+        XCTAssertFalse(reloadedStore.settings.showDockIcon)
         XCTAssertTrue(reloadedStore.settings.refineEnabled)
         XCTAssertEqual(reloadedStore.settings.refineBaseURL, "https://example.com/v1")
         XCTAssertEqual(reloadedStore.settings.refineAPIKey, "")
         XCTAssertEqual(reloadedStore.settings.refineModel, "gpt-4.1-mini")
+    }
+
+    func testMultipleSettingsObserversReceiveChanges() {
+        let suiteName = "speakdock-tests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+
+        let store = SettingsStore(
+            defaults: defaults,
+            migrator: CaptureRootMigrator()
+        )
+
+        var firstReceived: AppSettings?
+        var secondReceived: AppSettings?
+
+        _ = store.addSettingsObserver { settings in
+            firstReceived = settings
+        }
+        _ = store.addSettingsObserver { settings in
+            secondReceived = settings
+        }
+
+        store.settings.showDockIcon = false
+
+        XCTAssertEqual(firstReceived?.showDockIcon, false)
+        XCTAssertEqual(secondReceived?.showDockIcon, false)
     }
 
     func testCaptureRootMigrationMovesExistingFilesAndPersistsNewPath() throws {

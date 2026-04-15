@@ -19,6 +19,9 @@ struct SpeakDockApp: App {
         let launchOptions = SpeakDockLaunchOptions()
         let settingsStore = SettingsStore()
         let termDictionaryStore = TermDictionaryStore()
+        _ = settingsStore.addSettingsObserver { settings in
+            AppRuntime.updateActivationPolicy(showDockIcon: settings.showDockIcon)
+        }
         let triggerController = TriggerController(settingsStore: settingsStore)
         let audioCaptureEngine = AudioCaptureEngine()
         let composeTarget = ClipboardComposeTarget()
@@ -42,6 +45,7 @@ struct SpeakDockApp: App {
         switch launchOptions.mode {
         case .normal:
             AppRuntime.onDidFinishLaunching = {
+                AppRuntime.updateActivationPolicy(showDockIcon: settingsStore.settings.showDockIcon)
                 triggerController.start()
             }
         case .composeProbe:
@@ -50,6 +54,7 @@ struct SpeakDockApp: App {
                 duration: launchOptions.composeProbeDuration
             )
             AppRuntime.onDidFinishLaunching = {
+                AppRuntime.updateActivationPolicy(showDockIcon: settingsStore.settings.showDockIcon)
                 composeProbeRunner.start()
             }
         }

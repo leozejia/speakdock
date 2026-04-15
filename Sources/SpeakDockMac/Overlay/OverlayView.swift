@@ -23,11 +23,11 @@ enum OverlayPhase: Equatable, Sendable {
     var defaultTranscript: String {
         switch self {
         case .listening:
-            "Listening..."
+            "Listening…"
         case .thinking:
-            "Processing speech..."
+            "Processing…"
         case .refining:
-            "Refining..."
+            "Refining…"
         case .error:
             "Microphone Unavailable"
         }
@@ -97,6 +97,7 @@ final class OverlayView: NSVisualEffectView {
         transcriptLabel.stringValue = content.resolvedTranscript
         secondaryButton.title = content.secondaryActionTitle
         secondaryButton.isEnabled = content.secondaryActionEnabled
+        secondaryButton.isHidden = !content.secondaryActionEnabled
         secondaryButton.contentTintColor = content.secondaryActionEnabled
             ? .white
             : NSColor.white.withAlphaComponent(0.55)
@@ -132,13 +133,15 @@ final class OverlayView: NSVisualEffectView {
         ]).width)
         let textWidth = min(max(statusWidth, transcriptWidth), metrics.maxTextWidth)
 
-        let buttonWidth = max(metrics.minButtonWidth, secondaryButton.intrinsicContentSize.width)
+        let buttonWidth = content.secondaryActionEnabled
+            ? max(metrics.minButtonWidth, secondaryButton.intrinsicContentSize.width)
+            : 0
         let totalWidth =
             metrics.horizontalPadding +
             metrics.waveformWidth +
             metrics.stackSpacing +
             textWidth +
-            metrics.stackSpacing +
+            (content.secondaryActionEnabled ? metrics.stackSpacing : 0) +
             buttonWidth +
             metrics.horizontalPadding
 
@@ -185,7 +188,7 @@ final class OverlayView: NSVisualEffectView {
         statusLabel.textColor = NSColor.white.withAlphaComponent(0.64)
         statusLabel.lineBreakMode = .byTruncatingTail
 
-        transcriptLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+        transcriptLabel.font = .systemFont(ofSize: 14, weight: .semibold)
         transcriptLabel.textColor = NSColor.white.withAlphaComponent(0.96)
         transcriptLabel.lineBreakMode = .byTruncatingTail
         transcriptLabel.maximumNumberOfLines = 1
@@ -275,16 +278,16 @@ final class OverlayView: NSVisualEffectView {
 }
 
 private struct Metrics {
-    let height: CGFloat = 74
-    let cornerRadius: CGFloat = 22
-    let minWidth: CGFloat = 300
-    let maxWidth: CGFloat = 680
-    let maxTextWidth: CGFloat = 400
-    let horizontalPadding: CGFloat = 20
-    let stackSpacing: CGFloat = 16
-    let waveformWidth: CGFloat = 48
-    let waveformHeight: CGFloat = 34
-    let minButtonWidth: CGFloat = 78
+    let height: CGFloat = 66
+    let cornerRadius: CGFloat = 20
+    let minWidth: CGFloat = 220
+    let maxWidth: CGFloat = 520
+    let maxTextWidth: CGFloat = 260
+    let horizontalPadding: CGFloat = 16
+    let stackSpacing: CGFloat = 12
+    let waveformWidth: CGFloat = 34
+    let waveformHeight: CGFloat = 24
+    let minButtonWidth: CGFloat = 70
 }
 
 private final class WaveformBarsView: NSView {

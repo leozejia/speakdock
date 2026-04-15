@@ -24,6 +24,7 @@ final class HotPathCoordinator {
     private var undoFlowState = UndoFlowState()
     private var composeTargetSession = ComposeTargetSession()
     private var activeRefineTask: Task<Void, Never>?
+    private var pendingRecognitionTimeoutTask: Task<Void, Never>?
     private var renderedSegmentsByWorkspaceID: [UUID: [String]] = [:]
 
     init(
@@ -92,6 +93,7 @@ final class HotPathCoordinator {
                 return
             }
 
+            self?.cancelRecognitionTimeout()
             self?.overlayPanelController.showError(label)
         }
 
@@ -103,6 +105,7 @@ final class HotPathCoordinator {
                 return
             }
 
+            self?.cancelRecognitionTimeout()
             self?.overlayPanelController.showError(label)
         }
 
@@ -118,6 +121,7 @@ final class HotPathCoordinator {
         if isPressed {
             SpeakDockLog.trigger.notice("press started")
             cancelRefineTask()
+            cancelRecognitionTimeout()
             let composeAvailabilityAtPressStart = composeTarget.captureCurrentTarget()
             composeTargetSession.begin(availability: composeAvailabilityAtPressStart)
             if composeTargetSession.hasCapturedTarget {
@@ -139,10 +143,12 @@ final class HotPathCoordinator {
         case .recording:
             SpeakDockLog.trigger.notice("recording action completed")
             overlayPanelController.showThinking(transcript: speechController.latestTranscript)
+            scheduleRecognitionTimeout()
 
         case .submit:
             SpeakDockLog.trigger.notice("submit action received")
             cancelRefineTask()
+            cancelRecognitionTimeout()
             speechController.cancelSession()
             submitCurrentWorkspaceIfPossible()
             WorkspaceReducer.reduce(state: &workspaceState, action: .workspaceEnded)
@@ -160,6 +166,7 @@ final class HotPathCoordinator {
 
         if trimmedText.isEmpty {
             if result.isFinal {
+                cancelRecognitionTimeout()
                 overlayPanelController.dismiss(after: 0.2)
             }
             return
@@ -171,6 +178,7 @@ final class HotPathCoordinator {
             return
         }
 
+        cancelRecognitionTimeout()
         let cleanedText = cleanNormalizer.normalize(trimmedText)
         let configuration = currentRefineConfiguration
 
@@ -215,6 +223,7 @@ final class HotPathCoordinator {
     }
 
     private func commitRecognizedText(_ text: String) {
+        cancelRecognitionTimeout()
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty else {
             overlayPanelController.dismiss(after: 0.2)
@@ -568,5 +577,30 @@ final class HotPathCoordinator {
     private func cancelRefineTask() {
         activeRefineTask?.cancel()
         activeRefineTask = nil
+    }
+
+    private func scheduleRecognitionTimeout() {
+        cancelRecognitionTimeout()
+        pendingRecognitionTimeoutTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(4))
+            guard !Task.isCancelled else {
+                return
+            }
+
+            await MainActor.run {
+                guard let self else {
+                    return
+                }
+
+                SpeakDockLog.speech.error("speech recognition timed out while waiting for final result")
+                self.overlayPanelController.showError("Speech Timed Out")
+                self.pendingRecognitionTimeoutTask = nil
+            }
+        }
+    }
+
+    private func cancelRecognitionTimeout() {
+        pendingRecognitionTimeoutTask?.cancel()
+        pendingRecognitionTimeoutTask = nil
     }
 }

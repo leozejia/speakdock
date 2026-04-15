@@ -15,6 +15,7 @@ final class TriggerController {
 
     private let settingsStore: SettingsStore
     private let adapterFactory: (ModifierTriggerKey) -> any TriggerAdapter
+    private var settingsObserverID: UUID?
     private var adapter: (any TriggerAdapter)?
     private var stateMachine = TriggerStateMachine()
     private var isStarted = false
@@ -27,7 +28,7 @@ final class TriggerController {
     ) {
         self.settingsStore = settingsStore
         self.adapterFactory = adapterFactory
-        settingsStore.onSettingsChanged = { [weak self] _ in
+        self.settingsObserverID = settingsStore.addSettingsObserver { [weak self] _ in
             guard self?.isStarted == true else {
                 return
             }

@@ -78,6 +78,19 @@ struct SettingsView: View {
                                 .foregroundStyle(SpeakDockVisualStyle.secondaryText)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
+
+                        Divider()
+
+                        Toggle(isOn: $settingsStore.settings.showDockIcon) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Show Dock Icon")
+                                    .font(.system(size: 13, weight: .medium))
+                                Text("Keep a visible app icon in the Dock when the menu bar gets crowded.")
+                                    .font(.system(size: 11.5))
+                                    .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+                            }
+                        }
+                        .toggleStyle(.switch)
                     }
                 }
 
@@ -220,7 +233,10 @@ struct SettingsView: View {
                     title: settingsStore.settings.refineEnabled ? "Refine On" : "Refine Off",
                     tone: settingsStore.settings.refineEnabled ? .accent : .neutral
                 )
-                SpeakDockStatusBadge(title: "Capture Local", tone: .success)
+                SpeakDockStatusBadge(
+                    title: settingsStore.settings.showDockIcon ? "Dock On" : "Dock Off",
+                    tone: settingsStore.settings.showDockIcon ? .success : .neutral
+                )
             }
         }
         .padding(4)

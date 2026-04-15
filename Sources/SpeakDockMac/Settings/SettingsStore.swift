@@ -21,17 +21,16 @@ final class SettingsStore {
             }
 
             try? save()
-            onSettingsChanged?(settings)
+            notifySettingsObservers()
         }
     }
-
-    var onSettingsChanged: ((AppSettings) -> Void)?
 
     private let defaults: UserDefaults
     private let migrator: CaptureRootMigrating
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
     private var isReady = false
+    private var settingsObservers: [UUID: @MainActor (AppSettings) -> Void] = [:]
 
     init(
         defaults: UserDefaults = .standard,
@@ -60,6 +59,17 @@ final class SettingsStore {
         )
     }
 
+    @discardableResult
+    func addSettingsObserver(_ observer: @escaping @MainActor (AppSettings) -> Void) -> UUID {
+        let identifier = UUID()
+        settingsObservers[identifier] = observer
+        return identifier
+    }
+
+    func removeSettingsObserver(_ identifier: UUID) {
+        settingsObservers.removeValue(forKey: identifier)
+    }
+
     func updateCaptureRoot(to newRootURL: URL) throws {
         let currentRootURL = URL(fileURLWithPath: settings.captureRootPath, isDirectory: true)
         try migrator.migrate(from: currentRootURL, to: newRootURL)
@@ -80,6 +90,7 @@ final class SettingsStore {
                 languageCode: LanguageOption.defaultOption.rawValue,
                 captureRootPath: defaultCaptureRootURL.path,
                 triggerSelection: .fn,
+                showDockIcon: true,
                 refineEnabled: false,
                 refineBaseURL: "",
                 refineAPIKey: "",
@@ -88,5 +99,11 @@ final class SettingsStore {
         }
 
         return settings
+    }
+
+    private func notifySettingsObservers() {
+        for observer in settingsObservers.values {
+            observer(settings)
+        }
     }
 }
