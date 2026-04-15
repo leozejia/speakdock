@@ -10,11 +10,11 @@ enum OpenAICompatibleRefineEngineError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidBaseURL:
-            "Invalid Refine Base URL"
+            AppLocalizer.string(.refineInvalidBaseURL)
         case .invalidResponse:
-            "Invalid Refine Response"
+            AppLocalizer.string(.refineInvalidResponse)
         case let .unexpectedStatusCode(statusCode):
-            "Refine Request Failed (\(statusCode))"
+            AppLocalizer.formatted(.refineRequestFailedFormat, [String(statusCode)])
         }
     }
 }

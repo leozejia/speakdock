@@ -7,7 +7,7 @@ enum RefineConnectionTesterError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .incompleteConfiguration:
-            "Fill Base URL / API Key / Model first"
+            AppLocalizer.string(.refineConnectionIncomplete)
         }
     }
 }
@@ -22,7 +22,7 @@ struct RefineConnectionTester: RefineConnectionTesting {
 
     init(
         engine: any RefineEngine = OpenAICompatibleRefineEngine(),
-        sampleText: String = "你好 SpeakDock，测试连接。"
+        sampleText: String = AppLocalizer.string(.refineConnectionSampleText)
     ) {
         self.engine = engine
         self.sampleText = sampleText

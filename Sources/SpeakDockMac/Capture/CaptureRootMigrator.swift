@@ -12,11 +12,11 @@ enum CaptureRootMigrationError: Error, Equatable, LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .destinationConflict(itemName):
-            "目标目录已存在同名项目：\(itemName)"
+            AppLocalizer.formatted(.captureRootConflict, [itemName])
         case .sourceIsNotDirectory:
-            "原 capture 根目录不是一个目录。"
+            AppLocalizer.string(.captureRootSourceNotDirectory)
         case .destinationIsNotDirectory:
-            "目标 capture 根目录不是一个目录。"
+            AppLocalizer.string(.captureRootDestinationNotDirectory)
         }
     }
 }

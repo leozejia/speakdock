@@ -9,9 +9,9 @@ enum TermDictionaryStoreError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .emptyCanonicalTerm:
-            "Canonical term is required."
+            AppLocalizer.string(.termDictionaryCanonicalRequired)
         case .missingAlias:
-            "Add at least one alias before saving."
+            AppLocalizer.string(.termDictionaryMissingAlias)
         }
     }
 }
