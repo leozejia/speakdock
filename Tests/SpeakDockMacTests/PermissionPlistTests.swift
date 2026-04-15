@@ -15,4 +15,27 @@ final class PermissionPlistTests: XCTestCase {
         XCTAssertFalse(microphoneUsage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         XCTAssertFalse(speechUsage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     }
+
+    func testInfoPlistDeclaresBundleIconFile() throws {
+        let infoPlistURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Sources/SpeakDockMac/Resources/Info.plist")
+        let data = try Data(contentsOf: infoPlistURL)
+        let plist = try XCTUnwrap(
+            PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
+        )
+
+        let iconFile = try XCTUnwrap(plist["CFBundleIconFile"] as? String)
+        XCTAssertEqual(iconFile, "SpeakDock")
+    }
+
+    func testInfoPlistDoesNotForceAgentMode() throws {
+        let infoPlistURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Sources/SpeakDockMac/Resources/Info.plist")
+        let data = try Data(contentsOf: infoPlistURL)
+        let plist = try XCTUnwrap(
+            PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
+        )
+
+        XCTAssertNil(plist["LSUIElement"])
+    }
 }

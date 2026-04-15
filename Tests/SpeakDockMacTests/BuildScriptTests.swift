@@ -11,6 +11,16 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("CFBundleIdentifier"))
     }
 
+    func testBuildScriptRefreshesAndCopiesAppIcon() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/build-app.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("generate-app-icon.sh"))
+        XCTAssertTrue(script.contains("render-app-icon.swift"))
+        XCTAssertTrue(script.contains("SpeakDock.icns"))
+    }
+
     func testShowLogsScriptFiltersBySpeakDockSubsystem() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/show-logs.sh")

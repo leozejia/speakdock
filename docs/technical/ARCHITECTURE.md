@@ -699,7 +699,7 @@ macOS v1 的工程收口写死为：
 
 - 应用形态
   - 以 `menu bar` 工具为主
-  - `LSUIElement` 运行，无 Dock 图标
+  - 默认保留 menu bar 入口，同时允许通过设置显式保留 Dock 图标作为可见性兜底
   - 优先走 macOS 14+ 能力
 
 - 默认触发路径

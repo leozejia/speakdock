@@ -11,7 +11,7 @@
 ## 2. 当前状态
 
 - 当前阶段：P1 `AI 语音输入法` 体验增强
-- 当前目标：先落地 `TermDictionary`，再进入用户确认式候选词条与本地存储
+- 当前目标：补齐视觉入口与应用可感知性，保证 menu bar / Dock / Finder 都能识别 SpeakDock
 - 当前策略：每个行为按 RED / GREEN 小步推进；词典不记录完整转写、聊天内容或剪贴板内容
 
 ## 3. 任务看板
@@ -28,6 +28,7 @@
 | Task 8 | Complete | Clean normalizer、保守 refine prompt 与 OpenAI 兼容 refine 已接线 |
 | Task 9 | Complete | 整理、撤回、双击提交 已接线 |
 | Task 10 | Complete | 收尾、README、人工验收清单 已对齐 |
+| UI polish | In Progress | 图标资产、Dock 可见性和更接近原生质感的入口体验持续收敛中 |
 
 ## 4. 执行记录
 
@@ -55,7 +56,7 @@
   - `make test` -> pass
   - `make run` -> app 启动后进程保持存活，入口冒烟通过
 - 备注：
-  - menu bar 图标是否可见、是否无 Dock 图标，仍需按手动验收清单在图形环境中确认
+  - menu bar 图标是否可见、Dock 图标是否按设置正常显示，仍需按手动验收清单在图形环境中确认
 
 #### Task 2
 
@@ -119,6 +120,38 @@
   - `make run` -> app 启动冒烟通过
 - 备注：
   - “菜单栏可打开 Settings” 仍需按人工验收清单在图形环境中点击确认
+
+### 2026-04-15
+
+#### UI polish
+
+- 状态：`In Progress`
+- 目标：补齐 app bundle 图标资产链路，让 SpeakDock 在 Dock / Finder 中具备正式应用标识
+- 已完成文件：
+  - `Artwork/AppIcon.svg`
+  - `scripts/generate-app-icon.sh`
+  - `scripts/render-app-icon.swift`
+  - `scripts/build-app.sh`
+  - `Sources/SpeakDockMac/App/AppRuntime.swift`
+  - `Sources/SpeakDockMac/App/SpeakDockApp.swift`
+  - `Sources/SpeakDockMac/Resources/Info.plist`
+  - `Tests/SpeakDockMacTests/BuildScriptTests.swift`
+  - `Tests/SpeakDockMacTests/PermissionPlistTests.swift`
+- 已完成内容：
+  - 新增单一源稿 `Artwork/AppIcon.svg`，风格与现有 `SpeakDockBrandGlyph` 对齐
+  - 构建时自动通过本地 Swift 渲染器生成 `.iconset` 与 `.icns`
+  - app bundle 现在会复制 `SpeakDock.icns` 到 `Contents/Resources`
+  - `Info.plist` 增加 `CFBundleIconFile = SpeakDock`
+  - 应用启动可见性不再被 `LSUIElement` 固定锁死，Dock fallback 由运行时策略控制
+  - 增加 plist 测试，防止图标绑定在后续回归中丢失
+- 验证结果：
+  - `make test` -> pass，`66` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+  - `make build` -> pass，`.build/debug/SpeakDock.app/Contents/Resources/SpeakDock.icns` 已生成
+  - `zsh ./scripts/generate-app-icon.sh` -> 在非沙箱 macOS 会话中验证通过
+- 待人工确认：
+  - `make run` 后 Dock 图标是否按 `Show Dock Icon` 设置正常显示
+  - Finder 中 `.app` 是否显示新图标
+  - menu bar 拥挤时，Dock fallback 是否足以保证用户能找到应用入口
 
 #### Task 4
 

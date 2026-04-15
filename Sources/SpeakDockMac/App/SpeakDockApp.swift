@@ -19,6 +19,7 @@ struct SpeakDockApp: App {
         let launchOptions = SpeakDockLaunchOptions()
         let settingsStore = SettingsStore()
         let termDictionaryStore = TermDictionaryStore()
+        AppRuntime.configureInitialVisibility(showDockIcon: settingsStore.settings.showDockIcon)
         _ = settingsStore.addSettingsObserver { settings in
             AppRuntime.updateActivationPolicy(showDockIcon: settings.showDockIcon)
         }

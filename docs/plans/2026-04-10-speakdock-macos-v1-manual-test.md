@@ -19,7 +19,7 @@
 ## 3. 启动与基础形态
 
 1. 启动应用后，menu bar 图标可见。
-2. 应用没有 Dock 图标。
+2. 默认设置下应用在 Dock 中可见；关闭 `Show Dock Icon` 后，Dock 图标应消失。
 3. Settings 可以正常打开。
 4. 首次使用默认 `Fn` trigger 时，如果系统弹出 Accessibility 授权提示，应授权并重启应用。
 

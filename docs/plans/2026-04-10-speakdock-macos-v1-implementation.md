@@ -82,10 +82,10 @@ Expected:
 - `swift build` 成功
 - 生成可执行产物
 
-**Step 3: 接入 LSUIElement**
+**Step 3: 接入 menu bar 工具形态**
 
-- 在 `Info.plist` 中设置 `LSUIElement = 1`
 - 确保 app 以 menu bar 工具形态运行
+- 默认保留 Dock 图标作为可见性兜底，并允许用户在 Settings 中关闭
 
 **Step 4: 手动验证**
 
@@ -98,8 +98,8 @@ make run
 Expected:
 
 - 应用启动
-- 无 Dock 图标
 - 菜单栏出现 SpeakDock 图标
+- 默认设置下 Dock 中也能找到 SpeakDock
 
 **Step 5: Commit**
 

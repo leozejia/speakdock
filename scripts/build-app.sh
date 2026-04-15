@@ -8,6 +8,7 @@ APP_DIR="$ROOT_DIR/.build/$CONFIGURATION/SpeakDock.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
+ICON_SOURCE_PATH="$ROOT_DIR/.build/icon-work/SpeakDock.icns"
 SWIFT_HOME="$ROOT_DIR/.swift-home"
 SWIFT_CACHE="$ROOT_DIR/.swift-cache"
 CLANG_MODULE_CACHE="$SWIFT_CACHE/clang/ModuleCache"
@@ -30,6 +31,14 @@ mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
 cp "$ROOT_DIR/Sources/SpeakDockMac/Resources/Info.plist" "$CONTENTS_DIR/Info.plist"
 cp "$EXECUTABLE_PATH" "$MACOS_DIR/SpeakDock"
+
+if [[ ! -f "$ICON_SOURCE_PATH" || "$ROOT_DIR/Artwork/AppIcon.svg" -nt "$ICON_SOURCE_PATH" || "$ROOT_DIR/scripts/generate-app-icon.sh" -nt "$ICON_SOURCE_PATH" || "$ROOT_DIR/scripts/render-app-icon.swift" -nt "$ICON_SOURCE_PATH" ]]; then
+  zsh "$ROOT_DIR/scripts/generate-app-icon.sh" >/dev/null
+fi
+
+if [[ -f "$ICON_SOURCE_PATH" ]]; then
+  cp "$ICON_SOURCE_PATH" "$RESOURCES_DIR/SpeakDock.icns"
+fi
 
 if command -v codesign >/dev/null 2>&1; then
   BUNDLE_IDENTIFIER="$(plutil -extract CFBundleIdentifier raw -o - "$CONTENTS_DIR/Info.plist")"
