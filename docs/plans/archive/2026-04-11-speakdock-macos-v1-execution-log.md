@@ -5,7 +5,7 @@
 这份文档只记录执行状态、验证结果和实现偏差。
 
 - 架构定义仍以 `docs/technical/ARCHITECTURE.md` 为准
-- 任务顺序仍以 `docs/plans/2026-04-10-speakdock-macos-v1-implementation.md` 为准
+- 任务顺序仍以 `docs/plans/archive/2026-04-10-speakdock-macos-v1-implementation.md` 为准
 - 只有当实现事实要求修改真相源时，才回写主文档
 
 ## 2. 当前状态
@@ -371,7 +371,7 @@
   - `README.md`
   - `docs/README.md`
   - `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md`
-  - `docs/plans/2026-04-11-speakdock-macos-v1-execution-log.md`
+  - `docs/plans/archive/2026-04-11-speakdock-macos-v1-execution-log.md`
 - 已验证行为：
   - Settings 现已提供显式 `Choose & Migrate…` 入口，不再依赖直接改路径字符串
   - capture 根目录切换会复用既有迁移逻辑，满足“一键整体迁移”的 UI 落点

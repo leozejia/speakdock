@@ -6,19 +6,24 @@
 
 快速入口：
 
+- 当前唯一 live plan：`docs/plans/CURRENT.md`
 - 仓库启动与权限概览：`README.md`
-- 当前实现状态与验证结果：`docs/plans/2026-04-11-speakdock-macos-v1-execution-log.md`
 - 人工验收顺序：`docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md`
+- 最近一次执行归档：`docs/plans/archive/2026-04-11-speakdock-macos-v1-execution-log.md`
 
 ## 技术
 
 - `docs/technical/ARCHITECTURE.md`
 
-## 计划
+## 当前
 
-- `docs/plans/2026-04-10-speakdock-macos-v1-implementation.md`
+- `docs/plans/CURRENT.md`
 - `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md`
-- `docs/plans/2026-04-11-speakdock-macos-v1-execution-log.md`
+
+## 归档
+
+- `docs/plans/archive/2026-04-10-speakdock-macos-v1-implementation.md`
+- `docs/plans/archive/2026-04-11-speakdock-macos-v1-execution-log.md`
 
 ## 研究
 
@@ -30,7 +35,9 @@
 
 - 外部参考放 `research`
 - SpeakDock 自己的行为定义最终以 `technical/ARCHITECTURE.md` 为准
+- `docs/plans/CURRENT.md` 是当前唯一 live plan
+- 当前 focus 完成后，先把 `CURRENT.md` 快照归档，再开启下一轮
 - README 负责入口、权限矩阵和当前支持范围，不替代架构文档
-- 执行日志负责记录“已经实现并验证到什么程度”，不覆盖行为定义
+- `archive/` 只保留历史计划、执行记录和阶段性快照，不承担当前指挥作用
 - 只保留当前仍然正确、仍然会被执行的文档
 - 已被主架构取代的旧文档直接删除
