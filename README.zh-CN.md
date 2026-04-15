@@ -2,7 +2,7 @@
 
 SpeakDock 是一个不止会打字的 macOS AI 语音输入法。
 
-你说话，它把内容写进当前光标。你需要整理，它可以调用模型做保守矫正和结构化。你只是想先记下来，它会把这段想法保存成本地 Markdown，并把它变成后续进入本地知识库和 LLM Wiki 的入口。
+你说话，它把内容写进当前光标。热路径先走确定性的 `Clean`，保证稳定；你需要进一步整理时，再显式打开模型 `Refine` 做保守矫正和结构化。你只是想先记下来，它会把这段想法保存成本地 Markdown，并把它变成后续进入本地知识库和 LLM Wiki 的入口。
 
 长期目标是做一个会写、会改、会整理、也会记住的语音层，同时把事实源留在你的机器上。
 
@@ -55,16 +55,17 @@ SpeakDock 现在处于早期 macOS 实现阶段。第一阶段目标是把热路
 
 现在已经支持：
 
-- menu bar 应用形态，没有 Dock 图标。
+- menu bar 应用形态，Dock 图标默认可见，也可以在 Settings 里关闭。
 - 按住 `Fn` 说话，松开结束，双击提交。
 - Apple Speech 流式识别，默认语言为 `zh-CN`。
 - 语言选项覆盖 `en-US`、`zh-CN`、`zh-TW`、`ja-JP`、`ko-KR`。
 - 通过剪贴板粘贴执行 Compose，并临时切换 ASCII 输入源。
 - Capture 到本地 Markdown，文件名为 `speakdock-YYYYMMDD-HHMMSS.md`。
 - 轻量 overlay，显示 listening、thinking、refining、转写预览和音频电平。
-- 保守清洗和可选的 OpenAI 兼容 refine。
+- 确定性的 `Clean`、本地 `Term Dictionary`，以及可选的 OpenAI 兼容 `Refine`。
 - 最近一次写入撤回和 refine 撤回。
 - 第三方输入框兼容性诊断。
+- Settings 已覆盖 trigger、capture 根目录、本地词典和 refine 配置。
 - 基于 `OSLog.Logger` 的 Apple Unified Logging。
 
 还没有交付：
@@ -72,6 +73,7 @@ SpeakDock 现在处于早期 macOS 实现阶段。第一阶段目标是把热路
 - 正式打包和签名的公开版本。
 - 本地 ASR 模型路径。
 - 端侧小模型清洗或抽取引擎。
+- 从真实手动修正事件自动生成词典候选的接线路径。
 - 后台 Wiki compiler 和 schema 工作流。
 - DJI 或其他硬件 trigger adapter。
 - iOS 触发或 capture 入口。

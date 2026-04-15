@@ -2,6 +2,20 @@ import Foundation
 import Observation
 import SpeakDockCore
 
+enum TermDictionaryStoreError: LocalizedError {
+    case emptyCanonicalTerm
+    case missingAlias
+
+    var errorDescription: String? {
+        switch self {
+        case .emptyCanonicalTerm:
+            "Canonical term is required."
+        case .missingAlias:
+            "Add at least one alias before saving."
+        }
+    }
+}
+
 @MainActor
 @Observable
 final class TermDictionaryStore {
@@ -78,22 +92,48 @@ final class TermDictionaryStore {
     func confirm(_ candidate: TermDictionaryCandidate) throws {
         var entries = confirmedDictionary.entries
 
-        if let existingEntryIndex = entries.firstIndex(where: { $0.canonicalTerm == candidate.canonicalTerm }) {
-            var aliases = entries[existingEntryIndex].aliases
-            if !aliases.contains(candidate.alias) {
-                aliases.append(candidate.alias)
-            }
-            entries[existingEntryIndex].aliases = aliases
-        } else {
-            entries.append(
-                TermDictionaryEntry(
-                    canonicalTerm: candidate.canonicalTerm,
-                    aliases: [candidate.alias]
-                )
-            )
+        entries = upsert(
+            entries: entries,
+            canonicalTerm: candidate.canonicalTerm,
+            aliases: [candidate.alias]
+        )
+        confirmedDictionary = TermDictionary(entries: entries)
+        pendingCandidates.removeAll { $0 == candidate }
+        try save()
+    }
+
+    func addEntry(canonicalTerm: String, aliases: [String]) throws {
+        let normalizedCanonicalTerm = canonicalTerm.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedCanonicalTerm.isEmpty else {
+            throw TermDictionaryStoreError.emptyCanonicalTerm
         }
 
+        let normalizedAliases = normalizeAliases(
+            aliases,
+            canonicalTerm: normalizedCanonicalTerm
+        )
+        guard !normalizedAliases.isEmpty else {
+            throw TermDictionaryStoreError.missingAlias
+        }
+
+        let entries = upsert(
+            entries: confirmedDictionary.entries,
+            canonicalTerm: normalizedCanonicalTerm,
+            aliases: normalizedAliases
+        )
         confirmedDictionary = TermDictionary(entries: entries)
+        try save()
+    }
+
+    func removeEntry(canonicalTerm: String) throws {
+        let key = canonicalKey(for: canonicalTerm)
+        confirmedDictionary = TermDictionary(
+            entries: confirmedDictionary.entries.filter { canonicalKey(for: $0.canonicalTerm) != key }
+        )
+        try save()
+    }
+
+    func dismiss(_ candidate: TermDictionaryCandidate) throws {
         pendingCandidates.removeAll { $0 == candidate }
         try save()
     }
@@ -123,6 +163,70 @@ final class TermDictionaryStore {
         }
 
         return snapshot
+    }
+
+    private func upsert(
+        entries: [TermDictionaryEntry],
+        canonicalTerm: String,
+        aliases: [String]
+    ) -> [TermDictionaryEntry] {
+        var updatedEntries = entries
+        let key = canonicalKey(for: canonicalTerm)
+
+        if let existingEntryIndex = updatedEntries.firstIndex(where: { canonicalKey(for: $0.canonicalTerm) == key }) {
+            let mergedAliases = normalizeAliases(
+                updatedEntries[existingEntryIndex].aliases + aliases,
+                canonicalTerm: canonicalTerm
+            )
+            updatedEntries[existingEntryIndex].canonicalTerm = canonicalTerm
+            updatedEntries[existingEntryIndex].aliases = mergedAliases
+        } else {
+            updatedEntries.append(
+                TermDictionaryEntry(
+                    canonicalTerm: canonicalTerm,
+                    aliases: normalizeAliases(aliases, canonicalTerm: canonicalTerm)
+                )
+            )
+        }
+
+        return updatedEntries.sorted {
+            $0.canonicalTerm.localizedCaseInsensitiveCompare($1.canonicalTerm) == .orderedAscending
+        }
+    }
+
+    private func normalizeAliases(
+        _ aliases: [String],
+        canonicalTerm: String
+    ) -> [String] {
+        var seen: Set<String> = []
+        var normalizedAliases: [String] = []
+
+        for alias in aliases {
+            let trimmedAlias = alias.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedAlias.isEmpty else {
+                continue
+            }
+
+            guard canonicalKey(for: trimmedAlias) != canonicalKey(for: canonicalTerm) else {
+                continue
+            }
+
+            let key = canonicalKey(for: trimmedAlias)
+            guard seen.insert(key).inserted else {
+                continue
+            }
+
+            normalizedAliases.append(trimmedAlias)
+        }
+
+        return normalizedAliases.sorted {
+            $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
+        }
+    }
+
+    private func canonicalKey(for text: String) -> String {
+        text.trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
 }
 

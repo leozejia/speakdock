@@ -11,7 +11,7 @@
 ## 2. 当前状态
 
 - 当前阶段：P1 `AI 语音输入法` 体验增强
-- 当前目标：补齐视觉入口与应用可感知性，保证 menu bar / Dock / Finder 都能识别 SpeakDock
+- 当前目标：补齐术语词典入口，并持续回收 UI / README / 验收文档里的实现漂移
 - 当前策略：每个行为按 RED / GREEN 小步推进；词典不记录完整转写、聊天内容或剪贴板内容
 
 ## 3. 任务看板
@@ -28,7 +28,7 @@
 | Task 8 | Complete | Clean normalizer、保守 refine prompt 与 OpenAI 兼容 refine 已接线 |
 | Task 9 | Complete | 整理、撤回、双击提交 已接线 |
 | Task 10 | Complete | 收尾、README、人工验收清单 已对齐 |
-| UI polish | In Progress | 图标资产、Dock 可见性和更接近原生质感的入口体验持续收敛中 |
+| UI polish | In Progress | 图标资产、Dock 可见性、词典设置入口和更接近原生质感的入口体验持续收敛中 |
 
 ## 4. 执行记录
 
@@ -778,23 +778,29 @@
   - 存储层支持注入临时路径测试，不触碰仓库内文件，也不进入 Git 管理
   - app 启动时已把本地 confirmed dictionary 接入 `Clean` 热路径，后续识别不需要重启 normalizer 也能读到最新词典
   - 待确认候选现在可以被提升进 confirmed dictionary，并从 pending 列表移除
+  - Settings 已接入本地 `TermDictionaryStore`
+  - 用户现在可以在 Settings 手动添加、删除 confirmed terms
+  - pending candidates 现在可以在 Settings 中显式 `Confirm / Dismiss`
+  - README 与手动验收文档已修正为当前真实行为：Dock 默认可见，热路径是 `ASR + Clean + optional Refine`
 - 未完成范围：
-  - 用户手动填写词典 UI
   - 将用户手动修正事件接入候选词条生成流程
   - 候选撤回、删除和导出
   - 将词典条目传入 `RefineRequest` 上下文
-  - 将本地词典 store 接入 Settings
 - Red / Green 记录：
   - `TermDictionaryTests/testConfirmedAliasesAreAppliedBeforeFinalCleanTextIsSubmitted`：RED -> GREEN
   - `TermDictionaryTests/testManualCorrectionCreatesCandidateWithoutMutatingConfirmedDictionary`：RED -> GREEN
   - `TermDictionaryTests/testNormalizerCanReadCurrentDictionaryFromProviderWithoutRecreation`：RED -> GREEN
   - `TermDictionaryStoreTests/testPersistsAndReloadsConfirmedEntriesAndPendingCandidates`：RED -> GREEN
   - `TermDictionaryStoreTests/testConfirmCandidatePromotesItIntoConfirmedDictionaryAndRemovesPendingEntry`：RED -> GREEN
+  - `TermDictionaryStoreTests/testAddEntryMergesAliasesIntoExistingEntry`：RED -> GREEN
+  - `TermDictionaryStoreTests/testRemoveEntryAndDismissCandidatePersist`：RED -> GREEN
+  - `TermDictionaryStoreTests/testAddEntryRejectsEmptyCanonicalOrAliasList`：RED -> GREEN
 - 验证结果：
   - `make test TEST_FILTER=TermDictionaryTests` -> pass
   - `make test TEST_FILTER=ConservativeRefinePromptTests` -> pass
   - `make test TEST_FILTER=TermDictionaryStoreTests` -> pass
-  - `make test` -> pass，`61` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+  - `make test` -> pass，`69` 个 XCTest + `2` 个 Swift Testing smoke 全部通过
+  - `make build` -> pass
 
 ### 5.4 菜单栏与设置界面视觉基线重构
 
@@ -807,8 +813,6 @@
   - 设置页改为分组卡片和清晰层级，触发键替代项不再要求用户手输内部标识字符串
   - overlay 调整为更接近原生 utility HUD 的层级、按钮和状态色
 - 未完成范围：
-  - bundle 级 app icon 资产
-  - 词典 Settings UI
   - 视觉层人工验收与细节微调
 - 验证结果：
   - `make test` -> pass，`61` 个 XCTest + `2` 个 Swift Testing smoke 全部通过

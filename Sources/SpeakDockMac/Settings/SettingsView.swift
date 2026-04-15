@@ -4,18 +4,25 @@ import SwiftUI
 
 struct SettingsView: View {
     @Bindable var settingsStore: SettingsStore
+    @Bindable var termDictionaryStore: TermDictionaryStore
     @State private var captureRootMessage: String?
     @State private var refineTestMessage: String?
     @State private var saveMessage: String?
+    @State private var termCanonicalTerm = ""
+    @State private var termAliasesText = ""
+    @State private var termDictionaryMessage: String?
+    @State private var termDictionaryMessageTone: SpeakDockBadgeTone = .neutral
     @State private var isTestingRefine = false
 
     private let refineTester: any RefineConnectionTesting
 
     init(
         settingsStore: SettingsStore,
+        termDictionaryStore: TermDictionaryStore,
         refineTester: any RefineConnectionTesting = RefineConnectionTester()
     ) {
         self.settingsStore = settingsStore
+        self.termDictionaryStore = termDictionaryStore
         self.refineTester = refineTester
     }
 
@@ -133,6 +140,100 @@ struct SettingsView: View {
                 }
 
                 SpeakDockPanel(
+                    title: "Term Dictionary",
+                    subtitle: "Keep names and jargon stable with local-only replacements."
+                ) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Add Entry")
+                                .font(.system(size: 13, weight: .medium))
+
+                            TextField("Canonical term", text: $termCanonicalTerm)
+                                .textFieldStyle(.roundedBorder)
+
+                            TextField("Aliases, separated by commas", text: $termAliasesText)
+                                .textFieldStyle(.roundedBorder)
+
+                            HStack(alignment: .center, spacing: 12) {
+                                Button("Add Entry") {
+                                    addTermEntry()
+                                }
+                                .buttonStyle(SpeakDockActionButtonStyle(kind: .primary))
+                                .disabled(!canAddTermEntry)
+
+                                Text("Saved only on this Mac. Not committed to Git.")
+                                    .font(.system(size: 11.5))
+                                    .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+                            }
+                        }
+
+                        if let termDictionaryMessage {
+                            messageView(termDictionaryMessage, tone: termDictionaryMessageTone)
+                        }
+
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack(alignment: .center, spacing: 12) {
+                                Text("Confirmed Terms")
+                                    .font(.system(size: 13, weight: .medium))
+
+                                Spacer()
+
+                                SpeakDockStatusBadge(
+                                    title: "\(termDictionaryStore.confirmedDictionary.entries.count) Saved",
+                                    tone: termDictionaryStore.confirmedDictionary.entries.isEmpty ? .neutral : .success
+                                )
+                            }
+
+                            if termDictionaryStore.confirmedDictionary.entries.isEmpty {
+                                emptyStateView("No confirmed terms yet.")
+                            } else {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    ForEach(
+                                        Array(termDictionaryStore.confirmedDictionary.entries.enumerated()),
+                                        id: \.offset
+                                    ) { _, entry in
+                                        confirmedEntryRow(entry)
+                                    }
+                                }
+                            }
+                        }
+
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack(alignment: .center, spacing: 12) {
+                                Text("Pending Candidates")
+                                    .font(.system(size: 13, weight: .medium))
+
+                                Spacer()
+
+                                SpeakDockStatusBadge(
+                                    title: "\(termDictionaryStore.pendingCandidates.count) Pending",
+                                    tone: termDictionaryStore.pendingCandidates.isEmpty ? .neutral : .warning
+                                )
+                            }
+
+                            if termDictionaryStore.pendingCandidates.isEmpty {
+                                emptyStateView(
+                                    "No pending candidates yet. Manual correction capture is not wired into the app flow yet."
+                                )
+                            } else {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    ForEach(
+                                        Array(termDictionaryStore.pendingCandidates.enumerated()),
+                                        id: \.offset
+                                    ) { _, candidate in
+                                        pendingCandidateRow(candidate)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                SpeakDockPanel(
                     title: "Refine",
                     subtitle: "Optional cleanup path. Keep it off unless you need it."
                 ) {
@@ -208,7 +309,7 @@ struct SettingsView: View {
             .padding(24)
         }
         .background(settingsBackground.ignoresSafeArea())
-        .frame(minWidth: 720, minHeight: 620)
+        .frame(minWidth: 720, minHeight: 760)
     }
 
     private var header: some View {
@@ -262,6 +363,11 @@ struct SettingsView: View {
 
     private var alternativeTriggerOptions: [ModifierTriggerKey] {
         ModifierTriggerKey.allCases.filter { $0 != .fn }
+    }
+
+    private var canAddTermEntry: Bool {
+        let canonical = termCanonicalTerm.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !canonical.isEmpty && !parsedAliases(from: termAliasesText).isEmpty
     }
 
     private var triggerModeBinding: Binding<String> {
@@ -325,6 +431,47 @@ struct SettingsView: View {
         }
     }
 
+    private func addTermEntry() {
+        do {
+            try termDictionaryStore.addEntry(
+                canonicalTerm: termCanonicalTerm,
+                aliases: parsedAliases(from: termAliasesText)
+            )
+            termCanonicalTerm = ""
+            termAliasesText = ""
+            setTermDictionaryMessage("Term entry saved.", tone: .success)
+        } catch {
+            setTermDictionaryMessage(userFacingMessage(for: error), tone: .critical)
+        }
+    }
+
+    private func removeTermEntry(_ entry: TermDictionaryEntry) {
+        do {
+            try termDictionaryStore.removeEntry(canonicalTerm: entry.canonicalTerm)
+            setTermDictionaryMessage("Removed \(entry.canonicalTerm).", tone: .success)
+        } catch {
+            setTermDictionaryMessage(userFacingMessage(for: error), tone: .critical)
+        }
+    }
+
+    private func confirmTermCandidate(_ candidate: TermDictionaryCandidate) {
+        do {
+            try termDictionaryStore.confirm(candidate)
+            setTermDictionaryMessage("Candidate promoted to confirmed terms.", tone: .success)
+        } catch {
+            setTermDictionaryMessage(userFacingMessage(for: error), tone: .critical)
+        }
+    }
+
+    private func dismissTermCandidate(_ candidate: TermDictionaryCandidate) {
+        do {
+            try termDictionaryStore.dismiss(candidate)
+            setTermDictionaryMessage("Candidate dismissed.", tone: .neutral)
+        } catch {
+            setTermDictionaryMessage(userFacingMessage(for: error), tone: .critical)
+        }
+    }
+
     private func runRefineConnectionTest() {
         isTestingRefine = true
         refineTestMessage = "Testing…"
@@ -364,6 +511,120 @@ struct SettingsView: View {
     private func userFacingMessage(for error: Error) -> String {
         let description = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
         return description.isEmpty ? String(describing: error) : description
+    }
+
+    private func parsedAliases(from text: String) -> [String] {
+        text.components(separatedBy: CharacterSet(charactersIn: ",，\n"))
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+
+    private func setTermDictionaryMessage(_ message: String, tone: SpeakDockBadgeTone) {
+        termDictionaryMessage = message
+        termDictionaryMessageTone = tone
+    }
+
+    @ViewBuilder
+    private func confirmedEntryRow(_ entry: TermDictionaryEntry) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(entry.canonicalTerm)
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(Color.primary.opacity(0.9))
+
+                Text(entry.aliases.joined(separator: ", "))
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 12)
+
+            Button("Remove") {
+                removeTermEntry(entry)
+            }
+            .buttonStyle(SpeakDockActionButtonStyle(kind: .subtle))
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(SpeakDockVisualStyle.panelInset)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(SpeakDockVisualStyle.line, lineWidth: 1)
+        )
+    }
+
+    @ViewBuilder
+    private func pendingCandidateRow(_ candidate: TermDictionaryCandidate) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(candidate.canonicalTerm)
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(Color.primary.opacity(0.9))
+
+                Text("Alias: \(candidate.alias)")
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+                    .textSelection(.enabled)
+
+                Text("Source: \(candidateSourceLabel(candidate.source))")
+                    .font(.system(size: 11))
+                    .foregroundStyle(SpeakDockVisualStyle.tertiaryText)
+            }
+
+            Spacer(minLength: 12)
+
+            HStack(spacing: 8) {
+                Button("Confirm") {
+                    confirmTermCandidate(candidate)
+                }
+                .buttonStyle(SpeakDockActionButtonStyle(kind: .primary))
+
+                Button("Dismiss") {
+                    dismissTermCandidate(candidate)
+                }
+                .buttonStyle(SpeakDockActionButtonStyle(kind: .subtle))
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(SpeakDockVisualStyle.panelInset)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(SpeakDockVisualStyle.line, lineWidth: 1)
+        )
+    }
+
+    @ViewBuilder
+    private func emptyStateView(_ message: String) -> some View {
+        Text(message)
+            .font(.system(size: 11.5))
+            .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 11)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(SpeakDockVisualStyle.panelInset)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(SpeakDockVisualStyle.line, lineWidth: 1)
+            )
+    }
+
+    private func candidateSourceLabel(_ source: TermDictionaryCandidateSource) -> String {
+        switch source {
+        case .manualCorrection:
+            "Manual correction"
+        }
     }
 
     @ViewBuilder

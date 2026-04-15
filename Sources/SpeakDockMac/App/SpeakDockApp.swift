@@ -84,7 +84,10 @@ struct SpeakDockApp: App {
         .menuBarExtraStyle(.window)
 
         Settings {
-            SettingsView(settingsStore: settingsStore)
+            SettingsView(
+                settingsStore: settingsStore,
+                termDictionaryStore: termDictionaryStore
+            )
         }
     }
 }

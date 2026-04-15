@@ -96,7 +96,15 @@
 5. Settings 至少支持 `Test / Save`。
 6. 启用 refine 后，界面能明确显示 `Refining...`。
 
-## 12. 基线性能
+## 12. Term Dictionary
+
+1. Settings 中可以手动添加 `Canonical term + aliases`。
+2. alias 为空、或与 canonical term 相同的条目不会保存成功。
+3. 已确认条目可删除，删除后重新启动仍保持删除状态。
+4. 已确认条目保存在用户本地，不进入仓库 Git 管理。
+5. 如果存在 pending candidate，用户可以显式 `Confirm / Dismiss`，并在重启后保持结果。
+
+## 13. 基线性能
 
 1. 在基线机器上常驻时，前台体验没有明显卡顿。
 2. `Ready` 状态平均 CPU 尽量低于 `2%`。

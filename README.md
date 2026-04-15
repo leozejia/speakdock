@@ -2,7 +2,7 @@
 
 SpeakDock is an AI voice input method for macOS that does not stop at typing.
 
-Speak, and it writes where you are. Ask it to clean up or reorganize what you said, and model-based refine can turn rough speech into usable text. Capture a thought instead, and it becomes the entry point to a local Markdown knowledge base that can later be compiled into an LLM-maintained wiki.
+Speak, and it writes where you are. Deterministic cleanup keeps the hot path stable, and optional model-based refine can further clean or reorganize rough speech. Capture a thought instead, and it becomes the entry point to a local Markdown knowledge base that can later be compiled into an LLM-maintained wiki.
 
 The long-term goal is a voice layer that can write, correct, organize, and remember, while keeping the source of truth on your machine.
 
@@ -55,16 +55,17 @@ SpeakDock is in an early macOS implementation phase. The first milestone is the 
 
 What works today:
 
-- Menu bar app with no Dock icon.
+- Menu bar app with Dock visibility on by default, plus a Settings toggle when you want a menu-bar-only setup.
 - Press and hold `Fn` to speak, release to finish, double-press to submit.
 - Apple Speech streaming recognition with `zh-CN` by default.
 - Language options for `en-US`, `zh-CN`, `zh-TW`, `ja-JP`, and `ko-KR`.
 - Compose through clipboard paste with temporary ASCII input-source switching.
 - Capture to local Markdown files named `speakdock-YYYYMMDD-HHMMSS.md`.
 - Lightweight overlay for listening, thinking, refining, transcript preview, and audio level.
-- Conservative cleanup and optional OpenAI-compatible refine.
+- Deterministic `Clean`, a local `Term Dictionary`, and optional OpenAI-compatible `Refine`.
 - Recent insertion undo and refine undo.
 - Compatibility diagnostics for third-party text targets.
+- Settings for trigger, capture root, local term dictionary, and refine configuration.
 - Apple Unified Logging through `OSLog.Logger`.
 
 Not shipped yet:
@@ -72,6 +73,7 @@ Not shipped yet:
 - A packaged and signed public release.
 - A local ASR model path.
 - A local small-model cleanup or extraction engine.
+- Live term-dictionary candidate capture from manual correction events.
 - Background Wiki compiler and schema workflow.
 - DJI or other hardware trigger adapters.
 - iOS trigger or capture surface.
