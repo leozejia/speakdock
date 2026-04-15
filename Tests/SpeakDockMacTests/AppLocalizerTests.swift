@@ -69,4 +69,81 @@ final class AppLocalizerTests: XCTestCase {
             "3 saved"
         )
     }
+
+    func testChineseRefineConfigurationCopyIsLocalized() throws {
+        let baseURLPlaceholderKey = try XCTUnwrap(
+            AppLocalizedStringKey(rawValue: "settings.base_url.placeholder")
+        )
+        let apiKeyPlaceholderKey = try XCTUnwrap(
+            AppLocalizedStringKey(rawValue: "settings.api_key.placeholder")
+        )
+        let modelPlaceholderKey = try XCTUnwrap(
+            AppLocalizedStringKey(rawValue: "settings.model.placeholder")
+        )
+
+        XCTAssertEqual(
+            AppLocalizer.string(
+                .settingsBaseURLLabel,
+                appLanguage: .simplifiedChinese,
+                preferredLanguages: ["en"]
+            ),
+            "接口地址"
+        )
+        XCTAssertEqual(
+            AppLocalizer.string(
+                .settingsAPIKeyLabel,
+                appLanguage: .simplifiedChinese,
+                preferredLanguages: ["en"]
+            ),
+            "API 密钥"
+        )
+        XCTAssertEqual(
+            AppLocalizer.string(
+                .settingsModelLabel,
+                appLanguage: .simplifiedChinese,
+                preferredLanguages: ["en"]
+            ),
+            "模型"
+        )
+        XCTAssertEqual(
+            AppLocalizer.string(
+                .menuSettings,
+                appLanguage: .simplifiedChinese,
+                preferredLanguages: ["en"]
+            ),
+            "设置"
+        )
+        XCTAssertEqual(
+            AppLocalizer.string(
+                baseURLPlaceholderKey,
+                appLanguage: .simplifiedChinese,
+                preferredLanguages: ["en"]
+            ),
+            "https://example.com/v1"
+        )
+        XCTAssertEqual(
+            AppLocalizer.string(
+                apiKeyPlaceholderKey,
+                appLanguage: .simplifiedChinese,
+                preferredLanguages: ["en"]
+            ),
+            "请输入 API 密钥"
+        )
+        XCTAssertEqual(
+            AppLocalizer.string(
+                modelPlaceholderKey,
+                appLanguage: .simplifiedChinese,
+                preferredLanguages: ["en"]
+            ),
+            "例如 gpt-5.4"
+        )
+        XCTAssertEqual(
+            AppLocalizer.string(
+                .menuActionsUnavailableSubtitle,
+                appLanguage: .simplifiedChinese,
+                preferredLanguages: ["en"]
+            ),
+            "Fn 当前不可用，请去设置里手动切换触发方式。"
+        )
+    }
 }

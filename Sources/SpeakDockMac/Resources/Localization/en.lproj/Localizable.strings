@@ -44,8 +44,11 @@
 "settings.enable_refine.title" = "Enable Refine";
 "settings.enable_refine.subtitle" = "Use a compatible chat completion endpoint to polish transcription output.";
 "settings.base_url.label" = "Base URL";
+"settings.base_url.placeholder" = "https://example.com/v1";
 "settings.api_key.label" = "API Key";
+"settings.api_key.placeholder" = "Enter API key";
 "settings.model.label" = "Model";
+"settings.model.placeholder" = "e.g. gpt-5.4";
 "settings.actions.title" = "Actions";
 "settings.actions.subtitle" = "Verify the connection and persist current changes.";
 "settings.test_connection" = "Test Connection";

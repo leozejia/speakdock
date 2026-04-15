@@ -270,19 +270,19 @@ struct SettingsView: View {
 
                         VStack(alignment: .leading, spacing: 12) {
                             LabeledContent(localized(.settingsBaseURLLabel)) {
-                                TextField("https://example.com/v1", text: $settingsStore.settings.refineBaseURL)
+                                TextField(localized(.settingsBaseURLPlaceholder), text: $settingsStore.settings.refineBaseURL)
                                     .textFieldStyle(.roundedBorder)
                                     .frame(width: 280)
                             }
 
                             LabeledContent(localized(.settingsAPIKeyLabel)) {
-                                SecureField("sk-...", text: $settingsStore.settings.refineAPIKey)
+                                SecureField(localized(.settingsAPIKeyPlaceholder), text: $settingsStore.settings.refineAPIKey)
                                     .textFieldStyle(.roundedBorder)
                                     .frame(width: 280)
                             }
 
                             LabeledContent(localized(.settingsModelLabel)) {
-                                TextField("gpt-5.4", text: $settingsStore.settings.refineModel)
+                                TextField(localized(.settingsModelPlaceholder), text: $settingsStore.settings.refineModel)
                                     .textFieldStyle(.roundedBorder)
                                     .frame(width: 200)
                             }

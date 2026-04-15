@@ -57,19 +57,19 @@ final class UserFacingErrorLocalizationTests: XCTestCase {
 
         XCTAssertEqual(
             OpenAICompatibleRefineEngineError.invalidBaseURL.localizedDescription,
-            "Refine Base URL 无效"
+            "整理服务地址无效"
         )
         XCTAssertEqual(
             OpenAICompatibleRefineEngineError.invalidResponse.localizedDescription,
-            "Refine 返回结果无效"
+            "整理服务返回结果无效"
         )
         XCTAssertEqual(
             OpenAICompatibleRefineEngineError.unexpectedStatusCode(429).localizedDescription,
-            "Refine 请求失败（429）"
+            "整理请求失败（429）"
         )
         XCTAssertEqual(
             RefineConnectionTesterError.incompleteConfiguration.localizedDescription,
-            "请先填写 Base URL / API Key / Model"
+            "请先填写接口地址 / API 密钥 / 模型"
         )
         XCTAssertEqual(
             CaptureRootMigrationError.destinationConflict("note.md").localizedDescription,
