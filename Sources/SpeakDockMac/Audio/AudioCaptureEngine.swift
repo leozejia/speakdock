@@ -4,6 +4,10 @@ import Foundation
 enum AudioCaptureAvailability: Equatable, Sendable {
     case available
     case unavailable(label: String)
+
+    static var unavailableLabel: String {
+        AppLocalizer.string(.overlayMicrophoneUnavailable)
+    }
 }
 
 @MainActor
@@ -113,7 +117,7 @@ final class AudioCaptureEngine {
     private func reportUnavailable() {
         stopCapture()
         SpeakDockLog.audio.error("audio capture unavailable")
-        onAvailabilityChanged?(.unavailable(label: "Microphone Unavailable"))
+        onAvailabilityChanged?(.unavailable(label: AudioCaptureAvailability.unavailableLabel))
     }
 
 }

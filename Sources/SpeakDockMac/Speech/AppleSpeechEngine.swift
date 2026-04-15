@@ -7,6 +7,10 @@ import SpeakDockCore
 enum SpeechRecognitionAvailability: Equatable, Sendable {
     case available
     case unavailable(label: String)
+
+    static var unavailableLabel: String {
+        AppLocalizer.string(.speechRecognitionUnavailable)
+    }
 }
 
 protocol SpeechEngine: AnyObject {
@@ -179,7 +183,7 @@ final class AppleSpeechEngine: SpeechEngine, @unchecked Sendable {
     private func reportUnavailable() {
         resetRecognition(cancelTask: true)
         SpeakDockLog.speech.error("speech recognition unavailable")
-        notifyAvailability(.unavailable(label: "Speech Recognition Unavailable"))
+        notifyAvailability(.unavailable(label: SpeechRecognitionAvailability.unavailableLabel))
     }
 
     private func resetRecognition(cancelTask: Bool) {

@@ -10,26 +10,26 @@ enum OverlayPhase: Equatable, Sendable {
     var title: String {
         switch self {
         case .listening:
-            "Listening"
+            AppLocalizer.string(.overlayListeningTitle)
         case .thinking:
-            "Thinking"
+            AppLocalizer.string(.overlayThinkingTitle)
         case .refining:
-            "Refining"
+            AppLocalizer.string(.overlayRefiningTitle)
         case .error:
-            "Unavailable"
+            AppLocalizer.string(.overlayUnavailableTitle)
         }
     }
 
     var defaultTranscript: String {
         switch self {
         case .listening:
-            "Listening…"
+            AppLocalizer.string(.overlayListeningTranscript)
         case .thinking:
-            "Processing…"
+            AppLocalizer.string(.overlayProcessingTranscript)
         case .refining:
-            "Refining…"
+            AppLocalizer.string(.overlayRefiningTranscript)
         case .error:
-            "Microphone Unavailable"
+            AppLocalizer.string(.overlayMicrophoneUnavailable)
         }
     }
 
@@ -49,7 +49,7 @@ struct OverlayContent: Equatable, Sendable {
         phase: OverlayPhase,
         transcript: String = "",
         level: Float = 0,
-        secondaryActionTitle: String = "整理",
+        secondaryActionTitle: String = AppLocalizer.string(.hotPathSecondaryActionRefine),
         secondaryActionEnabled: Bool = false
     ) {
         self.phase = phase
@@ -72,7 +72,11 @@ final class OverlayView: NSVisualEffectView {
     private let statusDotView = NSView()
     private let statusLabel = NSTextField(labelWithString: "")
     private let transcriptLabel = NSTextField(labelWithString: "")
-    private let secondaryButton = NSButton(title: "整理", target: nil, action: nil)
+    private let secondaryButton = NSButton(
+        title: AppLocalizer.string(.hotPathSecondaryActionRefine),
+        target: nil,
+        action: nil
+    )
 
     private var content = OverlayContent(phase: .listening)
 

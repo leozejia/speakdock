@@ -91,6 +91,9 @@
 "overlay.refining.transcript" = "整理中...";
 "overlay.microphone_unavailable" = "麦克风不可用";
 "hot_path.secondary_action.refine" = "整理";
+"hot_path.secondary_action.undo_refine" = "撤回";
+"hot_path.secondary_action.confirm_undo_refine" = "确认撤回";
+"hot_path.secondary_action.undo_submit" = "撤回提交";
 "hot_path.undo_dirty_confirmation" = "你刚刚改过文本，仍要回滚吗？";
 "hot_path.compose_unavailable" = "无法直接输入";
 "hot_path.speech_timed_out" = "语音识别超时";

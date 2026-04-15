@@ -6,7 +6,7 @@ import SpeakDockCore
 @MainActor
 @Observable
 final class HotPathCoordinator {
-    var secondaryActionTitle = "整理"
+    var secondaryActionTitle = AppLocalizer.string(.hotPathSecondaryActionRefine)
     var secondaryActionEnabled = false
 
     private let settingsStore: SettingsStore
@@ -68,7 +68,7 @@ final class HotPathCoordinator {
             refineCurrentWorkspace()
 
         case .requestUndoRefineConfirmation:
-            overlayPanelController.updateTranscript("你刚刚修改过，确定要回滚吗？")
+            overlayPanelController.updateTranscript(AppLocalizer.string(.hotPathUndoDirtyConfirmation))
             refreshSecondaryAction()
 
         case .undoRefine:
@@ -246,7 +246,7 @@ final class HotPathCoordinator {
 
             case .noTarget:
                 SpeakDockLog.compose.warning("captured compose target disappeared before commit")
-                overlayPanelController.showError("Compose Unavailable")
+                overlayPanelController.showError(AppLocalizer.string(.hotPathComposeUnavailable))
 
             case let .unavailable(reason):
                 SpeakDockLog.compose.warning("captured compose target unavailable before commit: \(reason, privacy: .private)")
@@ -560,10 +560,11 @@ final class HotPathCoordinator {
             for: workspaceState.activeWorkspace,
             now: clock()
         )
-        secondaryActionTitle = presentation.title
+        let localizedTitle = presentation.localizedTitle(appLanguage: settingsStore.settings.appLanguage)
+        secondaryActionTitle = localizedTitle
         secondaryActionEnabled = presentation.isEnabled
         overlayPanelController.updateSecondaryAction(
-            title: presentation.title,
+            title: localizedTitle,
             isEnabled: presentation.isEnabled
         )
     }
@@ -593,7 +594,7 @@ final class HotPathCoordinator {
                 }
 
                 SpeakDockLog.speech.error("speech recognition timed out while waiting for final result")
-                self.overlayPanelController.showError("Speech Timed Out")
+                self.overlayPanelController.showError(AppLocalizer.string(.hotPathSpeechTimedOut))
                 self.pendingRecognitionTimeoutTask = nil
             }
         }
@@ -602,5 +603,25 @@ final class HotPathCoordinator {
     private func cancelRecognitionTimeout() {
         pendingRecognitionTimeoutTask?.cancel()
         pendingRecognitionTimeoutTask = nil
+    }
+}
+
+extension SecondaryActionPresentation {
+    func localizedTitle(appLanguage: AppLanguageOption? = nil) -> String {
+        switch kind {
+        case .refine:
+            AppLocalizer.string(.hotPathSecondaryActionRefine, appLanguage: appLanguage)
+
+        case let .undoRefine(requiresConfirmation):
+            AppLocalizer.string(
+                requiresConfirmation
+                    ? .hotPathSecondaryActionConfirmUndoRefine
+                    : .hotPathSecondaryActionUndoRefine,
+                appLanguage: appLanguage
+            )
+
+        case .undoRecentSubmission:
+            AppLocalizer.string(.hotPathSecondaryActionUndoSubmit, appLanguage: appLanguage)
+        }
     }
 }

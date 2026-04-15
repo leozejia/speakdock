@@ -91,6 +91,9 @@
 "overlay.refining.transcript" = "Refining...";
 "overlay.microphone_unavailable" = "Microphone Unavailable";
 "hot_path.secondary_action.refine" = "Refine";
+"hot_path.secondary_action.undo_refine" = "Undo";
+"hot_path.secondary_action.confirm_undo_refine" = "Confirm Undo";
+"hot_path.secondary_action.undo_submit" = "Undo Submit";
 "hot_path.undo_dirty_confirmation" = "You edited the text. Undo anyway?";
 "hot_path.compose_unavailable" = "Compose Unavailable";
 "hot_path.speech_timed_out" = "Speech Timed Out";

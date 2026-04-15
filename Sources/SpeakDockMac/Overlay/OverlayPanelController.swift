@@ -13,7 +13,7 @@ final class OverlayPanelController {
     private var overlayView: OverlayView?
     private var content = OverlayContent(phase: .listening)
     private var dismissTask: Task<Void, Never>?
-    private var secondaryActionTitle = "整理"
+    private var secondaryActionTitle = AppLocalizer.string(.hotPathSecondaryActionRefine)
     private var secondaryActionEnabled = false
 
     init() {

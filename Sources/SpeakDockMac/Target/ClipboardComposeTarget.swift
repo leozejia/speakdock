@@ -10,6 +10,10 @@ enum ComposeTargetAvailability: Equatable {
 enum ClipboardComposeTargetError: LocalizedError {
     case unavailable(String)
 
+    static var composeUnavailableReason: String {
+        AppLocalizer.string(.hotPathComposeUnavailable)
+    }
+
     var errorDescription: String? {
         switch self {
         case let .unavailable(reason):
@@ -77,7 +81,7 @@ final class ClipboardComposeTarget {
                 capturedTarget = nil
                 SpeakDockLog.permission.warning("compose target capture failed: accessibility not trusted")
             }
-            return .unavailable(reason: "Compose Unavailable")
+            return .unavailable(reason: ClipboardComposeTargetError.composeUnavailableReason)
         }
 
         let frontmostBundleIdentifier = workspace.frontmostApplication?.bundleIdentifier ?? "unknown"
@@ -153,7 +157,7 @@ final class ClipboardComposeTarget {
                     "compose target capture failed because AX API is disabled: frontmost=\(frontmostBundleIdentifier, privacy: .public)"
                 )
             }
-            return .unavailable(reason: "Compose Unavailable")
+            return .unavailable(reason: ClipboardComposeTargetError.composeUnavailableReason)
 
         default:
             if captureTarget {
@@ -162,7 +166,7 @@ final class ClipboardComposeTarget {
                     "compose target capture failed: error=\(error.rawValue, privacy: .public), frontmost=\(frontmostBundleIdentifier, privacy: .public)"
                 )
             }
-            return .unavailable(reason: "Compose Unavailable")
+            return .unavailable(reason: ClipboardComposeTargetError.composeUnavailableReason)
         }
     }
 
@@ -199,7 +203,7 @@ final class ClipboardComposeTarget {
             return .noTarget
         }
 
-        return .unavailable(reason: "Compose Unavailable")
+        return .unavailable(reason: ClipboardComposeTargetError.composeUnavailableReason)
     }
 
     func inject(_ text: String, expectedTargetID: String? = nil) throws {
@@ -212,7 +216,7 @@ final class ClipboardComposeTarget {
             try ensureAvailableTargetOrRestoreCapturedTarget(expectedTargetID: expectedTargetID)
         } else {
             guard case .available = availability() else {
-                throw ClipboardComposeTargetError.unavailable("Compose Unavailable")
+                throw ClipboardComposeTargetError.unavailable(ClipboardComposeTargetError.composeUnavailableReason)
             }
         }
 
@@ -276,7 +280,7 @@ final class ClipboardComposeTarget {
             return
         }
 
-        throw ClipboardComposeTargetError.unavailable("Compose Unavailable")
+        throw ClipboardComposeTargetError.unavailable(ClipboardComposeTargetError.composeUnavailableReason)
     }
 
     private func ensureAvailableTargetOrRestoreCapturedTarget(expectedTargetID: String) throws {
@@ -285,7 +289,7 @@ final class ClipboardComposeTarget {
         }
 
         guard let capturedTarget, capturedTarget.targetID == expectedTargetID else {
-            throw ClipboardComposeTargetError.unavailable("Compose Unavailable")
+            throw ClipboardComposeTargetError.unavailable(ClipboardComposeTargetError.composeUnavailableReason)
         }
 
         switch capturedTarget {
@@ -294,13 +298,13 @@ final class ClipboardComposeTarget {
 
         case let .pasteOnlyApplication(target):
             guard isFrontmostPasteOnlyApplicationTarget(target) else {
-                throw ClipboardComposeTargetError.unavailable("Compose Unavailable")
+                throw ClipboardComposeTargetError.unavailable(ClipboardComposeTargetError.composeUnavailableReason)
             }
             return
         }
 
         guard case let .available(targetID) = availability(), targetID == expectedTargetID else {
-            throw ClipboardComposeTargetError.unavailable("Compose Unavailable")
+            throw ClipboardComposeTargetError.unavailable(ClipboardComposeTargetError.composeUnavailableReason)
         }
     }
 
