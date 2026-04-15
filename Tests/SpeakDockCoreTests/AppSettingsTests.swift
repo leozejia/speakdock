@@ -19,18 +19,16 @@ final class AppSettingsTests: XCTestCase {
 
         let decoded = try JSONDecoder().decode(AppSettings.self, from: legacyJSON)
 
-        XCTAssertTrue(decoded.showDockIcon)
         XCTAssertEqual(decoded.appLanguage, .followSystem)
         XCTAssertEqual(decoded.inputLanguage, .simplifiedChinese)
     }
 
-    func testSettingsEncodeWritesSplitLanguageFieldsWithoutLegacyLanguageCode() throws {
+    func testSettingsEncodeWritesSplitLanguageFieldsWithoutLegacyLanguageCodeOrDockToggle() throws {
         let settings = AppSettings(
             appLanguage: .english,
             inputLanguage: .japanese,
             captureRootPath: "/tmp",
             triggerSelection: .fn,
-            showDockIcon: true,
             refineEnabled: false,
             refineBaseURL: "",
             refineAPIKey: "",
@@ -45,5 +43,6 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertEqual(payload["appLanguage"] as? String, "en")
         XCTAssertEqual(payload["inputLanguage"] as? String, "ja-JP")
         XCTAssertNil(payload["languageCode"])
+        XCTAssertNil(payload["showDockIcon"])
     }
 }

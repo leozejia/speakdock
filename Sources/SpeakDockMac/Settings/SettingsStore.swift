@@ -91,7 +91,6 @@ final class SettingsStore {
                 inputLanguage: .defaultOption,
                 captureRootPath: defaultCaptureRootURL.path,
                 triggerSelection: .fn,
-                showDockIcon: true,
                 refineEnabled: false,
                 refineBaseURL: "",
                 refineAPIKey: "",

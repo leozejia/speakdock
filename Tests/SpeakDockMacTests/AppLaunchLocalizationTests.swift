@@ -60,7 +60,6 @@ final class AppLaunchLocalizationTests: XCTestCase {
                 inputLanguage: .simplifiedChinese,
                 captureRootPath: "/tmp",
                 triggerSelection: .fn,
-                showDockIcon: true,
                 refineEnabled: false,
                 refineBaseURL: "",
                 refineAPIKey: "",

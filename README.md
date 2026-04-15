@@ -55,7 +55,7 @@ SpeakDock is in an early macOS implementation phase. The first milestone is the 
 
 What works today:
 
-- Menu bar app with Dock visibility on by default, plus a Settings toggle when you want a menu-bar-only setup.
+- Menu bar app with the Dock icon visible by default.
 - Press and hold `Fn` to speak, release to finish, double-press to submit.
 - Apple Speech streaming recognition with `zh-CN` by default.
 - Language options for `en-US`, `zh-CN`, `zh-TW`, `ja-JP`, and `ko-KR`.

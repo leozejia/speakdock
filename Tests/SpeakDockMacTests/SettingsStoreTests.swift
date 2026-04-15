@@ -19,7 +19,6 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.settings.appLanguage, .followSystem)
         XCTAssertEqual(store.settings.inputLanguage, .simplifiedChinese)
         XCTAssertEqual(store.settings.triggerSelection, .fn)
-        XCTAssertTrue(store.settings.showDockIcon)
         XCTAssertFalse(store.settings.refineEnabled)
         XCTAssertEqual(
             store.settings.captureRootPath,
@@ -40,7 +39,6 @@ final class SettingsStoreTests: XCTestCase {
         store.settings.appLanguage = .english
         store.settings.inputLanguage = .english
         store.settings.triggerSelection = .alternative("right-command")
-        store.settings.showDockIcon = false
         store.settings.refineEnabled = true
         store.settings.refineBaseURL = "https://example.com/v1"
         store.settings.refineAPIKey = "secret"
@@ -58,7 +56,6 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(reloadedStore.settings.appLanguage, .english)
         XCTAssertEqual(reloadedStore.settings.inputLanguage, .english)
         XCTAssertEqual(reloadedStore.settings.triggerSelection, .alternative("right-command"))
-        XCTAssertFalse(reloadedStore.settings.showDockIcon)
         XCTAssertTrue(reloadedStore.settings.refineEnabled)
         XCTAssertEqual(reloadedStore.settings.refineBaseURL, "https://example.com/v1")
         XCTAssertEqual(reloadedStore.settings.refineAPIKey, "")
@@ -77,7 +74,6 @@ final class SettingsStoreTests: XCTestCase {
           "triggerSelection": {
             "kind": "fn"
           },
-          "showDockIcon": true,
           "refineEnabled": false,
           "refineBaseURL": "",
           "refineAPIKey": "",
@@ -115,10 +111,10 @@ final class SettingsStoreTests: XCTestCase {
             secondReceived = settings
         }
 
-        store.settings.showDockIcon = false
+        store.settings.refineEnabled = true
 
-        XCTAssertEqual(firstReceived?.showDockIcon, false)
-        XCTAssertEqual(secondReceived?.showDockIcon, false)
+        XCTAssertEqual(firstReceived?.refineEnabled, true)
+        XCTAssertEqual(secondReceived?.refineEnabled, true)
     }
 
     func testCaptureRootMigrationMovesExistingFilesAndPersistsNewPath() throws {

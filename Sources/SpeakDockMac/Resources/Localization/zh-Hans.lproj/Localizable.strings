@@ -13,7 +13,7 @@
 "settings.input.title" = "输入";
 "settings.input.subtitle" = "把界面显示语言和语音识别语言分开设置。";
 "settings.pane.general.title" = "通用";
-"settings.pane.general.subtitle" = "语言、触发方式、Dock 与 capture 行为。";
+"settings.pane.general.subtitle" = "语言、触发方式与 capture 行为。";
 "settings.pane.dictionary.title" = "词典";
 "settings.pane.dictionary.subtitle" = "已确认术语与待处理修正。";
 "settings.pane.refine.title" = "整理";
@@ -25,8 +25,6 @@
 "settings.trigger.alternative" = "替代键";
 "settings.alternative_key.label" = "替代按键";
 "settings.fn.warning" = "如果 Fn 不可用，SpeakDock 会在菜单栏报警。替代触发键只能在设置中手动切换。";
-"settings.show_dock_icon.title" = "显示 Dock 图标";
-"settings.show_dock_icon.subtitle" = "调试或首次配置时，让 SpeakDock 在 Dock 中可见。";
 "settings.capture.title" = "捕获";
 "settings.capture.subtitle" = "当无法直接写入输入框时，选择兜底 capture 文件的保存目录。";
 "settings.capture_root.label" = "Capture 根目录";
@@ -55,16 +53,13 @@
 "settings.api_key.placeholder" = "请输入 API 密钥";
 "settings.model.label" = "模型";
 "settings.model.placeholder" = "例如 gpt-5.4";
-"settings.actions.title" = "操作";
-"settings.actions.subtitle" = "验证连接状态，并保存当前设置。";
 "settings.test_connection" = "测试连接";
 "settings.testing_connection" = "测试中...";
-"settings.save" = "保存";
+"settings.connection.title" = "连接测试";
+"settings.connection.subtitle" = "在主路径使用前，先验证当前整理接口是否可用。";
 "settings.header.tagline" = "为 Mac 打磨的 AI 语音输入。";
 "settings.refine.on" = "整理已开";
 "settings.refine.off" = "整理已关";
-"settings.dock.on" = "Dock 已开";
-"settings.dock.off" = "Dock 已关";
 "settings.open_panel.migrate" = "迁移到这里";
 "settings.open_panel.message" = "选择新的 capture 根目录，现有 capture 文件会一起迁移。";
 "settings.term_dictionary.entry_saved" = "术语已保存。";
@@ -72,7 +67,6 @@
 "settings.term_dictionary.candidate_promoted" = "候选词已加入术语词典。";
 "settings.term_dictionary.candidate_dismissed" = "候选词已忽略。";
 "settings.test_passed" = "连接成功：%@";
-"settings.saved" = "设置已保存。";
 "settings.remove" = "移除";
 "settings.alias.label" = "别名";
 "settings.source.label" = "来源";

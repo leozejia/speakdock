@@ -107,61 +107,110 @@ struct SpeakDockStatusBadge: View {
 }
 
 struct SpeakDockBrandGlyph: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     var size: CGFloat = 44
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
+        ZStack {
             RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [
-                            Color(nsColor: NSColor(calibratedWhite: 0.22, alpha: 1)),
-                            Color(nsColor: NSColor(calibratedWhite: 0.14, alpha: 1)),
-                        ],
+                        colors: shellGradientColors,
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        .stroke(shellStrokeColor, lineWidth: 1)
                 )
-                .shadow(color: .black.opacity(0.18), radius: 12, x: 0, y: 8)
-
-            HStack(alignment: .bottom, spacing: size * 0.075) {
-                glyphBar(height: size * 0.22)
-                glyphBar(height: size * 0.42)
-                glyphBar(height: size * 0.56)
-                glyphBar(height: size * 0.34)
-            }
-            .frame(height: size * 0.58)
+                .shadow(color: shellShadowColor, radius: size * 0.22, x: 0, y: size * 0.14)
 
             Circle()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            SpeakDockVisualStyle.accent.opacity(0.95),
-                            SpeakDockVisualStyle.accent.opacity(0.65),
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: size * 0.18, height: size * 0.18)
-                .overlay(
-                    Circle()
-                        .stroke(Color.white.opacity(0.28), lineWidth: 0.8)
-                )
-                .offset(x: size * 0.06, y: -size * 0.06)
+                .fill(shellHighlightColor)
+                .blur(radius: size * 0.16)
+                .frame(width: size * 0.7, height: size * 0.7)
+                .offset(x: -size * 0.1, y: -size * 0.16)
+
+            microphoneGlyph
         }
         .frame(width: size, height: size)
     }
 
-    private func glyphBar(height: CGFloat) -> some View {
-        Capsule(style: .continuous)
-            .fill(Color.white.opacity(0.96))
-            .frame(width: size * 0.1, height: height)
-            .shadow(color: Color.white.opacity(0.18), radius: 1.5, x: 0, y: 0.5)
+    private var shellGradientColors: [Color] {
+        if colorScheme == .dark {
+            return [
+                Color(nsColor: NSColor(calibratedWhite: 0.22, alpha: 1)),
+                Color(nsColor: NSColor(calibratedWhite: 0.10, alpha: 1)),
+            ]
+        }
+
+        return [
+            Color(nsColor: NSColor(calibratedRed: 0.99, green: 0.99, blue: 0.98, alpha: 1)),
+            Color(nsColor: NSColor(calibratedRed: 0.90, green: 0.92, blue: 0.96, alpha: 1)),
+        ]
+    }
+
+    private var shellStrokeColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.10)
+    }
+
+    private var shellShadowColor: Color {
+        colorScheme == .dark ? .black.opacity(0.24) : .black.opacity(0.14)
+    }
+
+    private var shellHighlightColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.12) : Color.white.opacity(0.72)
+    }
+
+    private var microphoneGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color(nsColor: NSColor(calibratedRed: 0.14, green: 0.82, blue: 1.0, alpha: 1)),
+                Color(nsColor: NSColor(calibratedRed: 0.21, green: 0.38, blue: 1.0, alpha: 1)),
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    private var microphoneStandColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.92) : Color.black.opacity(0.72)
+    }
+
+    private var microphoneGlyph: some View {
+        ZStack {
+            Capsule(style: .continuous)
+                .fill(microphoneGradient)
+                .frame(width: size * 0.26, height: size * 0.40)
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(Color.white.opacity(colorScheme == .dark ? 0.24 : 0.42), lineWidth: 0.9)
+                )
+                .shadow(
+                    color: Color(nsColor: NSColor(calibratedRed: 0.15, green: 0.60, blue: 1.0, alpha: colorScheme == .dark ? 0.34 : 0.18)),
+                    radius: size * 0.12,
+                    x: 0,
+                    y: size * 0.06
+                )
+                .offset(y: -size * 0.07)
+
+            RoundedRectangle(cornerRadius: size * 0.03, style: .continuous)
+                .fill(microphoneStandColor)
+                .frame(width: size * 0.06, height: size * 0.18)
+                .offset(y: size * 0.12)
+
+            Capsule(style: .continuous)
+                .fill(microphoneStandColor)
+                .frame(width: size * 0.30, height: size * 0.06)
+                .offset(y: size * 0.28)
+
+            Capsule(style: .continuous)
+                .fill(Color.white.opacity(colorScheme == .dark ? 0.20 : 0.38))
+                .frame(width: size * 0.05, height: size * 0.22)
+                .offset(x: -size * 0.06, y: -size * 0.09)
+        }
     }
 }
 
@@ -170,13 +219,9 @@ struct SpeakDockMenuBarIcon: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            HStack(alignment: .bottom, spacing: 1.6) {
-                menuBar(height: 5)
-                menuBar(height: 9)
-                menuBar(height: 12)
-                menuBar(height: 7)
-            }
-            .frame(width: 17, height: 14)
+            Image(systemName: "mic.fill")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(Color.primary.opacity(0.95))
 
             if case .unavailable = availability {
                 Circle()
@@ -185,14 +230,8 @@ struct SpeakDockMenuBarIcon: View {
                     .offset(x: 1, y: -1)
             }
         }
-        .frame(width: 18, height: 14)
+        .frame(width: 16, height: 14)
         .accessibilityLabel("SpeakDock")
-    }
-
-    private func menuBar(height: CGFloat) -> some View {
-        Capsule(style: .continuous)
-            .fill(Color.primary.opacity(0.92))
-            .frame(width: 2.2, height: height)
     }
 }
 

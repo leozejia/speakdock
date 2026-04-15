@@ -13,7 +13,7 @@
 "settings.input.title" = "Input";
 "settings.input.subtitle" = "Separate what the app shows from what speech recognition listens for.";
 "settings.pane.general.title" = "General";
-"settings.pane.general.subtitle" = "Language, trigger, dock, and capture behavior.";
+"settings.pane.general.subtitle" = "Language, trigger, and capture behavior.";
 "settings.pane.dictionary.title" = "Dictionary";
 "settings.pane.dictionary.subtitle" = "Confirmed terms and pending corrections.";
 "settings.pane.refine.title" = "Refine";
@@ -25,8 +25,6 @@
 "settings.trigger.alternative" = "Alternative";
 "settings.alternative_key.label" = "Alternative Key";
 "settings.fn.warning" = "If Fn becomes unavailable, SpeakDock will warn in the menu bar. Switch triggers manually in Settings.";
-"settings.show_dock_icon.title" = "Show Dock Icon";
-"settings.show_dock_icon.subtitle" = "Keep SpeakDock visible in the Dock while debugging or onboarding.";
 "settings.capture.title" = "Capture";
 "settings.capture.subtitle" = "Choose where fallback capture files are stored when direct insertion is unavailable.";
 "settings.capture_root.label" = "Capture Root";
@@ -55,16 +53,13 @@
 "settings.api_key.placeholder" = "Enter API key";
 "settings.model.label" = "Model";
 "settings.model.placeholder" = "e.g. gpt-5.4";
-"settings.actions.title" = "Actions";
-"settings.actions.subtitle" = "Verify the connection and persist current changes.";
 "settings.test_connection" = "Test Connection";
 "settings.testing_connection" = "Testing...";
-"settings.save" = "Save";
+"settings.connection.title" = "Connection Test";
+"settings.connection.subtitle" = "Verify the current refine endpoint before using it on the hot path.";
 "settings.header.tagline" = "AI voice input, tuned for the Mac.";
 "settings.refine.on" = "Refine On";
 "settings.refine.off" = "Refine Off";
-"settings.dock.on" = "Dock On";
-"settings.dock.off" = "Dock Off";
 "settings.open_panel.migrate" = "Move Here";
 "settings.open_panel.message" = "Choose a new capture root. Existing capture files will be moved.";
 "settings.term_dictionary.entry_saved" = "Term saved.";
@@ -72,7 +67,6 @@
 "settings.term_dictionary.candidate_promoted" = "Candidate saved to the term dictionary.";
 "settings.term_dictionary.candidate_dismissed" = "Candidate dismissed.";
 "settings.test_passed" = "Connection OK: %@";
-"settings.saved" = "Settings saved.";
 "settings.remove" = "Remove";
 "settings.alias.label" = "Alias";
 "settings.source.label" = "Source";

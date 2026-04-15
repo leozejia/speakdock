@@ -19,10 +19,9 @@ struct SpeakDockApp: App {
         let settingsStore = SettingsStore()
         let termDictionaryStore = TermDictionaryStore()
         AppLocalizer.setCurrentAppLanguage(settingsStore.settings.appLanguage)
-        AppRuntime.configureInitialVisibility(showDockIcon: settingsStore.settings.showDockIcon)
+        AppRuntime.configureInitialVisibility()
         _ = settingsStore.addSettingsObserver { settings in
             AppLocalizer.setCurrentAppLanguage(settings.appLanguage)
-            AppRuntime.updateActivationPolicy(showDockIcon: settings.showDockIcon)
         }
         let triggerController = TriggerController(settingsStore: settingsStore)
         let audioCaptureEngine = AudioCaptureEngine()
@@ -47,7 +46,7 @@ struct SpeakDockApp: App {
         switch launchOptions.mode {
         case .normal:
             AppRuntime.onDidFinishLaunching = {
-                AppRuntime.updateActivationPolicy(showDockIcon: settingsStore.settings.showDockIcon)
+                AppRuntime.updateActivationPolicy()
                 triggerController.start()
             }
         case .composeProbe:
@@ -56,7 +55,7 @@ struct SpeakDockApp: App {
                 duration: launchOptions.composeProbeDuration
             )
             AppRuntime.onDidFinishLaunching = {
-                AppRuntime.updateActivationPolicy(showDockIcon: settingsStore.settings.showDockIcon)
+                AppRuntime.updateActivationPolicy()
                 composeProbeRunner.start()
             }
         }

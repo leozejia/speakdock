@@ -55,7 +55,7 @@ SpeakDock 现在处于早期 macOS 实现阶段。第一阶段目标是把热路
 
 现在已经支持：
 
-- menu bar 应用形态，Dock 图标默认可见，也可以在 Settings 里关闭。
+- menu bar 应用形态，Dock 图标默认可见。
 - 按住 `Fn` 说话，松开结束，双击提交。
 - Apple Speech 流式识别，默认语言为 `zh-CN`。
 - 语言选项覆盖 `en-US`、`zh-CN`、`zh-TW`、`ja-JP`、`ko-KR`。

@@ -3,13 +3,20 @@ import SpeakDockCore
 import SwiftUI
 
 struct SettingsView: View {
+    private enum Layout {
+        static let windowWidth: CGFloat = 1040
+        static let windowHeight: CGFloat = 780
+        static let sidebarWidth: CGFloat = 282
+        static let secondaryColumnWidth: CGFloat = 320
+        static let wideFieldWidth: CGFloat = 320
+        static let mediumFieldWidth: CGFloat = 220
+    }
+
     @Bindable var settingsStore: SettingsStore
     @Bindable var termDictionaryStore: TermDictionaryStore
     @State private var captureRootMessage: String?
     @State private var refineTestMessage: String?
     @State private var refineTestMessageTone: SpeakDockBadgeTone = .neutral
-    @State private var saveMessage: String?
-    @State private var saveMessageTone: SpeakDockBadgeTone = .neutral
     @State private var termCanonicalTerm = ""
     @State private var termAliasesText = ""
     @State private var termDictionaryMessage: String?
@@ -38,7 +45,13 @@ struct SettingsView: View {
         }
         .background(settingsBackground.ignoresSafeArea())
         .padding(18)
-        .frame(minWidth: 1040, minHeight: 780)
+        .frame(
+            minWidth: Layout.windowWidth,
+            idealWidth: Layout.windowWidth,
+            maxWidth: Layout.windowWidth,
+            minHeight: Layout.windowHeight,
+            idealHeight: Layout.windowHeight
+        )
     }
 
     private var settingsBackground: some View {
@@ -62,13 +75,6 @@ struct SettingsView: View {
                         ? localized(.settingsRefineOn)
                         : localized(.settingsRefineOff),
                     tone: settingsStore.settings.refineEnabled ? .accent : .neutral
-                )
-
-                SpeakDockStatusBadge(
-                    title: settingsStore.settings.showDockIcon
-                        ? localized(.settingsDockOn)
-                        : localized(.settingsDockOff),
-                    tone: settingsStore.settings.showDockIcon ? .success : .neutral
                 )
             }
 
@@ -104,7 +110,7 @@ struct SettingsView: View {
             )
         }
         .padding(22)
-        .frame(width: 282)
+        .frame(width: Layout.sidebarWidth)
         .frame(maxHeight: .infinity, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
@@ -367,24 +373,9 @@ struct SettingsView: View {
                     }
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
 
             VStack(alignment: .leading, spacing: 20) {
-                SettingsShellSection(
-                    title: localized(.settingsShowDockIconTitle),
-                    subtitle: localized(.settingsShowDockIconSubtitle)
-                ) {
-                    Toggle(isOn: $settingsStore.settings.showDockIcon) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(settingsStore.settings.showDockIcon ? localized(.settingsDockOn) : localized(.settingsDockOff))
-                                .font(.system(size: 12.5, weight: .semibold))
-                            Text(localized(.settingsShowDockIconSubtitle))
-                                .font(.system(size: 11.5))
-                                .foregroundStyle(SpeakDockVisualStyle.secondaryText)
-                        }
-                    }
-                    .toggleStyle(.switch)
-                }
-
                 SettingsShellSection(
                     title: localized(.settingsCaptureTitle),
                     subtitle: localized(.settingsCaptureSubtitle)
@@ -420,25 +411,10 @@ struct SettingsView: View {
                         }
                     }
                 }
-
-                SettingsShellSection(
-                    title: localized(.settingsActionsTitle),
-                    subtitle: localized(.settingsActionsSubtitle)
-                ) {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Button(localized(.settingsSave)) {
-                            saveSettings()
-                        }
-                        .buttonStyle(SpeakDockActionButtonStyle(kind: .primary))
-
-                        if let saveMessage {
-                            messageView(saveMessage, tone: saveMessageTone)
-                        }
-                    }
-                }
             }
-            .frame(width: 320)
+            .frame(width: Layout.secondaryColumnWidth)
         }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
     private var dictionaryPane: some View {
@@ -493,6 +469,7 @@ struct SettingsView: View {
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
 
                 SettingsShellSection(
                     title: localized(.settingsTermDictionaryPendingCandidates),
@@ -514,8 +491,10 @@ struct SettingsView: View {
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
     private var refinePane: some View {
@@ -543,19 +522,19 @@ struct SettingsView: View {
                             LabeledContent(localized(.settingsBaseURLLabel)) {
                                 TextField(localized(.settingsBaseURLPlaceholder), text: $settingsStore.settings.refineBaseURL)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(width: 320)
+                                    .frame(width: Layout.wideFieldWidth)
                             }
 
                             LabeledContent(localized(.settingsAPIKeyLabel)) {
                                 SecureField(localized(.settingsAPIKeyPlaceholder), text: $settingsStore.settings.refineAPIKey)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(width: 320)
+                                    .frame(width: Layout.wideFieldWidth)
                             }
 
                             LabeledContent(localized(.settingsModelLabel)) {
                                 TextField(localized(.settingsModelPlaceholder), text: $settingsStore.settings.refineModel)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(width: 220)
+                                    .frame(width: Layout.mediumFieldWidth)
                             }
                         }
                         .disabled(!settingsStore.settings.refineEnabled)
@@ -563,33 +542,23 @@ struct SettingsView: View {
                 }
 
                 SettingsShellSection(
-                    title: localized(.settingsActionsTitle),
-                    subtitle: localized(.settingsActionsSubtitle)
+                    title: localized(.settingsConnectionTitle),
+                    subtitle: localized(.settingsConnectionSubtitle)
                 ) {
                     VStack(alignment: .leading, spacing: 14) {
-                        HStack(spacing: 10) {
-                            Button(isTestingRefine ? localized(.settingsTestingConnection) : localized(.settingsTestConnection)) {
-                                runRefineConnectionTest()
-                            }
-                            .buttonStyle(SpeakDockActionButtonStyle(kind: .primary))
-                            .disabled(isTestingRefine)
-
-                            Button(localized(.settingsSave)) {
-                                saveSettings()
-                            }
-                            .buttonStyle(SpeakDockActionButtonStyle(kind: .secondary))
+                        Button(isTestingRefine ? localized(.settingsTestingConnection) : localized(.settingsTestConnection)) {
+                            runRefineConnectionTest()
                         }
+                        .buttonStyle(SpeakDockActionButtonStyle(kind: .primary))
+                        .disabled(isTestingRefine)
 
                         if let refineTestMessage {
                             messageView(refineTestMessage, tone: refineTestMessageTone)
                         }
-
-                        if let saveMessage {
-                            messageView(saveMessage, tone: saveMessageTone)
-                        }
                     }
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
 
             SettingsShellSection(
                 title: localized(.settingsRefineTitle),
@@ -631,8 +600,9 @@ struct SettingsView: View {
                     }
                 }
             }
-            .frame(width: 280)
+            .frame(width: Layout.secondaryColumnWidth)
         }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
     private var dividerLine: some View {
@@ -802,17 +772,6 @@ struct SettingsView: View {
                     isTestingRefine = false
                 }
             }
-        }
-    }
-
-    private func saveSettings() {
-        do {
-            try settingsStore.save()
-            saveMessage = localized(.settingsSaved)
-            saveMessageTone = .success
-        } catch {
-            saveMessage = userFacingMessage(for: error)
-            saveMessageTone = .critical
         }
     }
 
