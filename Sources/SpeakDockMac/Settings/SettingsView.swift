@@ -52,14 +52,7 @@ struct SettingsView: View {
 
             detailPane(appLanguage: appLanguage)
         }
-        .background(SpeakDockVisualStyle.settingsContent)
-        .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 30, style: .continuous)
-                .stroke(SpeakDockVisualStyle.settingsLine, lineWidth: 1)
-        )
-        .shadow(color: SpeakDockVisualStyle.settingsShadow, radius: 24, x: 0, y: 16)
-        .padding(Layout.outerPadding)
+        .background(settingsBackground.ignoresSafeArea())
         .frame(
             minWidth: Layout.windowWidth,
             idealWidth: Layout.windowWidth,
@@ -67,7 +60,6 @@ struct SettingsView: View {
             minHeight: Layout.windowHeight,
             idealHeight: Layout.windowHeight
         )
-        .background(settingsBackground.ignoresSafeArea())
     }
 
     private var settingsBackground: some View {
@@ -178,6 +170,7 @@ struct SettingsView: View {
                             : .clear
                     )
             )
+            .contentShape(Rectangle())
             .overlay(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .stroke(
@@ -189,6 +182,7 @@ struct SettingsView: View {
             )
         }
         .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func detailPane(appLanguage: AppLanguageOption) -> some View {
