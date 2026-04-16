@@ -1,6 +1,6 @@
 public enum RefineExecutionMode: Equatable, Sendable {
     case cleanOnly
-    case refineThenSubmit
+    case workspaceRefine
 }
 
 public struct RefineConfiguration: Equatable, Sendable {
@@ -28,7 +28,7 @@ public struct RefineConfiguration: Equatable, Sendable {
     }
 
     public var executionMode: RefineExecutionMode {
-        enabled && isConfigured ? .refineThenSubmit : .cleanOnly
+        enabled && isConfigured ? .workspaceRefine : .cleanOnly
     }
 }
 

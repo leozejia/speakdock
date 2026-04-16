@@ -17,6 +17,8 @@ final class HotPathCoordinator {
     private let speechController: SpeechController
     private let overlayPanelController: OverlayPanelController
     private let cleanNormalizer: CleanNormalizer
+    private let recognitionCommitPreparer: RecognitionCommitPreparer
+    private let workspaceRefinePreparer: WorkspaceRefinePreparer
     private let refineEngine: any RefineEngine
     private let wordCorrectionObservationRecorder: WordCorrectionObservationRecorder
     private let clock: () -> TimeInterval
@@ -50,6 +52,8 @@ final class HotPathCoordinator {
         self.speechController = speechController
         self.overlayPanelController = overlayPanelController
         self.cleanNormalizer = cleanNormalizer
+        self.recognitionCommitPreparer = RecognitionCommitPreparer(cleanNormalizer: cleanNormalizer)
+        self.workspaceRefinePreparer = WorkspaceRefinePreparer(cleanNormalizer: cleanNormalizer)
         self.refineEngine = refineEngine
         self.wordCorrectionObservationRecorder = WordCorrectionObservationRecorder(
             termDictionaryStore: termDictionaryStore,
@@ -197,14 +201,7 @@ final class HotPathCoordinator {
             cancelRecognitionTimeout()
             speechController.cancelSession()
             recordWordCorrectionEvidenceIfPossible()
-            submitCurrentWorkspaceIfPossible()
-            WorkspaceReducer.reduce(state: &workspaceState, action: .workspaceEnded)
-            renderedSegmentsByWorkspaceID.removeAll()
-            undoFlowState.clearPendingConfirmation()
-            undoFlowState.clearRecentSubmission()
-            composeTargetSession.end()
-            refreshSecondaryAction()
-            overlayPanelController.dismiss(after: 0.1)
+            submitCurrentWorkspaceAfterOptionalRefine()
         }
     }
 
@@ -231,54 +228,12 @@ final class HotPathCoordinator {
             $0.markRecognitionFinal(at: clock())
         }
         logInteractionStage("recognitionFinal")
-        let cleanedText = cleanNormalizer.normalize(trimmedText)
-        let configuration = currentRefineConfiguration
-
-        switch configuration.executionMode {
-        case .cleanOnly:
-            SpeakDockLog.refine.debug("refine disabled; committing clean-only text")
-            commitRecognizedText(cleanedText)
-
-        case .refineThenSubmit:
-            SpeakDockLog.refine.notice("refine enabled; starting inline refine request")
-            logInteractionStage("refineStarted")
-            overlayPanelController.showRefining(transcript: cleanedText)
-            cancelRefineTask()
-            activeRefineTask = Task { [weak self] in
-                guard let self else {
-                    return
-                }
-
-                let refinedText: String
-                do {
-                    let response = try await self.refineEngine.refine(
-                        RefineRequest(text: cleanedText),
-                        configuration: configuration
-                    )
-                    let trimmedResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
-                    refinedText = trimmedResponse.isEmpty ? cleanedText : trimmedResponse
-                    await MainActor.run {
-                        self.logInteractionStage("refineFinished", extras: ["outcome=success"])
-                    }
-                } catch {
-                    SpeakDockLog.refine.error("inline refine request failed; falling back to clean text")
-                    refinedText = cleanedText
-                    await MainActor.run {
-                        self.logInteractionStage("refineFinished", extras: ["outcome=fallback"])
-                    }
-                }
-
-                guard !Task.isCancelled else {
-                    return
-                }
-
-                await MainActor.run {
-                    self.overlayPanelController.updateTranscript(refinedText)
-                    self.commitRecognizedText(refinedText)
-                    self.activeRefineTask = nil
-                }
-            }
-        }
+        let preparation = recognitionCommitPreparer.prepare(
+            transcript: trimmedText,
+            configuration: currentRefineConfiguration
+        )
+        SpeakDockLog.refine.debug("recording phase stays clean-only; committing prepared text")
+        commitRecognizedText(preparation.committedText)
     }
 
     private func commitRecognizedText(_ text: String) {
@@ -426,63 +381,76 @@ final class HotPathCoordinator {
             return
         }
 
-        let baseText = cleanNormalizer.normalize(workspace.rawContext)
         let configuration = currentRefineConfiguration
+        let preparation = currentWorkspaceRefinePreparation(
+            for: workspace,
+            configuration: configuration
+        )
+        let baseText = preparation.modelInputText
 
-        switch configuration.executionMode {
-        case .cleanOnly:
+        guard !baseText.isEmpty else {
+            refreshSecondaryAction()
+            return
+        }
+
+        if !preparation.shouldCallModel {
             SpeakDockLog.refine.debug("manual refine requested while refine is disabled; applying clean text")
             applyRefinedText(baseText, toWorkspaceID: workspace.id)
+            return
+        }
 
-        case .refineThenSubmit:
-            SpeakDockLog.refine.notice("manual refine request started")
-            overlayPanelController.showRefining(transcript: baseText)
-            cancelRefineTask()
-            activeRefineTask = Task { [weak self] in
-                guard let self else {
-                    return
-                }
+        SpeakDockLog.refine.notice("manual refine request started")
+        overlayPanelController.showRefining(transcript: baseText)
+        cancelRefineTask()
+        activeRefineTask = Task { [weak self] in
+            guard let self else {
+                return
+            }
 
-                let refinedText: String
-                do {
-                    let response = try await self.refineEngine.refine(
-                        RefineRequest(text: baseText),
-                        configuration: configuration
-                    )
-                    let trimmedResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
-                    refinedText = trimmedResponse.isEmpty ? baseText : trimmedResponse
-                } catch {
-                    SpeakDockLog.refine.error("manual refine request failed; falling back to clean text")
-                    refinedText = baseText
-                }
+            let refinedText: String
+            do {
+                let response = try await self.refineEngine.refine(
+                    RefineRequest(text: baseText),
+                    configuration: configuration
+                )
+                let trimmedResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
+                refinedText = trimmedResponse.isEmpty ? baseText : trimmedResponse
+            } catch {
+                SpeakDockLog.refine.error("manual refine request failed; falling back to clean text")
+                refinedText = baseText
+            }
 
-                guard !Task.isCancelled else {
-                    return
-                }
+            guard !Task.isCancelled else {
+                return
+            }
 
-                await MainActor.run {
-                    self.applyRefinedText(refinedText, toWorkspaceID: workspace.id)
-                    self.activeRefineTask = nil
-                }
+            await MainActor.run {
+                self.applyRefinedText(refinedText, toWorkspaceID: workspace.id)
+                self.activeRefineTask = nil
             }
         }
     }
 
-    private func applyRefinedText(_ text: String, toWorkspaceID workspaceID: UUID) {
+    @discardableResult
+    private func applyRefinedText(
+        _ text: String,
+        toWorkspaceID workspaceID: UUID,
+        showsFailureOverlay: Bool = true
+    ) -> Bool {
         guard let workspace = workspaceState.activeWorkspace, workspace.id == workspaceID else {
             refreshSecondaryAction()
-            return
+            return false
         }
 
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty else {
             refreshSecondaryAction()
-            return
+            return false
         }
 
         if !workspace.isRefined && trimmedText == workspace.visibleText {
             refreshSecondaryAction()
-            return
+            return true
         }
 
         do {
@@ -509,9 +477,13 @@ final class HotPathCoordinator {
             undoFlowState.clearRecentSubmission()
             overlayPanelController.updateTranscript(trimmedText)
             refreshSecondaryAction()
+            return true
         } catch {
             SpeakDockLog.refine.error("refine apply failed: \(error.localizedDescription, privacy: .private)")
-            overlayPanelController.showError(error.localizedDescription)
+            if showsFailureOverlay {
+                overlayPanelController.showError(error.localizedDescription)
+            }
+            return false
         }
     }
 
@@ -619,6 +591,89 @@ final class HotPathCoordinator {
         }
     }
 
+    private func submitCurrentWorkspaceAfterOptionalRefine() {
+        guard let workspace = workspaceState.activeWorkspace, workspace.mode == .compose else {
+            finishInteractionTrace(result: .submitFailed)
+            completeSubmitAction()
+            return
+        }
+
+        let configuration = currentRefineConfiguration
+        let preparation = currentWorkspaceRefinePreparation(
+            for: workspace,
+            configuration: configuration
+        )
+
+        guard preparation.shouldCallModel, !preparation.modelInputText.isEmpty else {
+            submitCurrentWorkspaceIfPossible()
+            completeSubmitAction()
+            return
+        }
+
+        SpeakDockLog.refine.notice("submit refine request started")
+        logInteractionStage("refineStarted", extras: ["phase=submit"])
+        overlayPanelController.showRefining(transcript: preparation.modelInputText)
+        cancelRefineTask()
+        activeRefineTask = Task { [weak self] in
+            guard let self else {
+                return
+            }
+
+            let refinedText: String?
+            do {
+                let response = try await self.refineEngine.refine(
+                    RefineRequest(text: preparation.modelInputText),
+                    configuration: configuration
+                )
+                let trimmedResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
+                refinedText = trimmedResponse.isEmpty ? nil : trimmedResponse
+                await MainActor.run {
+                    self.logInteractionStage(
+                        "refineFinished",
+                        extras: ["phase=submit", "outcome=success"]
+                    )
+                }
+            } catch {
+                SpeakDockLog.refine.error("submit refine request failed; falling back to current workspace text")
+                refinedText = nil
+                await MainActor.run {
+                    self.logInteractionStage(
+                        "refineFinished",
+                        extras: ["phase=submit", "outcome=fallback"]
+                    )
+                }
+            }
+
+            guard !Task.isCancelled else {
+                return
+            }
+
+            await MainActor.run {
+                if let refinedText {
+                    _ = self.applyRefinedText(
+                        refinedText,
+                        toWorkspaceID: workspace.id,
+                        showsFailureOverlay: false
+                    )
+                }
+
+                self.submitCurrentWorkspaceIfPossible()
+                self.completeSubmitAction()
+                self.activeRefineTask = nil
+            }
+        }
+    }
+
+    private func completeSubmitAction() {
+        WorkspaceReducer.reduce(state: &workspaceState, action: .workspaceEnded)
+        renderedSegmentsByWorkspaceID.removeAll()
+        undoFlowState.clearPendingConfirmation()
+        undoFlowState.clearRecentSubmission()
+        composeTargetSession.end()
+        refreshSecondaryAction()
+        overlayPanelController.dismiss(after: 0.1)
+    }
+
     private func recordWordCorrectionEvidenceIfPossible() {
         do {
             try wordCorrectionObservationRecorder.recordIfNeeded(for: workspaceState.activeWorkspace)
@@ -636,6 +691,26 @@ final class HotPathCoordinator {
             apiKey: settingsStore.settings.refineAPIKey,
             model: settingsStore.settings.refineModel
         )
+    }
+
+    private func currentWorkspaceRefinePreparation(
+        for workspace: Workspace,
+        configuration: RefineConfiguration
+    ) -> WorkspaceRefinePreparation {
+        workspaceRefinePreparer.prepare(
+            workspace: workspace,
+            observedText: observedCurrentWorkspaceText(for: workspace),
+            configuration: configuration
+        )
+    }
+
+    private func observedCurrentWorkspaceText(for workspace: Workspace) -> String? {
+        switch workspace.mode {
+        case .compose:
+            composeTarget.observedWorkspaceText(expectedTargetID: workspace.targetID)
+        case .capture, .wiki:
+            nil
+        }
     }
 
     private func refreshSecondaryAction() {

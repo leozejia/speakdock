@@ -102,8 +102,9 @@
 3. `API Key` 可以被完全清空。
 4. 点击 `Test` 时，不完整配置会直接报错；完整配置会返回明确结果。
 5. Settings 至少支持 `Test / Save`。
-6. 启用 refine 后，界面能明确显示 `Refining...`。
-7. 默认 refine 不强制翻译输入语言；如果出现翻译行为，必须来自显式模式或显式意图。
+6. 松开录音后，SpeakDock 只追加 clean 文本，不会因为 refine 已开启就立刻对单段文本做 inline 整理。
+7. 启用 refine 后，手动点击整理或执行发送前整理时，界面能明确显示 `Refining...`。
+8. 默认 refine 不强制翻译输入语言；如果出现翻译行为，必须来自显式模式或显式意图。
 
 ## 12. Term Dictionary
 
