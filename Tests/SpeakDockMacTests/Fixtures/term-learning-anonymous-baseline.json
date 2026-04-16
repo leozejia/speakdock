@@ -1,0 +1,82 @@
+{
+  "name": "anonymous term learning baseline",
+  "initialConfirmedEntries": [
+    {
+      "canonicalTerm": "SpeakDock",
+      "aliases": ["speak doc"]
+    }
+  ],
+  "corrections": [
+    {
+      "generatedText": "speak doc 今天上线",
+      "correctedText": "SpeakDock 今天上线"
+    },
+    {
+      "generatedText": "project adults 已完成",
+      "correctedText": "Project Atlas 已完成"
+    },
+    {
+      "generatedText": "project adults 明天继续",
+      "correctedText": "Project Atlas 明天继续"
+    },
+    {
+      "generatedText": "project adults 现在开始",
+      "correctedText": "Project Atlas 现在开始"
+    },
+    {
+      "generatedText": "local rank 需要同步",
+      "correctedText": "LocalRank 需要同步"
+    },
+    {
+      "generatedText": "pilot one 已经开始",
+      "correctedText": "PilotOne 已经开始"
+    },
+    {
+      "generatedText": "pilot one 已经开始",
+      "correctedText": "Pilot 1 已经开始"
+    },
+    {
+      "generatedText": "pilot one 继续推进",
+      "correctedText": "PilotOne 继续推进"
+    },
+    {
+      "generatedText": "pilot one 今天收尾",
+      "correctedText": "PilotOne 今天收尾"
+    }
+  ],
+  "expectations": {
+    "confirmedEntries": [
+      {
+        "canonicalTerm": "Project Atlas",
+        "aliases": ["project adults"]
+      },
+      {
+        "canonicalTerm": "SpeakDock",
+        "aliases": ["speak doc"]
+      }
+    ],
+    "observedCorrections": [
+      {
+        "canonicalTerm": "LocalRank",
+        "alias": "local rank",
+        "evidenceCount": 1
+      },
+      {
+        "canonicalTerm": "Pilot 1",
+        "alias": "pilot one",
+        "evidenceCount": 1
+      },
+      {
+        "canonicalTerm": "PilotOne",
+        "alias": "pilot one",
+        "evidenceCount": 3
+      }
+    ],
+    "outcomeCounts": {
+      "observed": 6,
+      "promoted": 1,
+      "conflicted": 1,
+      "skippedConfirmed": 1
+    }
+  }
+}

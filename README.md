@@ -159,6 +159,13 @@ make trace-report TRACE_WINDOW=5m
 make traces TRACE_WINDOW=5m
 ```
 
+Replay the repository's anonymous term-learning fixture baseline without touching real user data:
+
+```bash
+make test TEST_FILTER=TermLearningFixtureBaselineTests
+make test TEST_FILTER=TermLearningReportScriptTests
+```
+
 ## Permissions
 
 SpeakDock asks macOS for the permissions required by the current path:

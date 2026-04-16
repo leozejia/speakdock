@@ -1,65 +1,14 @@
 import Foundation
 import XCTest
 
+@MainActor
 final class TermLearningReportScriptTests: XCTestCase {
-    func testTermLearningReportSummarizesCurrentSnapshotAndOutcomeCounts() throws {
+    func testTermLearningReportSummarizesAnonymousFixtureSnapshotAndOutcomeCounts() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/report-term-learning.py")
-        let temporaryDirectory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("term-learning-report-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
-
-        let storageURL = temporaryDirectory.appendingPathComponent("term-dictionary.json")
-        let snapshot = """
-        {
-          "confirmedEntries": [
-            {
-              "canonicalTerm": "SpeakDock",
-              "aliases": ["speak dock"]
-            }
-          ],
-          "pendingCandidates": [],
-          "observedCorrections": [
-            {
-              "canonicalTerm": "Project Atlas",
-              "alias": "project adults",
-              "evidenceCount": 2
-            },
-            {
-              "canonicalTerm": "Project Alice",
-              "alias": "project adults",
-              "evidenceCount": 1
-            }
-          ],
-          "learningEvents": [
-            {
-              "canonicalTerm": "Project Atlas",
-              "alias": "project adults",
-              "outcome": "observed",
-              "evidenceCount": 1
-            },
-            {
-              "canonicalTerm": "Project Atlas",
-              "alias": "project adults",
-              "outcome": "observed",
-              "evidenceCount": 2
-            },
-            {
-              "canonicalTerm": "Project Atlas",
-              "alias": "project adults",
-              "outcome": "conflicted",
-              "evidenceCount": 3
-            },
-            {
-              "canonicalTerm": "SpeakDock",
-              "alias": "speak dock",
-              "outcome": "skippedConfirmed",
-              "evidenceCount": 0
-            }
-          ]
-        }
-        """
-        try snapshot.write(to: storageURL, atomically: true, encoding: .utf8)
+        let fixture = try TermLearningFixtureSupport.loadFixture()
+        let replayResult = try TermLearningFixtureSupport.replayFixture(fixture)
+        let storageURL = replayResult.storageURL
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
@@ -78,14 +27,17 @@ final class TermLearningReportScriptTests: XCTestCase {
         let output = String(decoding: outputData, as: UTF8.self)
 
         XCTAssertTrue(output.contains("Term Learning Report"))
-        XCTAssertTrue(output.contains("confirmed entries: 1"))
-        XCTAssertTrue(output.contains("observed corrections: 2"))
-        XCTAssertTrue(output.contains("learning events: 4"))
+        XCTAssertTrue(output.contains("confirmed entries: 2"))
+        XCTAssertTrue(output.contains("observed corrections: 3"))
+        XCTAssertTrue(output.contains("learning events: 9"))
         XCTAssertTrue(output.contains("- conflicted: 1"))
-        XCTAssertTrue(output.contains("- observed: 2"))
+        XCTAssertTrue(output.contains("- observed: 6"))
+        XCTAssertTrue(output.contains("- promoted: 1"))
         XCTAssertTrue(output.contains("- skippedConfirmed: 1"))
-        XCTAssertTrue(output.contains("- project adults -> Project Atlas evidence=2/3 status=conflicted"))
-        XCTAssertTrue(output.contains("- project adults -> Project Alice evidence=1/3 status=conflicted"))
-        XCTAssertTrue(output.contains("- SpeakDock <- speak dock"))
+        XCTAssertTrue(output.contains("- local rank -> LocalRank evidence=1/3 status=observed"))
+        XCTAssertTrue(output.contains("- pilot one -> PilotOne evidence=3/3 status=conflicted"))
+        XCTAssertTrue(output.contains("- pilot one -> Pilot 1 evidence=1/3 status=conflicted"))
+        XCTAssertTrue(output.contains("- Project Atlas <- project adults"))
+        XCTAssertTrue(output.contains("- SpeakDock <- speak doc"))
     }
 }

@@ -159,6 +159,13 @@ make trace-report TRACE_WINDOW=5m
 make traces TRACE_WINDOW=5m
 ```
 
+运行仓库内置的匿名术语夹具回归，不会碰真实用户词典：
+
+```bash
+make test TEST_FILTER=TermLearningFixtureBaselineTests
+make test TEST_FILTER=TermLearningReportScriptTests
+```
+
 ## 权限
 
 SpeakDock 只请求当前路径需要的 macOS 权限：

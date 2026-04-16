@@ -358,6 +358,38 @@
 - 中英文下字段标题、输入框、说明文字都保持稳定
 - `Refine` 左侧不再出现异常渲染
 
+### 3.11 匿名测试夹具必须声明成 SwiftPM test resource
+
+现象：
+
+- 夹具文件明明在仓库里，`swift test` 运行时却报文件不存在
+- 或者 build 阶段出现 `found 1 file(s) which are unhandled`
+
+根因：
+
+- SwiftPM 不会自动把 test 目录下的任意 JSON 带进 test bundle
+- 只把路径写死到文件系统，会让测试对执行目录过度敏感
+
+正确做法：
+
+- 在 `Package.swift` 的 test target 里显式声明 `resources: [.process("Fixtures")]`
+- 测试加载夹具时优先走 `Bundle.module`
+- 同一份匿名夹具同时服务 `store replay` 和 `report script`，不要复制两份近似样本
+
+当前落实位置：
+
+- `Package.swift`
+- `Tests/SpeakDockMacTests/Fixtures/term-learning-anonymous-baseline.json`
+- `Tests/SpeakDockMacTests/TermLearningFixtureSupport.swift`
+- `Tests/SpeakDockMacTests/TermLearningFixtureBaselineTests.swift`
+- `Tests/SpeakDockMacTests/TermLearningReportScriptTests.swift`
+
+验收方式：
+
+- `make test TEST_FILTER=TermLearningFixtureBaselineTests`
+- `make test TEST_FILTER=TermLearningReportScriptTests`
+- 不再出现 unhandled fixture warning
+
 ## 4. 每轮结束前的固定检查
 
 所有涉及 Swift/macOS 行为改动的任务，结束前至少检查：

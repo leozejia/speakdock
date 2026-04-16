@@ -53,7 +53,10 @@ let package = Package(
         .testTarget(
             name: "SpeakDockMacTests",
             dependencies: ["SpeakDockMac"],
-            path: "Tests/SpeakDockMacTests"
+            path: "Tests/SpeakDockMacTests",
+            resources: [
+                .process("Fixtures"),
+            ]
         ),
     ]
 )
