@@ -123,6 +123,33 @@ final class HotPathCoordinator {
         submitDelay: TimeInterval = 0.8,
         onFinished: @escaping @MainActor () -> Void
     ) {
+        runSmokeSubmit(
+            text: text,
+            submitDelay: submitDelay,
+            recordWordCorrectionEvidence: false,
+            onFinished: onFinished
+        )
+    }
+
+    func runSmokeTermLearningSubmit(
+        text: String,
+        submitDelay: TimeInterval = 0.8,
+        onFinished: @escaping @MainActor () -> Void
+    ) {
+        runSmokeSubmit(
+            text: text,
+            submitDelay: submitDelay,
+            recordWordCorrectionEvidence: true,
+            onFinished: onFinished
+        )
+    }
+
+    private func runSmokeSubmit(
+        text: String,
+        submitDelay: TimeInterval,
+        recordWordCorrectionEvidence: Bool,
+        onFinished: @escaping @MainActor () -> Void
+    ) {
         runSmokeCommit(text: text)
 
         Task { @MainActor [weak self] in
@@ -134,7 +161,11 @@ final class HotPathCoordinator {
                 try? await Task.sleep(for: .seconds(submitDelay))
             }
 
-            self.beginSubmitAction(origin: .smoke, onFinished: onFinished)
+            self.beginSubmitAction(
+                origin: .smoke,
+                shouldRecordWordCorrectionEvidence: recordWordCorrectionEvidence,
+                onFinished: onFinished
+            )
         }
     }
 
@@ -610,6 +641,7 @@ final class HotPathCoordinator {
 
     private func beginSubmitAction(
         origin: HotPathInteractionTrace.Origin = .live,
+        shouldRecordWordCorrectionEvidence: Bool? = nil,
         onFinished: (@MainActor () -> Void)? = nil
     ) {
         startInteractionTrace(kind: .submit, origin: origin)
@@ -618,7 +650,7 @@ final class HotPathCoordinator {
         cancelRecognitionTimeout()
         speechController.cancelSession()
 
-        if origin == .live {
+        if shouldRecordWordCorrectionEvidence ?? (origin == .live) {
             recordWordCorrectionEvidenceIfPossible()
         }
 

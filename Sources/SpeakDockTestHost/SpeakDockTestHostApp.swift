@@ -4,10 +4,12 @@ import SwiftUI
 private struct SpeakDockTestHostLaunchOptions {
     let stateFileURL: URL?
     let readyFileURL: URL?
+    let commandFileURL: URL?
 
     init(arguments: [String] = CommandLine.arguments) {
         stateFileURL = Self.urlValue(after: "--state-file", in: arguments)
         readyFileURL = Self.urlValue(after: "--ready-file", in: arguments)
+        commandFileURL = Self.urlValue(after: "--command-file", in: arguments)
     }
 
     private static func urlValue(after flag: String, in arguments: [String]) -> URL? {
@@ -30,10 +32,13 @@ private final class SpeakDockTestHostModel: ObservableObject {
 
     private let stateFileURL: URL?
     private let readyFileURL: URL?
+    private let commandFileURL: URL?
+    private var commandPollingTask: Task<Void, Never>?
 
     init(options: SpeakDockTestHostLaunchOptions) {
         self.stateFileURL = options.stateFileURL
         self.readyFileURL = options.readyFileURL
+        self.commandFileURL = options.commandFileURL
         persistState()
     }
 
@@ -60,6 +65,43 @@ private final class SpeakDockTestHostModel: ObservableObject {
         )
         try? "ready".write(to: readyFileURL, atomically: true, encoding: .utf8)
     }
+
+    func startCommandPolling() {
+        guard commandPollingTask == nil, commandFileURL != nil else {
+            return
+        }
+
+        commandPollingTask = Task { @MainActor [weak self] in
+            guard let self else {
+                return
+            }
+
+            while !Task.isCancelled {
+                self.applyPendingCommandIfNeeded()
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+        }
+    }
+
+    func stopCommandPolling() {
+        commandPollingTask?.cancel()
+        commandPollingTask = nil
+    }
+
+    func applyPendingCommandIfNeeded() {
+        guard let commandFileURL else {
+            return
+        }
+
+        guard FileManager.default.fileExists(atPath: commandFileURL.path) else {
+            return
+        }
+
+        let commandText = (try? String(contentsOf: commandFileURL, encoding: .utf8)) ?? ""
+        try? FileManager.default.removeItem(at: commandFileURL)
+        text = commandText
+        persistState()
+    }
 }
 
 private struct SpeakDockTestHostView: View {
@@ -85,10 +127,14 @@ private struct SpeakDockTestHostView: View {
         .frame(minWidth: 640, minHeight: 220)
         .onAppear {
             NSApp.activate(ignoringOtherApps: true)
+            model.startCommandPolling()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 inputFocused = true
                 model.markReady()
             }
+        }
+        .onDisappear {
+            model.stopCommandPolling()
         }
         .onChange(of: model.text) { _, _ in
             model.persistState()

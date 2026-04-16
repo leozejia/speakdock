@@ -79,6 +79,8 @@
 6. 需要回到原始明细时，再运行 `make traces TRACE_WINDOW=5m` 查看最近交互结果码和阶段耗时。
 7. 运行 `make smoke-refine` 时，命令会额外临时拉起一个本地 OpenAI-compatible stub server。
 8. `smoke-refine` 成功后，说明 `Refine HTTP -> workspace apply -> submit` 这条开发闭环仍然成立。
+9. 运行 `make smoke-term-learning` 时，命令会使用隔离的临时词典和测试宿主，连续验证 `词级观察 -> 晋升 -> 下次命中`。
+10. `smoke-term-learning` 成功后，说明 `TermDictionary` 的被动学习链路已有本地自驱基线。
 
 ## 9. Capture
 

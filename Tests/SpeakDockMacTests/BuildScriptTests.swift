@@ -120,4 +120,15 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("--smoke-refine-base-url"))
         XCTAssertTrue(script.contains("SpeakDockTestHost"))
     }
+
+    func testSmokeTermLearningScriptLaunchesSmokeModeAgainstIsolatedTermDictionaryStore() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-smoke-term-learning.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("build-test-host.sh"))
+        XCTAssertTrue(script.contains("--smoke-term-learning"))
+        XCTAssertTrue(script.contains("--smoke-term-dictionary-storage"))
+        XCTAssertTrue(script.contains("SpeakDockTestHost"))
+    }
 }

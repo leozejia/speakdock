@@ -17,7 +17,13 @@ struct SpeakDockApp: App {
     init() {
         let launchOptions = SpeakDockLaunchOptions()
         let settingsStore = SettingsStore()
-        let termDictionaryStore = TermDictionaryStore()
+        let termDictionaryStorageURL: URL
+        if launchOptions.smokeTermDictionaryStoragePath.isEmpty {
+            termDictionaryStorageURL = TermDictionaryStore.defaultStorageURL
+        } else {
+            termDictionaryStorageURL = URL(fileURLWithPath: launchOptions.smokeTermDictionaryStoragePath)
+        }
+        let termDictionaryStore = TermDictionaryStore(storageURL: termDictionaryStorageURL)
         AppLocalizer.setCurrentAppLanguage(settingsStore.settings.appLanguage)
         _ = settingsStore.addSettingsObserver { settings in
             AppLocalizer.setCurrentAppLanguage(settings.appLanguage)
@@ -35,6 +41,13 @@ struct SpeakDockApp: App {
                 baseURL: launchOptions.smokeRefineBaseURL,
                 apiKey: launchOptions.smokeRefineAPIKey,
                 model: launchOptions.smokeRefineModel
+            )
+        } else if launchOptions.mode == .smokeTermLearning {
+            runtimeRefineConfigurationOverride = RefineConfiguration(
+                enabled: false,
+                baseURL: "",
+                apiKey: "",
+                model: ""
             )
         } else {
             runtimeRefineConfigurationOverride = nil
@@ -86,7 +99,20 @@ struct SpeakDockApp: App {
                 hotPathCoordinator: hotPathCoordinator,
                 mode: .refineSubmit,
                 text: launchOptions.smokeText,
-                delay: launchOptions.smokeDelay
+                delay: launchOptions.smokeDelay,
+                submitDelay: launchOptions.smokeSubmitDelay
+            )
+            AppRuntime.onDidFinishLaunching = {
+                AppRuntime.updateActivationPolicy(activateApp: false)
+                smokeHotPathRunner.start()
+            }
+        case .smokeTermLearning:
+            let smokeHotPathRunner = SmokeHotPathRunner(
+                hotPathCoordinator: hotPathCoordinator,
+                mode: .termLearningSubmit,
+                text: launchOptions.smokeText,
+                delay: launchOptions.smokeDelay,
+                submitDelay: launchOptions.smokeSubmitDelay
             )
             AppRuntime.onDidFinishLaunching = {
                 AppRuntime.updateActivationPolicy(activateApp: false)

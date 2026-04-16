@@ -143,6 +143,14 @@ make trace-report TRACE_WINDOW=5m
 make traces TRACE_WINDOW=5m
 ```
 
+运行本地自动化词典被动学习 smoke 基线，命令会使用隔离的临时词典：
+
+```bash
+make smoke-term-learning
+make trace-report TRACE_WINDOW=5m
+make traces TRACE_WINDOW=5m
+```
+
 ## 权限
 
 SpeakDock 只请求当前路径需要的 macOS 权限：

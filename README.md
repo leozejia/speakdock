@@ -143,6 +143,14 @@ make trace-report TRACE_WINDOW=5m
 make traces TRACE_WINDOW=5m
 ```
 
+Run the local automated term-learning smoke baseline against an isolated temporary dictionary:
+
+```bash
+make smoke-term-learning
+make trace-report TRACE_WINDOW=5m
+make traces TRACE_WINDOW=5m
+```
+
 ## Permissions
 
 SpeakDock asks macOS for the permissions required by the current path:

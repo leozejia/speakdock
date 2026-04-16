@@ -6,6 +6,7 @@ struct SpeakDockLaunchOptions: Equatable {
         case composeProbe
         case smokeHotPath
         case smokeRefine
+        case smokeTermLearning
     }
 
     static let defaultComposeProbeDuration: TimeInterval = 30
@@ -14,19 +15,26 @@ struct SpeakDockLaunchOptions: Equatable {
     static let defaultSmokeDelay: TimeInterval = 1.5
     static let minimumSmokeDelay: TimeInterval = 0.5
     static let maximumSmokeDelay: TimeInterval = 8
+    static let defaultSmokeSubmitDelay: TimeInterval = 1.5
+    static let minimumSmokeSubmitDelay: TimeInterval = 0.5
+    static let maximumSmokeSubmitDelay: TimeInterval = 8
     static let defaultSmokeText = "SpeakDock smoke"
 
     let mode: Mode
     let composeProbeDuration: TimeInterval
     let smokeText: String
     let smokeDelay: TimeInterval
+    let smokeSubmitDelay: TimeInterval
     let smokeRefineBaseURL: String
     let smokeRefineAPIKey: String
     let smokeRefineModel: String
+    let smokeTermDictionaryStoragePath: String
 
     init(arguments: [String] = CommandLine.arguments) {
         if arguments.contains("--probe-compose") {
             mode = .composeProbe
+        } else if arguments.contains("--smoke-term-learning") {
+            mode = .smokeTermLearning
         } else if arguments.contains("--smoke-refine") {
             mode = .smokeRefine
         } else if arguments.contains("--smoke-hot-path") {
@@ -52,6 +60,14 @@ struct SpeakDockLaunchOptions: Equatable {
             max(requestedSmokeDelay, Self.minimumSmokeDelay),
             Self.maximumSmokeDelay
         )
+        let requestedSmokeSubmitDelay = Self.durationValue(
+            after: "--smoke-submit-delay",
+            in: arguments
+        ) ?? Self.defaultSmokeSubmitDelay
+        smokeSubmitDelay = min(
+            max(requestedSmokeSubmitDelay, Self.minimumSmokeSubmitDelay),
+            Self.maximumSmokeSubmitDelay
+        )
         smokeText = Self.stringValue(
             after: "--smoke-text",
             in: arguments
@@ -66,6 +82,10 @@ struct SpeakDockLaunchOptions: Equatable {
         ) ?? ""
         smokeRefineModel = Self.stringValue(
             after: "--smoke-refine-model",
+            in: arguments
+        ) ?? ""
+        smokeTermDictionaryStoragePath = Self.stringValue(
+            after: "--smoke-term-dictionary-storage",
             in: arguments
         ) ?? ""
     }

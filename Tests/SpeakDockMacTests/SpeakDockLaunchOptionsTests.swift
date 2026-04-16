@@ -72,4 +72,23 @@ final class SpeakDockLaunchOptionsTests: XCTestCase {
         XCTAssertEqual(options.smokeRefineAPIKey, "smoke-token")
         XCTAssertEqual(options.smokeRefineModel, "smoke-model")
     }
+
+    func testSmokeTermLearningModeParsesSubmitDelayAndStorageOverride() {
+        let options = SpeakDockLaunchOptions(
+            arguments: [
+                "SpeakDock",
+                "--smoke-term-learning",
+                "--smoke-text", "project adults 已经完成",
+                "--smoke-delay", "0.8",
+                "--smoke-submit-delay", "1.7",
+                "--smoke-term-dictionary-storage", "/tmp/speakdock-term-dictionary.json",
+            ]
+        )
+
+        XCTAssertEqual(options.mode, .smokeTermLearning)
+        XCTAssertEqual(options.smokeText, "project adults 已经完成")
+        XCTAssertEqual(options.smokeDelay, 0.8)
+        XCTAssertEqual(options.smokeSubmitDelay, 1.7)
+        XCTAssertEqual(options.smokeTermDictionaryStoragePath, "/tmp/speakdock-term-dictionary.json")
+    }
 }
