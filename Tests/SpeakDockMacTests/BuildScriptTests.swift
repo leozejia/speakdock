@@ -156,6 +156,25 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("SpeakDockTestHost"))
     }
 
+    func testMakefileExposesRefineFallbackSmokeTarget() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+
+        XCTAssertTrue(makefile.contains("smoke-refine-fallback:"))
+        XCTAssertTrue(makefile.contains("SMOKE_REFINE_SCENARIO=fallback"))
+    }
+
+    func testSmokeRefineScriptSupportsFallbackScenario() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-smoke-refine.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("SMOKE_REFINE_SCENARIO"))
+        XCTAssertTrue(script.contains("--status-code"))
+        XCTAssertTrue(script.contains("fallback"))
+    }
+
     func testSmokeTermLearningScriptLaunchesSmokeModeAgainstIsolatedTermDictionaryStore() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/run-smoke-term-learning.sh")

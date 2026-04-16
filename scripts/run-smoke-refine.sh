@@ -6,12 +6,15 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 CONFIGURATION="${1:-debug}"
 SOURCE_TEXT="${2:-SpeakDock source}"
 REFINED_TEXT="${3:-SpeakDock refined}"
+SCENARIO="${SMOKE_REFINE_SCENARIO:-success}"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/speakdock-refine-smoke.XXXXXX")"
 STATE_FILE="$WORK_DIR/text.txt"
 READY_FILE="$WORK_DIR/ready.txt"
 SERVER_LOG="$WORK_DIR/refine-server.log"
 HOST_APP_PATH="$("$ROOT_DIR/scripts/build-test-host.sh" "$CONFIGURATION")"
 APP_PATH="$("$ROOT_DIR/scripts/build-app.sh" "$CONFIGURATION")"
+EXPECTED_TEXT="$REFINED_TEXT"
+STUB_STATUS_CODE="200"
 PORT="$(python3 - <<'PY'
 import socket
 
@@ -20,6 +23,19 @@ with socket.socket() as sock:
     print(sock.getsockname()[1])
 PY
 )"
+
+case "$SCENARIO" in
+  success)
+    ;;
+  fallback)
+    EXPECTED_TEXT="$SOURCE_TEXT"
+    STUB_STATUS_CODE="500"
+    ;;
+  *)
+    print -u2 -- "Unknown SMOKE_REFINE_SCENARIO: $SCENARIO"
+    exit 1
+    ;;
+esac
 
 cleanup() {
   if [[ -n "${SERVER_PID:-}" ]]; then
@@ -71,6 +87,7 @@ print -u2 -- "Launching local refine stub..."
 python3 "$ROOT_DIR/scripts/run-refine-stub-server.py" \
   --port "$PORT" \
   --response-text "$REFINED_TEXT" \
+  --status-code "$STUB_STATUS_CODE" \
   >"$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
 
@@ -111,7 +128,7 @@ activate_test_host
 
 BASE_URL="http://127.0.0.1:$PORT/v1"
 
-print -u2 -- "Running SpeakDock smoke refine..."
+print -u2 -- "Running SpeakDock smoke refine ($SCENARIO)..."
 open -g -n -W "$APP_PATH" --args \
   --smoke-refine \
   --smoke-text "$SOURCE_TEXT" \
@@ -121,18 +138,22 @@ open -g -n -W "$APP_PATH" --args \
   --smoke-refine-model "smoke-model"
 
 ACTUAL_TEXT=""
-if wait_for_state_text "$REFINED_TEXT"; then
+if wait_for_state_text "$EXPECTED_TEXT"; then
   ACTUAL_TEXT="$(cat "$STATE_FILE")"
 elif [[ -f "$STATE_FILE" ]]; then
   ACTUAL_TEXT="$(cat "$STATE_FILE")"
 fi
 
-if [[ "$ACTUAL_TEXT" != "$REFINED_TEXT" ]]; then
-  print -u2 -- "Smoke refine mismatch."
-  print -u2 -- "Expected: $REFINED_TEXT"
+if [[ "$ACTUAL_TEXT" != "$EXPECTED_TEXT" ]]; then
+  print -u2 -- "Smoke refine mismatch ($SCENARIO)."
+  print -u2 -- "Expected: $EXPECTED_TEXT"
   print -u2 -- "Actual:   $ACTUAL_TEXT"
   print -u2 -- "Inspect traces with: make traces TRACE_WINDOW=5m"
   exit 1
 fi
 
-print -u2 -- "Smoke refine passed."
+if [[ "$SCENARIO" == "fallback" ]]; then
+  print -u2 -- "Smoke refine fallback passed."
+else
+  print -u2 -- "Smoke refine passed."
+fi
