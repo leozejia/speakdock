@@ -11,32 +11,32 @@
 ## 2. 当前阶段
 
 - 阶段：P1 `AI 语音输入法`
-- 当前 focus：把 `Refine` 的真实提交链路和 workspace 语义收稳，并补齐自驱验证
+- 当前 focus：补齐 `capture` 侧的 live workspace 自驱基线，确保 `compose + capture` 语义继续收敛
 - 状态：`In Progress`
 
 ## 3. 为什么现在做
 
-刚完成的上一轮，已经把词级学习热路径收稳：
+刚完成的上一轮，`Refine` 的热路径边界已经基本收稳：
 
-- `make smoke-term-learning` 和 `make smoke-term-learning-conflict` 已串行通过
-- 词典学习边界现在和真实热路径实现已经对齐
-- 继续在 term-learning 上细磨，短期收益会迅速下降
+- `make smoke-refine / make smoke-refine-submit-sync / make smoke-refine-manual / make smoke-refine-dirty-undo / make smoke-refine-fallback` 已经到位
+- `submit / manual refine / dirty undo / fallback` 的真实边界现在都有脚本化验证
+- 继续只在 `compose` 侧细磨，收益会迅速下降
 
-下一条更值钱的主线是 `Refine`：
+下一条更值钱的主线是 `capture` 一致性：
 
-- `Refine` 现在同时承担“手动整理当前 workspace”和“发送前可选整理”两条路径
-- 这两条路径都直接影响 `raw_context / visible_text / dirty / undo` 的关系
-- 如果这里边界不稳，用户就会遇到“整理语义说不清、撤回语义不稳定、发送前行为不可预测”的问题
+- 用户已经明确要求同一套 live workspace 规则同时覆盖 `compose + capture`
+- `capture` 现在虽然已有核心单测，但还缺少和 `compose` 对等的真实自驱闭环
+- `capture` 直接落文件，更容易在“继续口述 / 整理 / 撤回 / 外部手改”这些点上再次漂移
 
-所以下一轮不扩 UI，不引入新模型运行时，先把 `Refine` 的真实热路径继续做扎实。
+所以下一轮不扩 UI，不引入新模型运行时，先把 `capture` 这半边补到和 `compose` 接近的验证强度。
 
 ## 4. 本轮范围
 
-1. 重新审视 `HotPathCoordinator / WorkspaceRefinePreparer / UndoFlowState / WorkspaceReducer` 的真实调用边界
-2. 明确“手动整理”和“发送前整理”分别在什么条件下发生，什么场景必须保守跳过
-3. 补 `Refine / fallback / dirty / undo / submit` 相关测试
-4. 优先把验证做成自驱，而不是依赖人工反复点测
-5. 同步文档，避免产品语义和实现再次漂移
+1. 重新审视 `HotPathCoordinator / CaptureFileTarget / WorkspaceReducer` 在 `capture` 模式下的真实调用边界
+2. 找出 `capture` 里最容易漂的两个真实场景，优先补最小 failing test
+3. 优先补成自驱 smoke，而不是继续堆纯单测或人工点测
+4. 保证 `compose + capture` 对共享语义的解释一致
+5. 同步文档，避免“规则写的是一套，文件行为又是另一套”
 
 ## 5. 明确不做
 
@@ -46,22 +46,23 @@
 - 不做正式打包发布
 - 不改 Wiki 长线方向
 - 不做新 UI 入口
+- 不为了 `capture` 补验证而改动已稳定的 `compose` 热路径
 
 ## 6. 执行顺序
 
-1. 审视现有 `Refine` 相关测试和真实调用点
-2. 先补最小 failing test，锁定真实热路径里的整理边界
-3. 再补最小实现或修正
-4. 跑定向测试与 `make smoke-refine / make smoke-refine-submit-sync / make smoke-refine-manual / make smoke-refine-dirty-undo / make smoke-refine-fallback`
-5. 同步文档并归档本轮结果
+1. 审视现有 `capture` 相关单测、脚本和真实调用点
+2. 先补最小 failing test，锁定一个高风险 `capture` 场景
+3. 再补最小实现或 smoke 基建
+4. 跑定向测试与新的 `capture` 自驱命令
+5. 同步文档并记录新的真实边界
 
 ## 7. 完成定义
 
 满足以下条件才算完成：
 
-- 手动整理与发送前整理的真实触发边界，已经有明确测试覆盖
-- `raw_context / visible_text / dirty / undo` 的关系是可解释且稳定的
-- `fallback` 路径不会静默改写用户当前工作区语义
+- 至少一条 `capture` 高风险热路径已经有真实自驱 smoke，而不是只靠单测
+- `capture` 的文件状态和 workspace 状态在该场景里保持同构
+- `compose + capture` 对共享语义的差异已经被文档明确写清
 - 验证优先可脚本化、自驱
 - 文档能准确说明新的真实边界
 
