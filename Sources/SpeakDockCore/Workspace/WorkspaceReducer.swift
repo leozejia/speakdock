@@ -45,10 +45,11 @@ public enum WorkspaceReducer {
                 workspace.dirty = false
             }
 
+            let appendedText = appendedSpeechText(text, for: workspace)
             workspace.hasSpoken = true
-            workspace.rawContext += text
-            workspace.visibleText += text
-            workspace.endLocation += text.count
+            workspace.rawContext += appendedText
+            workspace.visibleText += appendedText
+            workspace.endLocation += appendedText.count
             state.activeWorkspace = workspace
 
         case let .speechSegmentUndone(text):
@@ -61,15 +62,10 @@ public enum WorkspaceReducer {
                 return
             }
 
-            if workspace.rawContext.hasSuffix(text) {
-                workspace.rawContext.removeLast(text.count)
-            }
+            let removedCount = removeAppendedSpeechText(text, from: &workspace.rawContext, for: workspace.mode)
+            _ = removeAppendedSpeechText(text, from: &workspace.visibleText, for: workspace.mode)
 
-            if workspace.visibleText.hasSuffix(text) {
-                workspace.visibleText.removeLast(text.count)
-            }
-
-            workspace.endLocation = max(workspace.startLocation, workspace.endLocation - text.count)
+            workspace.endLocation = max(workspace.startLocation, workspace.endLocation - removedCount)
             workspace.hasSpoken = !workspace.rawContext.isEmpty
             workspace.dirty = false
             workspace.isRefined = false
@@ -117,5 +113,32 @@ public enum WorkspaceReducer {
         case .workspaceEnded:
             state.activeWorkspace = nil
         }
+    }
+
+    private static func appendedSpeechText(_ text: String, for workspace: Workspace) -> String {
+        guard workspace.mode == .capture, !workspace.rawContext.isEmpty else {
+            return text
+        }
+
+        return "\n\(text)"
+    }
+
+    @discardableResult
+    private static func removeAppendedSpeechText(
+        _ text: String,
+        from value: inout String,
+        for mode: Mode
+    ) -> Int {
+        if mode == .capture, value.hasSuffix("\n\(text)") {
+            value.removeLast(text.count + 1)
+            return text.count + 1
+        }
+
+        if value.hasSuffix(text) {
+            value.removeLast(text.count)
+            return text.count
+        }
+
+        return 0
     }
 }

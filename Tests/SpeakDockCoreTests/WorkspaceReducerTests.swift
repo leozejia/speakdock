@@ -117,6 +117,57 @@ final class WorkspaceReducerTests: XCTestCase {
         XCTAssertEqual(workspace.visibleText, "hello world")
     }
 
+    func testCaptureSpeechAppendAddsLineBreakBetweenSegments() throws {
+        var state = WorkspaceState()
+
+        WorkspaceReducer.reduce(
+            state: &state,
+            action: .focusChanged(
+                targetID: "/tmp/demo.md",
+                mode: .capture,
+                cursorLocation: 0
+            )
+        )
+
+        WorkspaceReducer.reduce(
+            state: &state,
+            action: .speechAppended("第一句")
+        )
+
+        WorkspaceReducer.reduce(
+            state: &state,
+            action: .speechAppended("第二句")
+        )
+
+        let workspace = try XCTUnwrap(state.activeWorkspace)
+
+        XCTAssertEqual(workspace.rawContext, "第一句\n第二句")
+        XCTAssertEqual(workspace.visibleText, "第一句\n第二句")
+    }
+
+    func testCaptureSpeechUndoRemovesInsertedLineBreak() throws {
+        var state = WorkspaceState(
+            activeWorkspace: Workspace(
+                mode: .capture,
+                targetID: "/tmp/demo.md",
+                startLocation: 0,
+                rawContext: "第一句\n第二句",
+                visibleText: "第一句\n第二句",
+                hasSpoken: true
+            )
+        )
+
+        WorkspaceReducer.reduce(
+            state: &state,
+            action: .speechSegmentUndone("第二句")
+        )
+
+        let workspace = try XCTUnwrap(state.activeWorkspace)
+
+        XCTAssertEqual(workspace.rawContext, "第一句")
+        XCTAssertEqual(workspace.visibleText, "第一句")
+    }
+
     func testUndoAfterRefineRestoresRawContext() throws {
         var state = WorkspaceState()
 
