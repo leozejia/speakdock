@@ -44,6 +44,52 @@
       "correctedText": "PilotOne 今天收尾"
     }
   ],
+  "smokeScenarios": {
+    "promotion": {
+      "cycles": [
+        {
+          "generatedText": "project adults 已完成",
+          "correctedText": "Project Atlas 已完成"
+        },
+        {
+          "generatedText": "project adults 明天继续",
+          "correctedText": "Project Atlas 明天继续"
+        },
+        {
+          "generatedText": "project adults 现在开始",
+          "correctedText": "Project Atlas 现在开始"
+        }
+      ],
+      "finalCheck": {
+        "inputText": "project adults 已完成",
+        "expectedText": "Project Atlas 已完成"
+      }
+    },
+    "conflict": {
+      "cycles": [
+        {
+          "generatedText": "pilot one 已经开始",
+          "correctedText": "PilotOne 已经开始"
+        },
+        {
+          "generatedText": "pilot one 已经开始",
+          "correctedText": "Pilot 1 已经开始"
+        },
+        {
+          "generatedText": "pilot one 继续推进",
+          "correctedText": "PilotOne 继续推进"
+        },
+        {
+          "generatedText": "pilot one 今天收尾",
+          "correctedText": "PilotOne 今天收尾"
+        }
+      ],
+      "finalCheck": {
+        "inputText": "pilot one 已经开始",
+        "expectedText": "pilot one 已经开始"
+      }
+    }
+  },
   "expectations": {
     "confirmedEntries": [
       {

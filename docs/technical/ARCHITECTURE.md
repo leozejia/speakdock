@@ -856,7 +856,8 @@ macOS v1 的工程收口写死为：
   - 第三方 App `Compose` 兼容性扫测优先通过 `make probe-compose` 执行；probe 只检查前台 App 的可编辑目标，不录音、不注入、不改剪贴板
   - 自驱 smoke 优先通过 `make smoke-compose` 执行；smoke 使用 SpeakDock 自带测试宿主验证最小 Compose 注入闭环
   - `Refine` 自驱基线优先通过 `make smoke-refine` 执行；该命令使用本地临时 stub server 覆盖真实 HTTP refine 请求与发送前整理闭环
-  - `TermDictionary` 被动学习自驱基线优先通过 `make smoke-term-learning` 执行；该命令使用隔离临时词典和测试宿主覆盖 `观察证据 -> 自动晋升 -> 下次命中`
+  - `TermDictionary` 被动学习自驱基线优先通过 fixture-driven `make smoke-term-learning` 执行；默认回放匿名 `promotion` 场景
+  - 冲突 alias 的保守路径优先通过 `make smoke-term-learning-conflict` 执行；该命令必须验证“冲突不晋升、最终保持原 alias”
 
 ### 10.4 与 README_CN 的反向映射
 

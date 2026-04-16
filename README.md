@@ -154,10 +154,13 @@ Run the local automated term-learning smoke baseline against an isolated tempora
 
 ```bash
 make smoke-term-learning
+make smoke-term-learning-conflict
 make term-learning-report
 make trace-report TRACE_WINDOW=5m
 make traces TRACE_WINDOW=5m
 ```
+
+The default term-learning smoke replays the bundled anonymous `promotion` scenario. Use `make smoke-term-learning-conflict` to verify that conflicting aliases do not get promoted.
 
 Replay the repository's anonymous term-learning fixture baseline without touching real user data:
 

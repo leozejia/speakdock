@@ -102,6 +102,16 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("learning events"))
     }
 
+    func testMakefileExposesFixtureDrivenTermLearningSmokeTargets() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+
+        XCTAssertTrue(makefile.contains("smoke-term-learning:"))
+        XCTAssertTrue(makefile.contains("smoke-term-learning-conflict:"))
+        XCTAssertTrue(makefile.contains("SMOKE_TERM_LEARNING_SCENARIO=conflict"))
+    }
+
     func testComposeProbeScriptLaunchesSpeakDockBundleWithProbeArguments() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/run-compose-probe.sh")
@@ -152,6 +162,9 @@ final class BuildScriptTests: XCTestCase {
         let script = try String(contentsOf: scriptURL, encoding: .utf8)
 
         XCTAssertTrue(script.contains("build-test-host.sh"))
+        XCTAssertTrue(script.contains("SMOKE_TERM_LEARNING_FIXTURE"))
+        XCTAssertTrue(script.contains("SMOKE_TERM_LEARNING_SCENARIO"))
+        XCTAssertTrue(script.contains("term-learning-anonymous-baseline.json"))
         XCTAssertTrue(script.contains("tell application id \"com.leozejia.speakdock.testhost\" to activate"))
         XCTAssertTrue(script.contains("--smoke-term-learning"))
         XCTAssertTrue(script.contains("--smoke-term-dictionary-storage"))

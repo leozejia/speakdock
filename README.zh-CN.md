@@ -154,10 +154,13 @@ make traces TRACE_WINDOW=5m
 
 ```bash
 make smoke-term-learning
+make smoke-term-learning-conflict
 make term-learning-report
 make trace-report TRACE_WINDOW=5m
 make traces TRACE_WINDOW=5m
 ```
+
+默认 `smoke-term-learning` 会回放仓库内置匿名夹具里的 `promotion` 场景；运行 `make smoke-term-learning-conflict` 可以验证冲突 alias 不会被错误晋升。
 
 运行仓库内置的匿名术语夹具回归，不会碰真实用户词典：
 

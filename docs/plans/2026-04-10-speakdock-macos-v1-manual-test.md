@@ -80,9 +80,10 @@
 6. 需要回到原始明细时，再运行 `make traces TRACE_WINDOW=5m` 查看最近交互结果码和阶段耗时。
 7. 运行 `make smoke-refine` 时，命令会额外临时拉起一个本地 OpenAI-compatible stub server。
 8. `smoke-refine` 成功后，说明 `Refine HTTP -> workspace apply -> submit` 这条开发闭环仍然成立。
-9. 运行 `make smoke-term-learning` 时，命令会使用隔离的临时词典和测试宿主，连续验证 `词级观察 -> 晋升 -> 下次命中`。
-10. `smoke-term-learning` 成功后，说明 `TermDictionary` 的被动学习链路已有本地自驱基线。
-11. 运行 `make term-learning-report` 时，可以直接查看当前本地词典学习摘要；输出只包含 `alias / canonical / evidence / outcome`，不包含完整正文。
+9. 运行 `make smoke-term-learning` 时，命令会使用隔离的临时词典和测试宿主，回放匿名 `promotion` 场景，验证 `词级观察 -> 晋升 -> 下次命中`。
+10. 运行 `make smoke-term-learning-conflict` 时，命令会回放匿名 `conflict` 场景，验证冲突 alias 不会被错误晋升。
+11. 两条 `smoke-term-learning` 都成功后，说明 `TermDictionary` 的被动学习链路已有更完整的本地自驱基线。
+12. 运行 `make term-learning-report` 时，可以直接查看当前本地词典学习摘要；输出只包含 `alias / canonical / evidence / outcome`，不包含完整正文。
 
 ## 9. Capture
 

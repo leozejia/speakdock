@@ -240,9 +240,44 @@
 - `make trace-report TRACE_WINDOW=5m`
 - `make term-learning-report`
 - `make smoke-term-learning`
+- `make smoke-term-learning-conflict`
 - 关键链路都能按 category 找到，热路径能看到统一 `trace.finish`
 - 聚合报告能直接看到最近 `kind / result / origin / route / latency`
 - 词典学习报告能直接看到 `observed / promoted / conflicted / skippedConfirmed` 结果分布
+- `promotion` 和 `conflict` 两条匿名 smoke 都能自驱回归
+
+### 3.12 `smoke-term-learning` 不能继续硬编码样本
+
+现象：
+
+- `TermDictionaryStore` 测试已经切到匿名夹具了，但 shell smoke 还在手写字符串
+- 新增一个 alias 场景时，测试和 smoke 很容易再次漂移
+
+根因：
+
+- 测试层和 smoke 层没有复用同一份样本真源
+- shell 脚本默认容易把“临时方便”写成长期行为
+
+正确做法：
+
+- 默认 `smoke-term-learning` 直接读取仓库匿名夹具
+- 至少保留 `promotion` 和 `conflict` 两个 scenario
+- 允许 legacy 参数作为回退，但默认路径不能再依赖脚本硬编码
+
+当前落实位置：
+
+- `Tests/SpeakDockMacTests/Fixtures/term-learning-anonymous-baseline.json`
+- `scripts/run-smoke-term-learning.sh`
+- `Makefile`
+- `Tests/SpeakDockMacTests/TermLearningFixtureBaselineTests.swift`
+- `Tests/SpeakDockMacTests/BuildScriptTests.swift`
+
+验收方式：
+
+- `make smoke-term-learning`
+- `make smoke-term-learning-conflict`
+- `make test TEST_FILTER=TermLearningFixtureBaselineTests`
+- `make test TEST_FILTER=BuildScriptTests`
 
 ### 3.7 正常开发启动不能用 `open -n`
 

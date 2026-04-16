@@ -9,6 +9,16 @@ struct TermLearningObservedCorrection: Decodable, Equatable {
 }
 
 struct TermLearningFixture: Decodable {
+    struct SmokeFinalCheck: Decodable, Equatable {
+        let inputText: String
+        let expectedText: String
+    }
+
+    struct SmokeScenario: Decodable {
+        let cycles: [Correction]
+        let finalCheck: SmokeFinalCheck
+    }
+
     struct Correction: Decodable {
         let generatedText: String
         let correctedText: String
@@ -23,6 +33,7 @@ struct TermLearningFixture: Decodable {
     let name: String
     let initialConfirmedEntries: [TermDictionaryEntry]
     let corrections: [Correction]
+    let smokeScenarios: [String: SmokeScenario]?
     let expectations: Expectations
 }
 
