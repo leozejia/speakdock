@@ -192,6 +192,26 @@ final class HotPathCoordinator {
         onFinished: @escaping @MainActor () -> Void
     ) {
         runSmokeCommit(text: text)
+        runSmokeDirtyUndoRefineSecondaryAction(onFinished: onFinished)
+    }
+
+    func runSmokeCaptureDirtyUndoRefine(
+        text: String,
+        onFinished: @escaping @MainActor () -> Void
+    ) {
+        guard let captureRootURL = runtimeCaptureRootURLOverride else {
+            SpeakDockLog.capture.error("smoke capture dirty undo refine missing capture root")
+            onFinished()
+            return
+        }
+
+        runSmokeCaptureCommit(text: text, captureRootURL: captureRootURL)
+        runSmokeDirtyUndoRefineSecondaryAction(onFinished: onFinished)
+    }
+
+    private func runSmokeDirtyUndoRefineSecondaryAction(
+        onFinished: @escaping @MainActor () -> Void
+    ) {
         undoFlowState.clearRecentSubmission()
         refreshSecondaryAction()
         performSecondaryAction()

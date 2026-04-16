@@ -342,7 +342,38 @@
 - `make test TEST_FILTER=SpeakDockLaunchOptionsTests`
 - `make test TEST_FILTER=BuildScriptTests`
 
-### 3.11 正常开发启动不能用 `open -n`
+### 3.11 `capture dirty-undo refine smoke` 不能再依赖 `TestHost` 注入改字
+
+现象：
+
+- `compose dirty-undo` 的 smoke 通过 `TestHost` 命令文件改写前台文本
+- 如果把这套方式直接搬到 `capture`，脚本虽然会跑，但并没有真的改到 capture 文件
+
+错误做法：
+
+- 认为 `dirty-undo` 的“外部手改”只是一种抽象事件，不区分 `compose` 和 `capture`
+- 继续只等 `STATE_FILE`，而不是等隔离 capture 文件进入整理态后再改写
+
+正确做法：
+
+- `capture dirty-undo refine` 必须等整理后的 capture 文件真正落盘
+- 然后直接改写隔离文件，逼出真实的 observed edit
+- 最后再验证二级动作是否先进入 dirty，再确认撤回
+
+当前落实位置：
+
+- `Makefile`
+- `Sources/SpeakDockMac/App/HotPathCoordinator.swift`
+- `Sources/SpeakDockMac/App/SmokeHotPathRunner.swift`
+- `scripts/run-smoke-refine.sh`
+- `Tests/SpeakDockMacTests/BuildScriptTests.swift`
+
+验收方式：
+
+- `make smoke-capture-refine-dirty-undo`
+- `make test TEST_FILTER=BuildScriptTests`
+
+### 3.12 正常开发启动不能用 `open -n`
 
 现象：
 
@@ -368,7 +399,7 @@
 - 现有实例应被复用并回到前台
 - 只有 `probe / smoke` 这类隔离测试路径允许显式多开
 
-### 3.12 `App Language` 和 `Input Language` 必须分离
+### 3.13 `App Language` 和 `Input Language` 必须分离
 
 现象：
 

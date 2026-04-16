@@ -199,20 +199,40 @@ final class SmokeHotPathRunner {
                 runRefine()
 
             case .refineDirtyUndo:
-                self.hotPathCoordinator.runSmokeDirtyUndoRefine(text: self.text) {
-                    Task { @MainActor [weak self] in
-                        guard let self else {
-                            return
-                        }
+                let runRefine = {
+                    if self.refineTarget == .capture {
+                        self.hotPathCoordinator.runSmokeCaptureDirtyUndoRefine(text: self.text) {
+                            Task { @MainActor [weak self] in
+                                guard let self else {
+                                    return
+                                }
 
-                        if self.completionDelay > 0 {
-                            try? await Task.sleep(for: .seconds(self.completionDelay))
-                        }
+                                if self.completionDelay > 0 {
+                                    try? await Task.sleep(for: .seconds(self.completionDelay))
+                                }
 
-                        SpeakDockLog.lifecycle.notice("smoke hot path finished")
-                        NSApp.terminate(nil)
+                                SpeakDockLog.lifecycle.notice("smoke hot path finished")
+                                NSApp.terminate(nil)
+                            }
+                        }
+                    } else {
+                        self.hotPathCoordinator.runSmokeDirtyUndoRefine(text: self.text) {
+                            Task { @MainActor [weak self] in
+                                guard let self else {
+                                    return
+                                }
+
+                                if self.completionDelay > 0 {
+                                    try? await Task.sleep(for: .seconds(self.completionDelay))
+                                }
+
+                                SpeakDockLog.lifecycle.notice("smoke hot path finished")
+                                NSApp.terminate(nil)
+                            }
+                        }
                     }
                 }
+                runRefine()
 
             case .termLearningSubmit:
                 self.hotPathCoordinator.runSmokeTermLearningSubmit(

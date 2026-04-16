@@ -193,6 +193,18 @@ if [[ "$TARGET" == "compose" ]]; then
   fi
 elif [[ "$TARGET" == "capture" ]]; then
   mkdir -p "$CAPTURE_ROOT"
+
+  if [[ -n "$HOST_COMMAND_TEXT" ]]; then
+    (
+      if wait_for_capture_text "$HOST_COMMAND_TRIGGER_TEXT"; then
+        capture_file="$(find_capture_file)"
+        if [[ -n "$capture_file" ]]; then
+          print -n -- "$HOST_COMMAND_TEXT" > "$capture_file"
+        fi
+      fi
+    ) &
+    COMMAND_WRITER_PID=$!
+  fi
 else
   print -u2 -- "Unknown SMOKE_REFINE_TARGET: $TARGET"
   exit 1
