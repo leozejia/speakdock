@@ -873,6 +873,7 @@ macOS v1 的工程收口写死为：
   - Apple Speech 任务错误必须记录脱敏的 `NSError.domain` 与 `NSError.code`，用于区分系统 ASR、权限、会话和短音频类失败
   - CoreAudio realtime tap 回调内不直接写日志；只在录音启动、停止、失败等边界记录
   - 本地调试入口优先通过 `make logs` 或等价的 `log show --predicate 'subsystem == "com.leozejia.speakdock"'`
+  - 本地 `speech` 原始明细入口优先通过 `make speech-logs`
   - 开发期热路径必须输出交互级 trace summary，至少包含 `interaction_id / kind / origin / result / total_duration`
   - 本地 trace 原始明细入口优先通过 `make traces`
   - 本地 trace 聚合摘要入口优先通过 `make trace-report`

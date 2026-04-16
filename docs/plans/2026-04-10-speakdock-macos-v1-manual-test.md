@@ -46,6 +46,7 @@
 2. 切换到英语、繁体中文、日语、韩语后，新会话生效。
 3. 录音过程中 overlay 能实时看到 partial transcript。
 4. 如果复现“第一次说话没出字”或其他语音识别失败，先运行 `make speech-error-report LOG_WINDOW=5m`，确认最近失败摘要里的 `language / outcome / error domain / error code`。
+5. 需要回到原始明细时，再运行 `make speech-logs LOG_WINDOW=5m`，只看 `speech` category，不先翻整段总日志。
 
 ## 7. Overlay 与状态反馈
 

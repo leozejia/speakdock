@@ -10,7 +10,7 @@ CLANG_MODULE_CACHE := $(SWIFT_CACHE)/clang/ModuleCache
 SWIFT_ENV := HOME=$(SWIFT_HOME) XDG_CACHE_HOME=$(SWIFT_CACHE) CLANG_MODULE_CACHE_PATH=$(CLANG_MODULE_CACHE) SWIFTPM_MODULECACHE_OVERRIDE=$(CLANG_MODULE_CACHE)
 TEST_FILTER ?=
 
-.PHONY: build run clean test logs traces trace-report speech-error-report term-learning-report probe-compose smoke-compose smoke-compose-continue smoke-capture-continue smoke-capture-undo smoke-refine smoke-refine-manual smoke-capture-refine-manual smoke-refine-dirty-undo smoke-capture-refine-dirty-undo smoke-refine-fallback smoke-capture-refine-fallback smoke-refine-submit-sync smoke-term-learning smoke-term-learning-conflict
+.PHONY: build run clean test logs speech-logs traces trace-report speech-error-report term-learning-report probe-compose smoke-compose smoke-compose-continue smoke-capture-continue smoke-capture-undo smoke-refine smoke-refine-manual smoke-capture-refine-manual smoke-refine-dirty-undo smoke-capture-refine-dirty-undo smoke-refine-fallback smoke-capture-refine-fallback smoke-refine-submit-sync smoke-term-learning smoke-term-learning-conflict
 
 build:
 	./scripts/build-app.sh $(CONFIGURATION)
@@ -20,6 +20,9 @@ run:
 
 logs:
 	./scripts/show-logs.sh $(LOG_WINDOW)
+
+speech-logs:
+	./scripts/show-speech-logs.sh $(LOG_WINDOW)
 
 traces:
 	./scripts/show-traces.sh $(TRACE_WINDOW)

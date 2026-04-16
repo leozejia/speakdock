@@ -85,6 +85,7 @@
 - 本轮已完成：`capture` 路径现在有 `make smoke-capture-refine-dirty-undo` 自驱入口，能真实验证“整理后的 capture 文件如果被外部手改，二级动作会先进入 dirty，再经确认撤回到原文”
 - 本轮已完成：`capture` 路径现在有 `make smoke-capture-refine-fallback` 自驱入口，能真实验证“手动整理失败时，当前 capture 文件保持原文不被污染”
 - 本轮已完成：现在有 `make speech-error-report` 本地入口，能把最近 `speech` 会话聚合成 `language / outcome / error domain / error code` 摘要
+- 本轮已完成：现在有 `make speech-logs` 本地入口，能直接只看 `speech` category 的原始明细
 - 本轮已完成：workspace 的 `endLocation` 现在会跟随整理改写、手动改写和撤回后的当前可见文本边界
 - 本轮已完成：手动整理现在有独立的 `make smoke-refine-manual` 自驱入口
 - 本轮已完成：整理后的外部手改现在会在二级动作前先同步回 workspace，再决定是直接撤回还是先确认
@@ -94,4 +95,4 @@
 - 本轮已完成：`submit` 语义已经明确锁定，词级观察保留 pre-sync 差异，发送前 `refine` 仍读取当前可观测文本
 - 更早已完成：Settings 的 `Passive Learning` 面板现在能展示 `observed / promoted / conflicted / skippedConfirmed` 状态计数
 - 更早已完成：Settings 现在能展示最近学习事件，且只暴露 `alias / canonical / evidence / outcome`
-- 更早已完成：项目已经收敛到 `OSLog.Logger + make logs + make traces + make trace-report + make speech-error-report + make term-learning-report + make smoke-term-learning + make smoke-refine` 的统一调试入口
+- 更早已完成：项目已经收敛到 `OSLog.Logger + make logs + make speech-logs + make traces + make trace-report + make speech-error-report + make term-learning-report + make smoke-term-learning + make smoke-refine` 的统一调试入口

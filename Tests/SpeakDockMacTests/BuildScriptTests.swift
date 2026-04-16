@@ -73,6 +73,16 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("/usr/bin/log"))
     }
 
+    func testShowSpeechLogsScriptFiltersBySpeechCategory() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/show-speech-logs.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("subsystem == \"com.leozejia.speakdock\""))
+        XCTAssertTrue(script.contains("category == \"speech\""))
+        XCTAssertTrue(script.contains("/usr/bin/log"))
+    }
+
     func testMakefileExposesTraceReportCommandAndScript() throws {
         let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("Makefile")
@@ -97,6 +107,18 @@ final class BuildScriptTests: XCTestCase {
 
         XCTAssertTrue(makefile.contains("speech-error-report:"))
         XCTAssertTrue(makefile.contains("report-speech-errors.py"))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
+    }
+
+    func testMakefileExposesSpeechLogsCommandAndScript() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/show-speech-logs.sh")
+
+        XCTAssertTrue(makefile.contains("speech-logs:"))
+        XCTAssertTrue(makefile.contains("show-speech-logs.sh"))
         XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
     }
 

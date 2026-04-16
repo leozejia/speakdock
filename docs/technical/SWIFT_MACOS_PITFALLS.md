@@ -472,6 +472,7 @@
 当前落实位置：
 
 - `scripts/report-speech-errors.py`
+- `scripts/show-speech-logs.sh`
 - `Makefile`
 - `Tests/SpeakDockMacTests/SpeechErrorReportScriptTests.swift`
 - `Tests/SpeakDockMacTests/BuildScriptTests.swift`
@@ -479,6 +480,7 @@
 验收方式：
 
 - `make speech-error-report LOG_WINDOW=5m`
+- `make speech-logs LOG_WINDOW=5m`
 - `make test TEST_FILTER=SpeechErrorReportScriptTests`
 - `make test TEST_FILTER=BuildScriptTests`
 
