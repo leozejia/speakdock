@@ -38,6 +38,13 @@ public enum WorkspaceReducer {
                 return
             }
 
+            if workspace.isRefined {
+                workspace.rawContext = workspace.visibleText
+                workspace.endLocation = workspace.startLocation + workspace.visibleText.count
+                workspace.isRefined = false
+                workspace.dirty = false
+            }
+
             workspace.hasSpoken = true
             workspace.rawContext += text
             workspace.visibleText += text
