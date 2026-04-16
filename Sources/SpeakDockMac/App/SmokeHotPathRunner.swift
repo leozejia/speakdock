@@ -22,6 +22,7 @@ final class SmokeHotPathRunner {
     private let submitDelay: TimeInterval
     private let completionDelay: TimeInterval
     private let captureRootURL: URL?
+    private let refineTarget: SpeakDockLaunchOptions.SmokeRefineTarget
 
     init(
         hotPathCoordinator: HotPathCoordinator,
@@ -31,7 +32,8 @@ final class SmokeHotPathRunner {
         delay: TimeInterval,
         submitDelay: TimeInterval = 0.8,
         completionDelay: TimeInterval = 0.8,
-        captureRootURL: URL? = nil
+        captureRootURL: URL? = nil,
+        refineTarget: SpeakDockLaunchOptions.SmokeRefineTarget = .compose
     ) {
         self.hotPathCoordinator = hotPathCoordinator
         self.mode = mode
@@ -41,6 +43,7 @@ final class SmokeHotPathRunner {
         self.submitDelay = submitDelay
         self.completionDelay = completionDelay
         self.captureRootURL = captureRootURL
+        self.refineTarget = refineTarget
     }
 
     func start() {
@@ -160,20 +163,40 @@ final class SmokeHotPathRunner {
                 }
 
             case .refineManual:
-                self.hotPathCoordinator.runSmokeManualRefine(text: self.text) {
-                    Task { @MainActor [weak self] in
-                        guard let self else {
-                            return
-                        }
+                let runRefine = {
+                    if self.refineTarget == .capture {
+                        self.hotPathCoordinator.runSmokeCaptureManualRefine(text: self.text) {
+                            Task { @MainActor [weak self] in
+                                guard let self else {
+                                    return
+                                }
 
-                        if self.completionDelay > 0 {
-                            try? await Task.sleep(for: .seconds(self.completionDelay))
-                        }
+                                if self.completionDelay > 0 {
+                                    try? await Task.sleep(for: .seconds(self.completionDelay))
+                                }
 
-                        SpeakDockLog.lifecycle.notice("smoke hot path finished")
-                        NSApp.terminate(nil)
+                                SpeakDockLog.lifecycle.notice("smoke hot path finished")
+                                NSApp.terminate(nil)
+                            }
+                        }
+                    } else {
+                        self.hotPathCoordinator.runSmokeManualRefine(text: self.text) {
+                            Task { @MainActor [weak self] in
+                                guard let self else {
+                                    return
+                                }
+
+                                if self.completionDelay > 0 {
+                                    try? await Task.sleep(for: .seconds(self.completionDelay))
+                                }
+
+                                SpeakDockLog.lifecycle.notice("smoke hot path finished")
+                                NSApp.terminate(nil)
+                            }
+                        }
                     }
                 }
+                runRefine()
 
             case .refineDirtyUndo:
                 self.hotPathCoordinator.runSmokeDirtyUndoRefine(text: self.text) {

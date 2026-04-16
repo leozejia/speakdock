@@ -253,6 +253,27 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("--smoke-refine-phase"))
     }
 
+    func testMakefileExposesCaptureManualRefineSmokeTarget() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+
+        XCTAssertTrue(makefile.contains("smoke-capture-refine-manual:"))
+        XCTAssertTrue(makefile.contains("SMOKE_REFINE_TARGET=capture"))
+        XCTAssertTrue(makefile.contains("SMOKE_REFINE_SCENARIO=manual"))
+    }
+
+    func testSmokeRefineScriptSupportsCaptureTargetScenario() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-smoke-refine.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("SMOKE_REFINE_TARGET"))
+        XCTAssertTrue(script.contains("--smoke-refine-target"))
+        XCTAssertTrue(script.contains("--smoke-capture-root"))
+        XCTAssertTrue(script.contains("find_capture_file"))
+    }
+
     func testMakefileExposesDirtyUndoRefineSmokeTarget() throws {
         let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("Makefile")

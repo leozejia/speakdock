@@ -32,10 +32,17 @@ struct SpeakDockApp: App {
         let triggerController = TriggerController(settingsStore: settingsStore)
         let audioCaptureEngine = AudioCaptureEngine()
         let composeTarget = ClipboardComposeTarget()
+        let smokeCaptureRootURL = launchOptions.smokeCaptureRootPath.isEmpty
+            ? nil
+            : URL(fileURLWithPath: launchOptions.smokeCaptureRootPath, isDirectory: true)
         let opensCaptureFilesOnFirstWrite =
-            !(launchOptions.mode == .smokeHotPath &&
-              (launchOptions.smokeHotPathPhase == .captureContinueAfterObservedEdit ||
-               launchOptions.smokeHotPathPhase == .captureUndoRecentSubmission))
+            !(
+                (launchOptions.mode == .smokeHotPath &&
+                 (launchOptions.smokeHotPathPhase == .captureContinueAfterObservedEdit ||
+                  launchOptions.smokeHotPathPhase == .captureUndoRecentSubmission)) ||
+                (launchOptions.mode == .smokeRefine &&
+                 launchOptions.smokeRefineTarget == .capture)
+            )
         let captureTarget = CaptureFileTarget(opensFilesOnFirstWrite: opensCaptureFilesOnFirstWrite)
         let speechController = SpeechController(settingsStore: settingsStore)
         let overlayPanelController = OverlayPanelController()
@@ -71,7 +78,8 @@ struct SpeakDockApp: App {
                     termDictionaryStore.confirmedDictionary
                 }
             ),
-            runtimeRefineConfigurationOverride: runtimeRefineConfigurationOverride
+            runtimeRefineConfigurationOverride: runtimeRefineConfigurationOverride,
+            runtimeCaptureRootURLOverride: smokeCaptureRootURL
         )
         switch launchOptions.mode {
         case .normal:
@@ -105,9 +113,7 @@ struct SpeakDockApp: App {
                 text: launchOptions.smokeText,
                 secondText: launchOptions.smokeSecondText,
                 delay: launchOptions.smokeDelay,
-                captureRootURL: launchOptions.smokeCaptureRootPath.isEmpty
-                    ? nil
-                    : URL(fileURLWithPath: launchOptions.smokeCaptureRootPath, isDirectory: true)
+                captureRootURL: smokeCaptureRootURL
             )
             AppRuntime.onDidFinishLaunching = {
                 AppRuntime.updateActivationPolicy(activateApp: false)
@@ -127,7 +133,8 @@ struct SpeakDockApp: App {
                 mode: smokeRefineMode,
                 text: launchOptions.smokeText,
                 delay: launchOptions.smokeDelay,
-                submitDelay: launchOptions.smokeSubmitDelay
+                submitDelay: launchOptions.smokeSubmitDelay,
+                refineTarget: launchOptions.smokeRefineTarget
             )
             AppRuntime.onDidFinishLaunching = {
                 AppRuntime.updateActivationPolicy(activateApp: false)

@@ -140,6 +140,24 @@ final class SpeakDockLaunchOptionsTests: XCTestCase {
         XCTAssertEqual(options.smokeRefinePhase, .manual)
     }
 
+    func testSmokeRefineModeParsesCaptureTargetAndCaptureRootOverride() {
+        let options = SpeakDockLaunchOptions(
+            arguments: [
+                "SpeakDock",
+                "--smoke-refine",
+                "--smoke-refine-phase", "manual",
+                "--smoke-refine-target", "capture",
+                "--smoke-text", "Project Atlas",
+                "--smoke-capture-root", "/tmp/speakdock-capture-refine",
+            ]
+        )
+
+        XCTAssertEqual(options.mode, .smokeRefine)
+        XCTAssertEqual(options.smokeRefinePhase, .manual)
+        XCTAssertEqual(options.smokeRefineTarget, .capture)
+        XCTAssertEqual(options.smokeCaptureRootPath, "/tmp/speakdock-capture-refine")
+    }
+
     func testSmokeRefineModeParsesDirtyUndoPhaseOverride() {
         let options = SpeakDockLaunchOptions(
             arguments: [

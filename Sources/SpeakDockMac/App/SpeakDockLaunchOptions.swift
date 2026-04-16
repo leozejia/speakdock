@@ -15,6 +15,11 @@ struct SpeakDockLaunchOptions: Equatable {
         case dirtyUndo
     }
 
+    enum SmokeRefineTarget: Equatable {
+        case compose
+        case capture
+    }
+
     enum SmokeHotPathPhase: Equatable {
         case commit
         case continueAfterObservedEdit
@@ -41,6 +46,7 @@ struct SpeakDockLaunchOptions: Equatable {
     let smokeSubmitDelay: TimeInterval
     let smokeHotPathPhase: SmokeHotPathPhase
     let smokeRefinePhase: SmokeRefinePhase
+    let smokeRefineTarget: SmokeRefineTarget
     let smokeRefineBaseURL: String
     let smokeRefineAPIKey: String
     let smokeRefineModel: String
@@ -95,6 +101,7 @@ struct SpeakDockLaunchOptions: Equatable {
         ) ?? ""
         smokeHotPathPhase = Self.smokeHotPathPhaseValue(in: arguments)
         smokeRefinePhase = Self.smokeRefinePhaseValue(in: arguments)
+        smokeRefineTarget = Self.smokeRefineTargetValue(in: arguments)
         smokeRefineBaseURL = Self.stringValue(
             after: "--smoke-refine-base-url",
             in: arguments
@@ -151,6 +158,15 @@ struct SpeakDockLaunchOptions: Equatable {
             .dirtyUndo
         default:
             .submit
+        }
+    }
+
+    private static func smokeRefineTargetValue(in arguments: [String]) -> SmokeRefineTarget {
+        switch stringValue(after: "--smoke-refine-target", in: arguments) {
+        case "capture":
+            .capture
+        default:
+            .compose
         }
     }
 

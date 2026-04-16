@@ -7,11 +7,13 @@ CONFIGURATION="${1:-debug}"
 SOURCE_TEXT="${2:-SpeakDock source}"
 REFINED_TEXT="${3:-SpeakDock refined}"
 SCENARIO="${SMOKE_REFINE_SCENARIO:-success}"
+TARGET="${SMOKE_REFINE_TARGET:-compose}"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/speakdock-refine-smoke.XXXXXX")"
 STATE_FILE="$WORK_DIR/text.txt"
 READY_FILE="$WORK_DIR/ready.txt"
 COMMAND_FILE="$WORK_DIR/command.txt"
 REQUEST_FILE="$WORK_DIR/request.txt"
+CAPTURE_ROOT="$WORK_DIR/capture"
 SERVER_LOG="$WORK_DIR/refine-server.log"
 HOST_APP_PATH="$("$ROOT_DIR/scripts/build-test-host.sh" "$CONFIGURATION")"
 APP_PATH="$("$ROOT_DIR/scripts/build-app.sh" "$CONFIGURATION")"
@@ -106,6 +108,29 @@ wait_for_state_text() {
   return 1
 }
 
+find_capture_file() {
+  find "$CAPTURE_ROOT" -type f | head -n 1
+}
+
+wait_for_capture_text() {
+  local expected_text="$1"
+  local capture_file=""
+  local actual_text=""
+
+  for _ in {1..50}; do
+    capture_file="$(find_capture_file)"
+    if [[ -n "$capture_file" && -f "$capture_file" ]]; then
+      actual_text="$(cat "$capture_file")"
+      if [[ "$actual_text" == "$expected_text" ]]; then
+        return 0
+      fi
+    fi
+    sleep 0.1
+  done
+
+  return 1
+}
+
 print -u2 -- "Launching local refine stub..."
 STUB_ARGS=(
   python3
@@ -142,34 +167,46 @@ if ! server_ready; then
   exit 1
 fi
 
-print -u2 -- "Launching SpeakDockTestHost..."
-open -n "$HOST_APP_PATH" --args --state-file "$STATE_FILE" --ready-file "$READY_FILE" --command-file "$COMMAND_FILE"
+if [[ "$TARGET" == "compose" ]]; then
+  print -u2 -- "Launching SpeakDockTestHost..."
+  open -n "$HOST_APP_PATH" --args --state-file "$STATE_FILE" --ready-file "$READY_FILE" --command-file "$COMMAND_FILE"
 
-for _ in {1..50}; do
-  [[ -f "$READY_FILE" ]] && break
-  sleep 0.1
-done
+  for _ in {1..50}; do
+    [[ -f "$READY_FILE" ]] && break
+    sleep 0.1
+  done
 
-if [[ ! -f "$READY_FILE" ]]; then
-  print -u2 -- "SpeakDockTestHost did not become ready."
+  if [[ ! -f "$READY_FILE" ]]; then
+    print -u2 -- "SpeakDockTestHost did not become ready."
+    exit 1
+  fi
+
+  activate_test_host
+
+  if [[ -n "$HOST_COMMAND_TEXT" ]]; then
+    (
+      if wait_for_state_text "$HOST_COMMAND_TRIGGER_TEXT"; then
+        print -n -- "$HOST_COMMAND_TEXT" > "$COMMAND_FILE"
+      fi
+    ) &
+    COMMAND_WRITER_PID=$!
+  fi
+elif [[ "$TARGET" == "capture" ]]; then
+  mkdir -p "$CAPTURE_ROOT"
+else
+  print -u2 -- "Unknown SMOKE_REFINE_TARGET: $TARGET"
   exit 1
-fi
-
-activate_test_host
-
-if [[ -n "$HOST_COMMAND_TEXT" ]]; then
-  (
-    if wait_for_state_text "$HOST_COMMAND_TRIGGER_TEXT"; then
-      print -n -- "$HOST_COMMAND_TEXT" > "$COMMAND_FILE"
-    fi
-  ) &
-  COMMAND_WRITER_PID=$!
 fi
 
 BASE_URL="http://127.0.0.1:$PORT/v1"
 
 print -u2 -- "Running SpeakDock smoke refine ($SCENARIO)..."
-open -g -n -W "$APP_PATH" --args \
+OPEN_ARGS=(
+  -g
+  -n
+  -W
+  "$APP_PATH"
+  --args
   --smoke-refine \
   --smoke-refine-phase "$APP_REFINE_PHASE" \
   --smoke-text "$SOURCE_TEXT" \
@@ -177,12 +214,34 @@ open -g -n -W "$APP_PATH" --args \
   --smoke-refine-base-url "$BASE_URL" \
   --smoke-refine-api-key "smoke-token" \
   --smoke-refine-model "smoke-model"
+)
+
+if [[ "$TARGET" == "capture" ]]; then
+  OPEN_ARGS+=(
+    --smoke-refine-target "capture"
+    --smoke-capture-root "$CAPTURE_ROOT"
+  )
+fi
+
+open "${OPEN_ARGS[@]}"
 
 ACTUAL_TEXT=""
-if wait_for_state_text "$EXPECTED_TEXT"; then
-  ACTUAL_TEXT="$(cat "$STATE_FILE")"
-elif [[ -f "$STATE_FILE" ]]; then
-  ACTUAL_TEXT="$(cat "$STATE_FILE")"
+if [[ "$TARGET" == "compose" ]]; then
+  if wait_for_state_text "$EXPECTED_TEXT"; then
+    ACTUAL_TEXT="$(cat "$STATE_FILE")"
+  elif [[ -f "$STATE_FILE" ]]; then
+    ACTUAL_TEXT="$(cat "$STATE_FILE")"
+  fi
+else
+  if wait_for_capture_text "$EXPECTED_TEXT"; then
+    CAPTURE_FILE="$(find_capture_file)"
+    ACTUAL_TEXT="$(cat "$CAPTURE_FILE")"
+  else
+    CAPTURE_FILE="$(find_capture_file)"
+    if [[ -n "$CAPTURE_FILE" && -f "$CAPTURE_FILE" ]]; then
+      ACTUAL_TEXT="$(cat "$CAPTURE_FILE")"
+    fi
+  fi
 fi
 
 if [[ "$ACTUAL_TEXT" != "$EXPECTED_TEXT" ]]; then

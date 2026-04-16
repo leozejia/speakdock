@@ -21,6 +21,7 @@ final class HotPathCoordinator {
     private let workspaceRefinePreparer: WorkspaceRefinePreparer
     private let refineEngine: any RefineEngine
     private let runtimeRefineConfigurationOverride: RefineConfiguration?
+    private let runtimeCaptureRootURLOverride: URL?
     private let wordCorrectionObservationRecorder: WordCorrectionObservationRecorder
     private let clock: () -> TimeInterval
 
@@ -44,6 +45,7 @@ final class HotPathCoordinator {
         cleanNormalizer: CleanNormalizer = CleanNormalizer(),
         refineEngine: any RefineEngine = OpenAICompatibleRefineEngine(),
         runtimeRefineConfigurationOverride: RefineConfiguration? = nil,
+        runtimeCaptureRootURLOverride: URL? = nil,
         clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
     ) {
         self.settingsStore = settingsStore
@@ -58,6 +60,7 @@ final class HotPathCoordinator {
         self.workspaceRefinePreparer = WorkspaceRefinePreparer(cleanNormalizer: cleanNormalizer)
         self.refineEngine = refineEngine
         self.runtimeRefineConfigurationOverride = runtimeRefineConfigurationOverride
+        self.runtimeCaptureRootURLOverride = runtimeCaptureRootURLOverride
         self.wordCorrectionObservationRecorder = WordCorrectionObservationRecorder(
             termDictionaryStore: termDictionaryStore,
             observeComposeText: { targetID in
@@ -141,6 +144,26 @@ final class HotPathCoordinator {
         onFinished: @escaping @MainActor () -> Void
     ) {
         runSmokeCommit(text: text)
+        runSmokeRefineSecondaryAction(onFinished: onFinished)
+    }
+
+    func runSmokeCaptureManualRefine(
+        text: String,
+        onFinished: @escaping @MainActor () -> Void
+    ) {
+        guard let captureRootURL = runtimeCaptureRootURLOverride else {
+            SpeakDockLog.capture.error("smoke capture manual refine missing capture root")
+            onFinished()
+            return
+        }
+
+        runSmokeCaptureCommit(text: text, captureRootURL: captureRootURL)
+        runSmokeRefineSecondaryAction(onFinished: onFinished)
+    }
+
+    private func runSmokeRefineSecondaryAction(
+        onFinished: @escaping @MainActor () -> Void
+    ) {
         undoFlowState.clearRecentSubmission()
         refreshSecondaryAction()
         performSecondaryAction()
@@ -555,7 +578,7 @@ final class HotPathCoordinator {
     }
 
     private func commitToCapture(_ text: String, captureRootURLOverride: URL? = nil) {
-        let captureRootURL = captureRootURLOverride ?? URL(
+        let captureRootURL = captureRootURLOverride ?? runtimeCaptureRootURLOverride ?? URL(
             fileURLWithPath: settingsStore.settings.captureRootPath,
             isDirectory: true
         )

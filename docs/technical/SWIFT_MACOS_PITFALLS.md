@@ -310,7 +310,39 @@
 - `make test TEST_FILTER=TermLearningFixtureBaselineTests`
 - `make test TEST_FILTER=BuildScriptTests`
 
-### 3.10 正常开发启动不能用 `open -n`
+### 3.10 `capture refine smoke` 不能复用 `compose` 提交路径
+
+现象：
+
+- `capture` 的手动整理 smoke 如果复用通用 `runSmokeCommit(...)`
+- 前台只要存在可编辑目标，整理结果就会被错误写到 `compose` 宿主，而不是隔离 capture 文件
+
+错误做法：
+
+- 认为“先提交一段文本，再点二级动作”这条 smoke 基建对 `compose + capture` 完全通用
+- 没给 `capture refine` 单独的隔离根目录和提交入口
+
+正确做法：
+
+- `capture refine smoke` 必须显式声明目标是 `capture`
+- 这条路径必须直接走 `runSmokeCaptureCommit(...)`
+- 文件写入优先使用 smoke 临时根目录，不能污染用户真实 `captureRootPath`
+
+当前落实位置：
+
+- `Sources/SpeakDockMac/App/SpeakDockLaunchOptions.swift`
+- `Sources/SpeakDockMac/App/SpeakDockApp.swift`
+- `Sources/SpeakDockMac/App/HotPathCoordinator.swift`
+- `Sources/SpeakDockMac/App/SmokeHotPathRunner.swift`
+- `scripts/run-smoke-refine.sh`
+
+验收方式：
+
+- `make smoke-capture-refine-manual`
+- `make test TEST_FILTER=SpeakDockLaunchOptionsTests`
+- `make test TEST_FILTER=BuildScriptTests`
+
+### 3.11 正常开发启动不能用 `open -n`
 
 现象：
 
@@ -336,7 +368,7 @@
 - 现有实例应被复用并回到前台
 - 只有 `probe / smoke` 这类隔离测试路径允许显式多开
 
-### 3.11 `App Language` 和 `Input Language` 必须分离
+### 3.12 `App Language` 和 `Input Language` 必须分离
 
 现象：
 

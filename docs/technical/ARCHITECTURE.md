@@ -885,6 +885,7 @@ macOS v1 的工程收口写死为：
   - `Compose continuation` 自驱基线优先通过 `make smoke-compose-continue` 执行；该命令必须验证“第一次注入后，外部手改被同步进同一 live workspace，第二次继续口述会接在当前文本后面”
   - `Capture continuation` 自驱基线优先通过 `make smoke-capture-continue` 执行；该命令必须验证“capture 文件被外部手改后，同一 live workspace 的第二次继续口述会先同步当前文件，再按换行追加”
   - `Capture undo` 自驱基线优先通过 `make smoke-capture-undo` 执行；该命令必须验证“capture 最近一次追加可以走共享 undo recent submission 语义，文件与 workspace 会一起回退”
+  - `Capture manual refine` 自驱基线优先通过 `make smoke-capture-refine-manual` 执行；该命令必须验证“当前 capture workspace 手动整理后，整理结果会直接写回隔离 capture 文件目标”
   - `Refine` 自驱基线优先通过 `make smoke-refine` 执行；该命令使用本地临时 stub server 覆盖真实 HTTP refine 请求与发送前整理闭环
   - `Submit refine sync` 自驱基线优先通过 `make smoke-refine-submit-sync` 执行；该命令必须验证“发送前如果用户已手改当前 workspace，整理请求读取的是手改后的当前文本”
   - 手动 `Refine` 自驱基线优先通过 `make smoke-refine-manual` 执行；该命令必须验证“当前 workspace 手动整理后，整理结果已写回目标”

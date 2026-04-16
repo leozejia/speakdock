@@ -81,6 +81,7 @@
 - 本轮已完成：`compose` 路径现在有 `make smoke-compose-continue` 自驱入口，能真实验证“外部手改后继续口述”
 - 本轮已完成：`capture` 路径现在有 `make smoke-capture-continue` 自驱入口，能真实验证“文件被外部手改后继续口述，会先同步再按换行追加”
 - 本轮已完成：`capture` 路径现在有 `make smoke-capture-undo` 自驱入口，能真实验证“最近一次文件追加可以直接按共享撤回语义回退”
+- 本轮已完成：`capture` 路径现在有 `make smoke-capture-refine-manual` 自驱入口，能真实验证“当前 capture workspace 手动整理后，整理结果会直接写回隔离文件目标”
 - 本轮已完成：workspace 的 `endLocation` 现在会跟随整理改写、手动改写和撤回后的当前可见文本边界
 - 本轮已完成：手动整理现在有独立的 `make smoke-refine-manual` 自驱入口
 - 本轮已完成：整理后的外部手改现在会在二级动作前先同步回 workspace，再决定是直接撤回还是先确认
