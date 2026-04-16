@@ -63,6 +63,7 @@ What works today:
 - Capture to local Markdown files named `speakdock-YYYYMMDD-HHMMSS.md`.
 - Lightweight overlay for listening, thinking, refining, transcript preview, and audio level.
 - Deterministic `Clean`, a local `Term Dictionary`, and optional OpenAI-compatible workspace-level `Refine`.
+- Conservative passive word-level learning in readable targets, with repeated stable corrections promoted into the local term dictionary.
 - Recent insertion undo and refine undo.
 - Compatibility diagnostics for third-party text targets.
 - Settings for trigger, capture root, local term dictionary, and refine configuration.
@@ -73,7 +74,6 @@ Not shipped yet:
 - A packaged and signed public release.
 - A local ASR model path.
 - A local small-model cleanup or extraction engine.
-- A passive word-level term-learning loop that promotes stable repeated corrections into the active term dictionary.
 - Background Wiki compiler and schema workflow.
 - DJI or other hardware trigger adapters.
 - iOS trigger or capture surface.

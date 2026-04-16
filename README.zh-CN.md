@@ -63,6 +63,7 @@ SpeakDock 现在处于早期 macOS 实现阶段。第一阶段目标是把热路
 - Capture 到本地 Markdown，文件名为 `speakdock-YYYYMMDD-HHMMSS.md`。
 - 轻量 overlay，显示 listening、thinking、refining、转写预览和音频电平。
 - 确定性的 `Clean`、本地 `Term Dictionary`，以及可选的 OpenAI 兼容 workspace 级 `Refine`。
+- 在“可读回文本”的目标里支持保守的被动词级学习，重复且稳定的修正会晋升进本地 active 词典。
 - 最近一次写入撤回和 refine 撤回。
 - 第三方输入框兼容性诊断。
 - Settings 已覆盖 trigger、capture 根目录、本地词典和 refine 配置。
@@ -73,7 +74,6 @@ SpeakDock 现在处于早期 macOS 实现阶段。第一阶段目标是把热路
 - 正式打包和签名的公开版本。
 - 本地 ASR 模型路径。
 - 端侧小模型清洗或抽取引擎。
-- 从真实手动修正事件中无感学习词级纠错，并把稳定重复映射晋升进 active 词典的完整链路。
 - 后台 Wiki compiler 和 schema 工作流。
 - DJI 或其他硬件 trigger adapter。
 - iOS 触发或 capture 入口。
