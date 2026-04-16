@@ -15,6 +15,12 @@ public struct TermDictionary: Equatable, Codable, Sendable {
 
     public var entries: [TermDictionaryEntry]
 
+    private struct ReplacementRule {
+        let alias: String
+        let canonicalTerm: String
+        let requiresStandaloneBoundary: Bool
+    }
+
     private static let asciiTermBoundaryScalars = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-")
     private static let matchingOptions: String.CompareOptions = [.caseInsensitive, .diacriticInsensitive]
 
@@ -23,61 +29,85 @@ public struct TermDictionary: Equatable, Codable, Sendable {
     }
 
     public func applying(to text: String) -> String {
-        var rewritten = text
+        let replacements = entries.flatMap { entry in
+            replacementRules(for: entry)
+        }
+        .sorted { lhs, rhs in
+            if lhs.alias.count != rhs.alias.count {
+                return lhs.alias.count > rhs.alias.count
+            }
 
-        for entry in entries {
-            let canonicalTerm = entry.canonicalTerm.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !canonicalTerm.isEmpty else {
+            return lhs.canonicalTerm.localizedCaseInsensitiveCompare(rhs.canonicalTerm) == .orderedAscending
+        }
+
+        guard !replacements.isEmpty else {
+            return text
+        }
+
+        var rewritten = String()
+        var index = text.startIndex
+
+        while index < text.endIndex {
+            if let replacement = firstReplacementMatch(
+                at: index,
+                in: text,
+                replacements: replacements
+            ) {
+                rewritten.append(replacement.canonicalTerm)
+                index = replacement.range.upperBound
                 continue
             }
 
-            let aliases = entry.aliases
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty && $0 != canonicalTerm }
-                .sorted { $0.count > $1.count }
-
-            for alias in aliases {
-                rewritten = replaceStandaloneOccurrences(
-                    of: alias,
-                    with: canonicalTerm,
-                    in: rewritten
-                )
-            }
+            rewritten.append(text[index])
+            text.formIndex(after: &index)
         }
 
         return rewritten
     }
 
-    private func replaceStandaloneOccurrences(
-        of alias: String,
-        with canonicalTerm: String,
-        in text: String
-    ) -> String {
-        let requiresStandaloneBoundary = alias.rangeOfCharacter(from: Self.asciiTermBoundaryScalars) != nil
-
-        var result = String()
-        var searchStart = text.startIndex
-
-        while searchStart < text.endIndex,
-              let range = text.range(
-                of: alias,
-                options: Self.matchingOptions,
-                range: searchStart..<text.endIndex,
-                locale: .current
-              ) {
-            result.append(contentsOf: text[searchStart..<range.lowerBound])
-
-            if !requiresStandaloneBoundary || isStandaloneMatch(range, in: text) {
-                result.append(canonicalTerm)
-            } else {
-                result.append(contentsOf: text[range])
-            }
-
-            searchStart = range.upperBound
+    private func replacementRules(for entry: TermDictionaryEntry) -> [ReplacementRule] {
+        let canonicalTerm = entry.canonicalTerm.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !canonicalTerm.isEmpty else {
+            return []
         }
 
-        result.append(contentsOf: text[searchStart...])
-        return result
+        return entry.aliases
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty && $0 != canonicalTerm }
+            .map { alias in
+                ReplacementRule(
+                    alias: alias,
+                    canonicalTerm: canonicalTerm,
+                    requiresStandaloneBoundary: alias.rangeOfCharacter(from: Self.asciiTermBoundaryScalars) != nil
+                )
+            }
+    }
+
+    private func firstReplacementMatch(
+        at index: String.Index,
+        in text: String,
+        replacements: [ReplacementRule]
+    ) -> (range: Range<String.Index>, canonicalTerm: String)? {
+        for replacement in replacements {
+            guard let range = text.range(
+                of: replacement.alias,
+                options: Self.matchingOptions,
+                range: index..<text.endIndex,
+                locale: .current
+              ),
+              range.lowerBound == index
+            else {
+                continue
+            }
+
+            if replacement.requiresStandaloneBoundary && !isStandaloneMatch(range, in: text) {
+                continue
+            }
+
+            return (range: range, canonicalTerm: replacement.canonicalTerm)
+        }
+
+        return nil
     }
 
     private func isStandaloneMatch(

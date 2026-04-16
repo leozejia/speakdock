@@ -97,4 +97,16 @@ final class TermDictionaryTests: XCTestCase {
             "Project Atlas Project Atlas"
         )
     }
+
+    func testLongerAliasWinsAcrossDifferentDictionaryEntries() {
+        let dictionary = TermDictionary(entries: [
+            TermDictionaryEntry(canonicalTerm: "Atlas Tool", aliases: ["atlas"]),
+            TermDictionaryEntry(canonicalTerm: "Project Atlas", aliases: ["project atlas"]),
+        ])
+
+        XCTAssertEqual(
+            dictionary.applying(to: "project atlas"),
+            "Project Atlas"
+        )
+    }
 }
