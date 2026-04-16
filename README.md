@@ -2,9 +2,9 @@
 
 SpeakDock is an AI voice input method for macOS that does not stop at typing.
 
-Speak, and it writes where you are. Deterministic cleanup keeps the hot path stable, and optional model-based refine can further clean or reorganize rough speech. Capture a thought instead, and it becomes the entry point to a local Markdown knowledge base that can later be compiled into an LLM-maintained wiki.
+Speak, and it writes where you are. Deterministic cleanup keeps the hot path stable, and optional model-based `Refine` can reorganize an entire workspace when the user wants clearer expression. Capture a thought instead, and it becomes the entry point to a local Markdown knowledge base that can later be compiled into an LLM-maintained wiki.
 
-The long-term goal is a voice layer that can write, correct, organize, and remember, while keeping the source of truth on your machine.
+The long-term goal is a voice layer that can write, learn the right terms, organize expression, and remember, while keeping the source of truth on your machine.
 
 [中文说明](README.zh-CN.md)
 
@@ -31,7 +31,7 @@ SpeakDock's product target goes beyond speech-to-text. It is a small, dependable
 - background knowledge compilation into Markdown pages
 - Apple-platform workflows first, with macOS as the proving ground
 
-Local-first matters here. The source of truth should remain on the user's machine, in ordinary files. Cloud model calls can help refine text, but they should not define the default hot path. Over time, small on-device models should handle most cleanup, classification, and structured extraction work. Larger models stay optional.
+Local-first matters here. The source of truth should remain on the user's machine, in ordinary files. Cloud model calls can help reorganize a workspace, but they should not define the default hot path. Over time, small on-device models should handle most cleanup, classification, and structured extraction work. Larger models stay optional.
 
 Hardware triggers are also part of the design, but not as a product dependency. A device such as a DJI microphone button should be one `TriggerAdapter` among others: keyboard, iPhone action, shortcut, widget, or future hardware. The user-facing semantics should stay the same.
 
@@ -62,7 +62,7 @@ What works today:
 - Compose through clipboard paste with temporary ASCII input-source switching.
 - Capture to local Markdown files named `speakdock-YYYYMMDD-HHMMSS.md`.
 - Lightweight overlay for listening, thinking, refining, transcript preview, and audio level.
-- Deterministic `Clean`, a local `Term Dictionary`, and optional OpenAI-compatible `Refine`.
+- Deterministic `Clean`, a local `Term Dictionary`, and optional OpenAI-compatible workspace-level `Refine`.
 - Recent insertion undo and refine undo.
 - Compatibility diagnostics for third-party text targets.
 - Settings for trigger, capture root, local term dictionary, and refine configuration.
@@ -73,7 +73,7 @@ Not shipped yet:
 - A packaged and signed public release.
 - A local ASR model path.
 - A local small-model cleanup or extraction engine.
-- Live term-dictionary candidate capture from manual correction events.
+- A passive word-level term-learning loop that promotes stable repeated corrections into the active term dictionary.
 - Background Wiki compiler and schema workflow.
 - DJI or other hardware trigger adapters.
 - iOS trigger or capture surface.
