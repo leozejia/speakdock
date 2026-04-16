@@ -418,6 +418,11 @@ final class HotPathCoordinator {
     }
 
     private func commitToCompose(_ text: String, targetID: String) {
+        synchronizeObservedWorkspaceTextIfNeeded(
+            for: .compose,
+            targetID: targetID
+        )
+
         do {
             try composeTarget.inject(text, expectedTargetID: targetID)
             captureTarget.resetSession()
@@ -453,6 +458,13 @@ final class HotPathCoordinator {
             fileURLWithPath: settingsStore.settings.captureRootPath,
             isDirectory: true
         )
+
+        if let targetID = captureWorkspaceTargetIDForContinuation() {
+            synchronizeObservedWorkspaceTextIfNeeded(
+                for: .capture,
+                targetID: targetID
+            )
+        }
 
         do {
             let fileURL = try captureTarget.write(text, captureRootURL: captureRootURL)
@@ -861,7 +873,9 @@ final class HotPathCoordinator {
         switch workspace.mode {
         case .compose:
             composeTarget.observedWorkspaceText(expectedTargetID: workspace.targetID)
-        case .capture, .wiki:
+        case .capture:
+            captureTarget.observedWorkspaceText(expectedTargetID: workspace.targetID)
+        case .wiki:
             nil
         }
     }
@@ -885,6 +899,39 @@ final class HotPathCoordinator {
         }
 
         refreshSecondaryAction()
+    }
+
+    private func synchronizeObservedWorkspaceTextIfNeeded(for mode: Mode, targetID: String) {
+        guard let workspace = workspaceState.activeWorkspace else {
+            return
+        }
+
+        guard let action = WorkspaceContinuationObservationSync.action(
+            activeWorkspace: workspace,
+            incomingMode: mode,
+            incomingTargetID: targetID,
+            observedText: observedCurrentWorkspaceText(for: workspace)
+        ) else {
+            return
+        }
+
+        WorkspaceReducer.reduce(state: &workspaceState, action: action)
+
+        if let updatedWorkspace = workspaceState.activeWorkspace {
+            overlayPanelController.updateTranscript(updatedWorkspace.visibleText)
+        }
+
+        refreshSecondaryAction()
+    }
+
+    private func captureWorkspaceTargetIDForContinuation() -> String? {
+        guard let workspace = workspaceState.activeWorkspace,
+              workspace.mode == .capture
+        else {
+            return nil
+        }
+
+        return workspace.targetID
     }
 
     private func refreshSecondaryAction() {
