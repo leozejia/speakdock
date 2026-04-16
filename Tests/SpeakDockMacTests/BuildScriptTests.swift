@@ -88,6 +88,18 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("/usr/bin/log"))
     }
 
+    func testMakefileExposesSpeechErrorReportCommandAndScript() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/report-speech-errors.py")
+
+        XCTAssertTrue(makefile.contains("speech-error-report:"))
+        XCTAssertTrue(makefile.contains("report-speech-errors.py"))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
+    }
+
     func testMakefileExposesTermLearningReportCommandAndScript() throws {
         let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("Makefile")

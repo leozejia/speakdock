@@ -876,6 +876,7 @@ macOS v1 的工程收口写死为：
   - 开发期热路径必须输出交互级 trace summary，至少包含 `interaction_id / kind / origin / result / total_duration`
   - 本地 trace 原始明细入口优先通过 `make traces`
   - 本地 trace 聚合摘要入口优先通过 `make trace-report`
+  - 本地 `speech` 失败聚合入口优先通过 `make speech-error-report`；该命令至少要能看清 `language / outcome / error domain / error code`
   - 本地词典学习摘要入口优先通过 `make term-learning-report`；该命令只读取 `TermDictionaryStore` 快照里的最小必要字段，不暴露完整正文
   - `Settings -> Dictionary -> Passive Learning` 也只能展示同一层最小字段：`alias / canonical / evidence / outcome` 与状态计数；不展示完整正文
   - 匿名术语回归样本的唯一真源固定在 `Tests/SpeakDockMacTests/Fixtures/term-learning-anonymous-baseline.json`；`TermDictionaryStore` 回放测试和 `term-learning-report` 脚本测试都必须复用同一份夹具，不能各写一套内联样本

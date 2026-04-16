@@ -451,6 +451,37 @@
 - `Sources/SpeakDockMac/SpeechController.swift`
 - `Sources/SpeakDockMac/AppLocalizer.swift`
 
+### 3.15 `ASR` 失败不能只靠人工翻原始日志
+
+现象：
+
+- 用户反馈“第一次说话没出字”时，原始日志虽然已经有 `domain / code`
+- 但如果每次都手工翻最近几百行，很快就会失去稳定判断
+
+错误做法：
+
+- 看到 `speech recognition task reported error` 就直接猜是权限、短音频或 warm-up
+- 每次都临时复制日志做人工统计
+
+正确做法：
+
+- 保持 Unified Logging 为唯一真源
+- 再补一个只读聚合入口，把最近 `speech` 会话按 `language / outcome / error domain / error code` 汇总
+- 在没有样本分布之前，不先改 `AppleSpeechEngine` 运行时策略
+
+当前落实位置：
+
+- `scripts/report-speech-errors.py`
+- `Makefile`
+- `Tests/SpeakDockMacTests/SpeechErrorReportScriptTests.swift`
+- `Tests/SpeakDockMacTests/BuildScriptTests.swift`
+
+验收方式：
+
+- `make speech-error-report LOG_WINDOW=5m`
+- `make test TEST_FILTER=SpeechErrorReportScriptTests`
+- `make test TEST_FILTER=BuildScriptTests`
+
 验收方式：
 
 - 切 `App Language` 只影响界面
