@@ -125,6 +125,57 @@ final class WordCorrectionObservationRecorderTests: XCTestCase {
         XCTAssertEqual(store.observedCorrections, [])
     }
 
+    func testComposeWorkspaceSkipsObservationWhenCurrentTargetCannotBeReadBack() throws {
+        let store = TermDictionaryStore(
+            storageURL: try makeStorageURL(),
+            fileManager: fileManager
+        )
+        let recorder = WordCorrectionObservationRecorder(
+            termDictionaryStore: store,
+            observeComposeText: { _ in nil }
+        )
+        let workspace = Workspace(
+            mode: .compose,
+            targetID: "paste-only-target",
+            startLocation: 0,
+            visibleText: "project adults 已经完成",
+            hasSpoken: true
+        )
+
+        try recorder.recordIfNeeded(for: workspace)
+
+        XCTAssertEqual(store.observedCorrections, [])
+    }
+
+    func testWikiWorkspaceNeverRecordsCorrectionEvidence() throws {
+        let store = TermDictionaryStore(
+            storageURL: try makeStorageURL(),
+            fileManager: fileManager
+        )
+        let recorder = WordCorrectionObservationRecorder(
+            termDictionaryStore: store,
+            observeComposeText: { _ in
+                XCTFail("Wiki workspace should not query compose observation")
+                return nil
+            },
+            observeCaptureText: { _ in
+                XCTFail("Wiki workspace should not query capture observation")
+                return nil
+            }
+        )
+        let workspace = Workspace(
+            mode: .wiki,
+            targetID: "wiki-page",
+            startLocation: 0,
+            visibleText: "project adults 已经完成",
+            hasSpoken: true
+        )
+
+        try recorder.recordIfNeeded(for: workspace)
+
+        XCTAssertEqual(store.observedCorrections, [])
+    }
+
     private func makeStorageURL() throws -> URL {
         let rootDirectory = fileManager.temporaryDirectory
             .appendingPathComponent("manual-correction-recorder-\(UUID().uuidString)", isDirectory: true)
