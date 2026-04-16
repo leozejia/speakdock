@@ -69,6 +69,8 @@
 
 ## 9. 最近完成
 
+- 当前轮已完成：`Capture` 工作区现在也能读取当前文件内容做词级观察；缺文件时保守跳过
+- 当前轮已完成：`WordCorrectionObservationRecorderTests` 已覆盖 `Compose / Capture / 文件缺失跳过` 三类基础边界
 - 上一轮已完成：Settings 的 `Passive Learning` 面板现在能展示 `observed / promoted / conflicted / skippedConfirmed` 状态计数
 - 上一轮已完成：Settings 现在能展示最近学习事件，且只暴露 `alias / canonical / evidence / outcome`
 - 上一轮已完成：README、手测文档、架构文档和 Swift 踩坑记录已同步到新的词级可读层

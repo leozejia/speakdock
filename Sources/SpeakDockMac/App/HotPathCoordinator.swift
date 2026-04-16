@@ -62,6 +62,9 @@ final class HotPathCoordinator {
             termDictionaryStore: termDictionaryStore,
             observeComposeText: { targetID in
                 composeTarget.observedWorkspaceText(expectedTargetID: targetID)
+            },
+            observeCaptureText: { targetID in
+                captureTarget.observedWorkspaceText(expectedTargetID: targetID)
             }
         )
         self.clock = clock

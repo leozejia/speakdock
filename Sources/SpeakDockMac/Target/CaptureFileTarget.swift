@@ -87,6 +87,15 @@ final class CaptureFileTarget {
         lastAppend = nil
     }
 
+    func observedWorkspaceText(expectedTargetID: String) -> String? {
+        let fileURL = URL(fileURLWithPath: expectedTargetID)
+        guard fileManager.fileExists(atPath: fileURL.path) else {
+            return nil
+        }
+
+        return try? existingContents(of: fileURL)
+    }
+
     func undoLastAppend(
         expectedTargetID: String,
         committedText: String

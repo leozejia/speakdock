@@ -129,6 +129,7 @@
 11. `Settings -> Dictionary -> Passive Learning` 能看到“观察中 / 已晋升 / 有冲突 / 已确认”四类状态计数。
 12. `Recent Learning` 只显示 `alias / canonical / evidence / outcome` 这些词级最小字段，不显示完整正文。
 13. `Recent Learning` 为空时，会明确显示空状态，而不是只剩一块静态说明。
+14. `Capture` 工作区如果用户直接改了本地 Markdown，再执行发送，系统可以读取当前文件内容并产生词级观察证据。
 
 ## 13. 基线性能
 
