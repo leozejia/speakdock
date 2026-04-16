@@ -11,6 +11,7 @@ WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/speakdock-refine-smoke.XXXXXX")"
 STATE_FILE="$WORK_DIR/text.txt"
 READY_FILE="$WORK_DIR/ready.txt"
 COMMAND_FILE="$WORK_DIR/command.txt"
+REQUEST_FILE="$WORK_DIR/request.txt"
 SERVER_LOG="$WORK_DIR/refine-server.log"
 HOST_APP_PATH="$("$ROOT_DIR/scripts/build-test-host.sh" "$CONFIGURATION")"
 APP_PATH="$("$ROOT_DIR/scripts/build-app.sh" "$CONFIGURATION")"
@@ -18,6 +19,8 @@ EXPECTED_TEXT="$REFINED_TEXT"
 STUB_STATUS_CODE="200"
 APP_REFINE_PHASE="submit"
 HOST_COMMAND_TEXT=""
+HOST_COMMAND_TRIGGER_TEXT=""
+EXPECTED_REQUEST_TEXT=""
 PORT="$(python3 - <<'PY'
 import socket
 
@@ -37,10 +40,16 @@ case "$SCENARIO" in
     EXPECTED_TEXT="$SOURCE_TEXT"
     APP_REFINE_PHASE="dirty-undo"
     HOST_COMMAND_TEXT="$REFINED_TEXT edited"
+    HOST_COMMAND_TRIGGER_TEXT="$REFINED_TEXT"
     ;;
   fallback)
     EXPECTED_TEXT="$SOURCE_TEXT"
     STUB_STATUS_CODE="500"
+    ;;
+  submit-observed-edit)
+    HOST_COMMAND_TEXT="$SOURCE_TEXT edited"
+    HOST_COMMAND_TRIGGER_TEXT="$SOURCE_TEXT"
+    EXPECTED_REQUEST_TEXT="$HOST_COMMAND_TEXT"
     ;;
   *)
     print -u2 -- "Unknown SMOKE_REFINE_SCENARIO: $SCENARIO"
@@ -98,11 +107,19 @@ wait_for_state_text() {
 }
 
 print -u2 -- "Launching local refine stub..."
-python3 "$ROOT_DIR/scripts/run-refine-stub-server.py" \
-  --port "$PORT" \
-  --response-text "$REFINED_TEXT" \
-  --status-code "$STUB_STATUS_CODE" \
-  >"$SERVER_LOG" 2>&1 &
+STUB_ARGS=(
+  python3
+  "$ROOT_DIR/scripts/run-refine-stub-server.py"
+  --port "$PORT"
+  --response-text "$REFINED_TEXT"
+  --status-code "$STUB_STATUS_CODE"
+)
+
+if [[ -n "$EXPECTED_REQUEST_TEXT" ]]; then
+  STUB_ARGS+=(--record-user-message "$REQUEST_FILE")
+fi
+
+"${STUB_ARGS[@]}" >"$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
 
 for _ in {1..50}; do
@@ -142,7 +159,7 @@ activate_test_host
 
 if [[ -n "$HOST_COMMAND_TEXT" ]]; then
   (
-    if wait_for_state_text "$REFINED_TEXT"; then
+    if wait_for_state_text "$HOST_COMMAND_TRIGGER_TEXT"; then
       print -n -- "$HOST_COMMAND_TEXT" > "$COMMAND_FILE"
     fi
   ) &
@@ -176,12 +193,29 @@ if [[ "$ACTUAL_TEXT" != "$EXPECTED_TEXT" ]]; then
   exit 1
 fi
 
+if [[ -n "$EXPECTED_REQUEST_TEXT" ]]; then
+  ACTUAL_REQUEST_TEXT=""
+  if [[ -f "$REQUEST_FILE" ]]; then
+    ACTUAL_REQUEST_TEXT="$(cat "$REQUEST_FILE")"
+  fi
+
+  if [[ "$ACTUAL_REQUEST_TEXT" != "$EXPECTED_REQUEST_TEXT" ]]; then
+    print -u2 -- "Smoke refine request mismatch ($SCENARIO)."
+    print -u2 -- "Expected request text: $EXPECTED_REQUEST_TEXT"
+    print -u2 -- "Actual request text:   $ACTUAL_REQUEST_TEXT"
+    print -u2 -- "Inspect traces with: make traces TRACE_WINDOW=5m"
+    exit 1
+  fi
+fi
+
 if [[ "$SCENARIO" == "fallback" ]]; then
   print -u2 -- "Smoke refine fallback passed."
 elif [[ "$SCENARIO" == "dirty-undo" ]]; then
   print -u2 -- "Smoke refine dirty undo passed."
 elif [[ "$SCENARIO" == "manual" ]]; then
   print -u2 -- "Smoke manual refine passed."
+elif [[ "$SCENARIO" == "submit-observed-edit" ]]; then
+  print -u2 -- "Smoke refine submit sync passed."
 else
   print -u2 -- "Smoke refine passed."
 fi

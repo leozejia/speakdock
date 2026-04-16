@@ -884,6 +884,7 @@ macOS v1 的工程收口写死为：
   - 自驱 smoke 优先通过 `make smoke-compose` 执行；smoke 使用 SpeakDock 自带测试宿主验证最小 Compose 注入闭环
   - `Compose continuation` 自驱基线优先通过 `make smoke-compose-continue` 执行；该命令必须验证“第一次注入后，外部手改被同步进同一 live workspace，第二次继续口述会接在当前文本后面”
   - `Refine` 自驱基线优先通过 `make smoke-refine` 执行；该命令使用本地临时 stub server 覆盖真实 HTTP refine 请求与发送前整理闭环
+  - `Submit refine sync` 自驱基线优先通过 `make smoke-refine-submit-sync` 执行；该命令必须验证“发送前如果用户已手改当前 workspace，整理请求读取的是手改后的当前文本”
   - 手动 `Refine` 自驱基线优先通过 `make smoke-refine-manual` 执行；该命令必须验证“当前 workspace 手动整理后，整理结果已写回目标”
   - `Refine dirty undo` 自驱基线优先通过 `make smoke-refine-dirty-undo` 执行；该命令必须验证“整理后手动改字会先进入 dirty，再经过确认后撤回到 `raw_context`”
   - `Refine fallback` 自驱基线优先通过 `make smoke-refine-fallback` 执行；该命令必须验证“模型失败时仍按当前 workspace 文本继续提交”

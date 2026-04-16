@@ -10,11 +10,35 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--port", type=int, required=True)
     parser.add_argument("--response-text", required=True)
     parser.add_argument("--status-code", type=int, default=200)
+    parser.add_argument("--record-user-message")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+
+    def record_user_message(body: bytes) -> None:
+        if not args.record_user_message:
+            return
+
+        extracted_text = ""
+
+        try:
+            payload = json.loads(body.decode("utf-8"))
+            messages = payload.get("messages", [])
+            for message in reversed(messages):
+                if message.get("role") != "user":
+                    continue
+
+                content = str(message.get("content", ""))
+                parts = content.split("\n\n", 1)
+                extracted_text = parts[1].strip() if len(parts) == 2 else content.strip()
+                break
+        except (UnicodeDecodeError, json.JSONDecodeError, AttributeError):
+            extracted_text = ""
+
+        with open(args.record_user_message, "w", encoding="utf-8") as handle:
+            handle.write(extracted_text)
 
     class Handler(BaseHTTPRequestHandler):
         def do_POST(self) -> None:
@@ -23,8 +47,11 @@ def main() -> None:
                 return
 
             length = int(self.headers.get("Content-Length", "0"))
+            body = b""
             if length > 0:
-                _ = self.rfile.read(length)
+                body = self.rfile.read(length)
+
+            record_user_message(body)
 
             if args.status_code != 200:
                 encoded = json.dumps({"error": {"message": "stub failure"}}).encode("utf-8")

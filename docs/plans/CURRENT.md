@@ -52,7 +52,7 @@
 1. 审视现有 `Refine` 相关测试和真实调用点
 2. 先补最小 failing test，锁定真实热路径里的整理边界
 3. 再补最小实现或修正
-4. 跑定向测试与 `make smoke-refine / make smoke-refine-manual / make smoke-refine-dirty-undo / make smoke-refine-fallback`
+4. 跑定向测试与 `make smoke-refine / make smoke-refine-submit-sync / make smoke-refine-manual / make smoke-refine-dirty-undo / make smoke-refine-fallback`
 5. 同步文档并归档本轮结果
 
 ## 7. 完成定义
@@ -83,6 +83,7 @@
 - 本轮已完成：整理后的外部手改现在会在二级动作前先同步回 workspace，再决定是直接撤回还是先确认
 - 本轮已完成：`dirty -> confirm undo -> undo refine` 现在有独立的 `make smoke-refine-dirty-undo` 自驱入口
 - 本轮已完成：`Refine fallback` 现在有独立的 `make smoke-refine-fallback` 自驱入口
+- 本轮已完成：`submit` 前如果用户手改了当前 workspace，`make smoke-refine-submit-sync` 现在会真实校验整理请求读取的是手改后的当前文本
 - 本轮已完成：`submit` 语义已经明确锁定，词级观察保留 pre-sync 差异，发送前 `refine` 仍读取当前可观测文本
 - 更早已完成：Settings 的 `Passive Learning` 面板现在能展示 `observed / promoted / conflicted / skippedConfirmed` 状态计数
 - 更早已完成：Settings 现在能展示最近学习事件，且只暴露 `alias / canonical / evidence / outcome`
