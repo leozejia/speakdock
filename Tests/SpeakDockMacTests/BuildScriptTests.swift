@@ -165,6 +165,26 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("--smoke-text-2"))
     }
 
+    func testMakefileExposesCaptureContinuationSmokeTarget() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+
+        XCTAssertTrue(makefile.contains("smoke-capture-continue:"))
+        XCTAssertTrue(makefile.contains("SMOKE_CAPTURE_SCENARIO=continue"))
+    }
+
+    func testSmokeCaptureScriptSupportsContinuationScenario() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-smoke-capture.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("SMOKE_CAPTURE_SCENARIO"))
+        XCTAssertTrue(script.contains("capture-continue-after-observed-edit"))
+        XCTAssertTrue(script.contains("--smoke-capture-root"))
+        XCTAssertTrue(script.contains("find_capture_file"))
+    }
+
     func testSmokeRefineScriptLaunchesLocalRefineStubAndSmokeMode() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/run-smoke-refine.sh")

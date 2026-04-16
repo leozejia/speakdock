@@ -208,7 +208,37 @@
 - `make logs LOG_WINDOW=2m`
 - 看日志里是否出现 `compose target captured at press start`
 
-### 3.7 日志必须用统一 `os.Logger`，不能回到临时打印
+### 3.7 `capture` 自驱 smoke 必须隔离真实文件副作用，不能顺手打开用户编辑器
+
+现象：
+
+- 为了测 `capture` 热路径，smoke 会往真实桌面写文件
+- 第一次写入还会顺手拉起默认编辑器，导致 smoke 结果掺杂前台 App 副作用
+
+错误做法：
+
+- 直接复用真实 `captureRootPath`
+- 让 smoke 沿用“首次写入自动 `workspace.open(fileURL)`”这条用户态行为
+
+正确做法：
+
+- `capture` smoke 必须写到临时根目录，测完即删
+- `capture` smoke 如果只是验证文件与 workspace 语义，不要再额外拉起真实编辑器
+- 这类隔离开关只能用于 smoke / probe，不能反向污染正常用户路径
+
+当前落实位置：
+
+- `Sources/SpeakDockMac/Target/CaptureFileTarget.swift`
+- `Sources/SpeakDockMac/App/SpeakDockApp.swift`
+- `Sources/SpeakDockMac/App/HotPathCoordinator.swift`
+- `scripts/run-smoke-capture.sh`
+
+验收方式：
+
+- `make smoke-capture-continue`
+- `make test TEST_FILTER=BuildScriptTests`
+
+### 3.8 日志必须用统一 `os.Logger`，不能回到临时打印
 
 现象：
 
@@ -247,7 +277,7 @@
 - Settings 的 `Passive Learning` 面板能看到同一套结果分布，而且仍然只显示 `alias / canonical / evidence / outcome`
 - `promotion` 和 `conflict` 两条匿名 smoke 都能自驱回归
 
-### 3.12 `smoke-term-learning` 不能继续硬编码样本
+### 3.9 `smoke-term-learning` 不能继续硬编码样本
 
 现象：
 
@@ -280,7 +310,7 @@
 - `make test TEST_FILTER=TermLearningFixtureBaselineTests`
 - `make test TEST_FILTER=BuildScriptTests`
 
-### 3.7 正常开发启动不能用 `open -n`
+### 3.10 正常开发启动不能用 `open -n`
 
 现象：
 
@@ -306,7 +336,7 @@
 - 现有实例应被复用并回到前台
 - 只有 `probe / smoke` 这类隔离测试路径允许显式多开
 
-### 3.8 `App Language` 和 `Input Language` 必须分离
+### 3.11 `App Language` 和 `Input Language` 必须分离
 
 现象：
 
@@ -334,7 +364,7 @@
 - 切 `App Language` 只影响界面
 - 切 `Input Language` 只影响识别
 
-### 3.9 macOS `Settings` 不要做成“外壳里再套一个网页壳”
+### 3.12 macOS `Settings` 不要做成“外壳里再套一个网页壳”
 
 现象：
 
@@ -365,7 +395,7 @@
 - 三个 pane 都沿用同一套整体布局节奏
 - detail 内容区视觉上能自然填满整个设置窗右侧
 
-### 3.10 不要在自定义窄设置壳体里硬套 `LabeledContent`
+### 3.13 不要在自定义窄设置壳体里硬套 `LabeledContent`
 
 现象：
 
@@ -394,7 +424,7 @@
 - 中英文下字段标题、输入框、说明文字都保持稳定
 - `Refine` 左侧不再出现异常渲染
 
-### 3.11 匿名测试夹具必须声明成 SwiftPM test resource
+### 3.14 匿名测试夹具必须声明成 SwiftPM test resource
 
 现象：
 
@@ -426,7 +456,7 @@
 - `make test TEST_FILTER=TermLearningReportScriptTests`
 - 不再出现 unhandled fixture warning
 
-### 3.12 词典替换不能直接用裸 `replacingOccurrences`
+### 3.15 词典替换不能直接用裸 `replacingOccurrences`
 
 现象：
 

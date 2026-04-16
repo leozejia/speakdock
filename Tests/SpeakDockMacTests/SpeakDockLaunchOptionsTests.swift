@@ -57,6 +57,25 @@ final class SpeakDockLaunchOptionsTests: XCTestCase {
         XCTAssertEqual(options.smokeSecondText, " again")
     }
 
+    func testSmokeModeParsesCaptureContinuationPhaseAndCaptureRootOverride() {
+        let options = SpeakDockLaunchOptions(
+            arguments: [
+                "SpeakDock",
+                "--smoke-hot-path",
+                "--smoke-hot-path-phase", "capture-continue-after-observed-edit",
+                "--smoke-text", "hello",
+                "--smoke-text-2", " again",
+                "--smoke-capture-root", "/tmp/speakdock-capture-smoke",
+            ]
+        )
+
+        XCTAssertEqual(options.mode, .smokeHotPath)
+        XCTAssertEqual(options.smokeHotPathPhase, .captureContinueAfterObservedEdit)
+        XCTAssertEqual(options.smokeText, "hello")
+        XCTAssertEqual(options.smokeSecondText, " again")
+        XCTAssertEqual(options.smokeCaptureRootPath, "/tmp/speakdock-capture-smoke")
+    }
+
     func testSmokeDelayIsBounded() {
         let shortOptions = SpeakDockLaunchOptions(
             arguments: ["SpeakDock", "--smoke-hot-path", "--smoke-text", "hello", "--smoke-delay", "0.1"]

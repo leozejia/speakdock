@@ -6,6 +6,7 @@ final class SmokeHotPathRunner {
     enum Mode: String {
         case commit
         case continueAfterObservedEdit
+        case captureContinueAfterObservedEdit
         case refineSubmit
         case refineManual
         case refineDirtyUndo
@@ -19,6 +20,7 @@ final class SmokeHotPathRunner {
     private let delay: TimeInterval
     private let submitDelay: TimeInterval
     private let completionDelay: TimeInterval
+    private let captureRootURL: URL?
 
     init(
         hotPathCoordinator: HotPathCoordinator,
@@ -27,7 +29,8 @@ final class SmokeHotPathRunner {
         secondText: String = "",
         delay: TimeInterval,
         submitDelay: TimeInterval = 0.8,
-        completionDelay: TimeInterval = 0.8
+        completionDelay: TimeInterval = 0.8,
+        captureRootURL: URL? = nil
     ) {
         self.hotPathCoordinator = hotPathCoordinator
         self.mode = mode
@@ -36,6 +39,7 @@ final class SmokeHotPathRunner {
         self.delay = delay
         self.submitDelay = submitDelay
         self.completionDelay = completionDelay
+        self.captureRootURL = captureRootURL
     }
 
     func start() {
@@ -67,6 +71,33 @@ final class SmokeHotPathRunner {
                 self.hotPathCoordinator.runSmokeContinueAfterObservedEdit(
                     initialText: self.text,
                     continuedText: self.secondText
+                ) {
+                    Task { @MainActor [weak self] in
+                        guard let self else {
+                            return
+                        }
+
+                        if self.completionDelay > 0 {
+                            try? await Task.sleep(for: .seconds(self.completionDelay))
+                        }
+
+                        SpeakDockLog.lifecycle.notice("smoke hot path finished")
+                        NSApp.terminate(nil)
+                    }
+                }
+
+            case .captureContinueAfterObservedEdit:
+                guard let captureRootURL = self.captureRootURL else {
+                    SpeakDockLog.capture.error("smoke capture continuation missing capture root")
+                    SpeakDockLog.lifecycle.notice("smoke hot path finished")
+                    NSApp.terminate(nil)
+                    return
+                }
+
+                self.hotPathCoordinator.runSmokeCaptureContinueAfterObservedEdit(
+                    initialText: self.text,
+                    continuedText: self.secondText,
+                    captureRootURL: captureRootURL
                 ) {
                     Task { @MainActor [weak self] in
                         guard let self else {

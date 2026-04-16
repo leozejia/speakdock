@@ -13,6 +13,7 @@ final class CaptureFileTarget {
     private let namer: CaptureFileNamer
     private let workspace: NSWorkspace
     private let now: () -> Date
+    private let opensFilesOnFirstWrite: Bool
 
     private(set) var activeFileURL: URL?
     private var activeEditorBundleIdentifier: String?
@@ -22,12 +23,14 @@ final class CaptureFileTarget {
         fileManager: FileManager = .default,
         namer: CaptureFileNamer = CaptureFileNamer(),
         workspace: NSWorkspace = .shared,
-        now: @escaping () -> Date = Date.init
+        now: @escaping () -> Date = Date.init,
+        opensFilesOnFirstWrite: Bool = true
     ) {
         self.fileManager = fileManager
         self.namer = namer
         self.workspace = workspace
         self.now = now
+        self.opensFilesOnFirstWrite = opensFilesOnFirstWrite
     }
 
     func write(_ text: String, captureRootURL: URL) throws -> URL {
@@ -50,12 +53,14 @@ final class CaptureFileTarget {
 
         if isFirstWrite {
             activeFileURL = fileURL
-            activeEditorBundleIdentifier = workspace
-                .urlForApplication(toOpen: fileURL)
-                .flatMap { url in
-                    Bundle(url: url)?.bundleIdentifier
-                }
-            workspace.open(fileURL)
+            if opensFilesOnFirstWrite {
+                activeEditorBundleIdentifier = workspace
+                    .urlForApplication(toOpen: fileURL)
+                    .flatMap { url in
+                        Bundle(url: url)?.bundleIdentifier
+                    }
+                workspace.open(fileURL)
+            }
         }
 
         return fileURL

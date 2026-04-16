@@ -262,6 +262,51 @@ final class HotPathCoordinator {
         }
     }
 
+    func runSmokeCaptureContinueAfterObservedEdit(
+        initialText: String,
+        continuedText: String,
+        captureRootURL: URL,
+        onFinished: @escaping @MainActor () -> Void
+    ) {
+        runSmokeCaptureCommit(text: initialText, captureRootURL: captureRootURL)
+
+        Task { @MainActor [weak self] in
+            guard let self else {
+                return
+            }
+
+            var observedEditDetected = false
+
+            for _ in 0..<100 {
+                guard let workspace = self.workspaceState.activeWorkspace,
+                      workspace.mode == .capture
+                else {
+                    try? await Task.sleep(for: .milliseconds(50))
+                    continue
+                }
+
+                if let observedText = self.observedCurrentWorkspaceText(for: workspace),
+                   observedText != workspace.visibleText
+                {
+                    observedEditDetected = true
+                    break
+                }
+
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+
+            if observedEditDetected {
+                self.runSmokeCaptureCommit(text: continuedText, captureRootURL: captureRootURL)
+            } else {
+                SpeakDockLog.capture.error(
+                    "smoke capture continuation timed out waiting for observed workspace edit"
+                )
+            }
+
+            onFinished()
+        }
+    }
+
     private func runSmokeSubmit(
         text: String,
         submitDelay: TimeInterval,
@@ -499,8 +544,8 @@ final class HotPathCoordinator {
         }
     }
 
-    private func commitToCapture(_ text: String) {
-        let captureRootURL = URL(
+    private func commitToCapture(_ text: String, captureRootURLOverride: URL? = nil) {
+        let captureRootURL = captureRootURLOverride ?? URL(
             fileURLWithPath: settingsStore.settings.captureRootPath,
             isDirectory: true
         )
@@ -538,6 +583,25 @@ final class HotPathCoordinator {
             finishInteractionTrace(result: .captureCommitFailed)
             overlayPanelController.showError(error.localizedDescription)
         }
+    }
+
+    private func runSmokeCaptureCommit(text: String, captureRootURL: URL) {
+        startInteractionTrace(kind: .recording, origin: .smoke)
+        logInteractionStage("smokeStarted", extras: ["route=capture"])
+
+        let cleanedText = cleanNormalizer.normalize(text)
+        guard !cleanedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            finishInteractionTrace(result: .emptyTranscript)
+            return
+        }
+
+        mutateInteractionTrace {
+            $0.markRecognitionFinal(at: clock())
+        }
+        logInteractionStage("recognitionFinal", extras: ["synthetic=true"])
+        overlayPanelController.updateTranscript(cleanedText)
+        markCommitStarted(route: .capture)
+        commitToCapture(cleanedText, captureRootURLOverride: captureRootURL)
     }
 
     private func activateWorkspace(mode: Mode, targetID: String) -> Workspace {

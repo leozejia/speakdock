@@ -883,6 +883,7 @@ macOS v1 的工程收口写死为：
   - 第三方 App `Compose` 兼容性扫测优先通过 `make probe-compose` 执行；probe 只检查前台 App 的可编辑目标，不录音、不注入、不改剪贴板
   - 自驱 smoke 优先通过 `make smoke-compose` 执行；smoke 使用 SpeakDock 自带测试宿主验证最小 Compose 注入闭环
   - `Compose continuation` 自驱基线优先通过 `make smoke-compose-continue` 执行；该命令必须验证“第一次注入后，外部手改被同步进同一 live workspace，第二次继续口述会接在当前文本后面”
+  - `Capture continuation` 自驱基线优先通过 `make smoke-capture-continue` 执行；该命令必须验证“capture 文件被外部手改后，同一 live workspace 的第二次继续口述会先同步当前文件，再按换行追加”
   - `Refine` 自驱基线优先通过 `make smoke-refine` 执行；该命令使用本地临时 stub server 覆盖真实 HTTP refine 请求与发送前整理闭环
   - `Submit refine sync` 自驱基线优先通过 `make smoke-refine-submit-sync` 执行；该命令必须验证“发送前如果用户已手改当前 workspace，整理请求读取的是手改后的当前文本”
   - 手动 `Refine` 自驱基线优先通过 `make smoke-refine-manual` 执行；该命令必须验证“当前 workspace 手动整理后，整理结果已写回目标”

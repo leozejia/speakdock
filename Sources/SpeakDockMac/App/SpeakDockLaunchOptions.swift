@@ -18,6 +18,7 @@ struct SpeakDockLaunchOptions: Equatable {
     enum SmokeHotPathPhase: Equatable {
         case commit
         case continueAfterObservedEdit
+        case captureContinueAfterObservedEdit
     }
 
     static let defaultComposeProbeDuration: TimeInterval = 30
@@ -43,6 +44,7 @@ struct SpeakDockLaunchOptions: Equatable {
     let smokeRefineAPIKey: String
     let smokeRefineModel: String
     let smokeTermDictionaryStoragePath: String
+    let smokeCaptureRootPath: String
 
     init(arguments: [String] = CommandLine.arguments) {
         if arguments.contains("--probe-compose") {
@@ -108,6 +110,10 @@ struct SpeakDockLaunchOptions: Equatable {
             after: "--smoke-term-dictionary-storage",
             in: arguments
         ) ?? ""
+        smokeCaptureRootPath = Self.stringValue(
+            after: "--smoke-capture-root",
+            in: arguments
+        ) ?? ""
     }
 
     private static func durationValue(after flag: String, in arguments: [String]) -> TimeInterval? {
@@ -151,6 +157,8 @@ struct SpeakDockLaunchOptions: Equatable {
         switch stringValue(after: "--smoke-hot-path-phase", in: arguments) {
         case "continue-after-observed-edit":
             .continueAfterObservedEdit
+        case "capture-continue-after-observed-edit":
+            .captureContinueAfterObservedEdit
         default:
             .commit
         }

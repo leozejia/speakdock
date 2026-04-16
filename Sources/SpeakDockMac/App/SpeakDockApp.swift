@@ -32,7 +32,10 @@ struct SpeakDockApp: App {
         let triggerController = TriggerController(settingsStore: settingsStore)
         let audioCaptureEngine = AudioCaptureEngine()
         let composeTarget = ClipboardComposeTarget()
-        let captureTarget = CaptureFileTarget()
+        let opensCaptureFilesOnFirstWrite =
+            !(launchOptions.mode == .smokeHotPath &&
+              launchOptions.smokeHotPathPhase == .captureContinueAfterObservedEdit)
+        let captureTarget = CaptureFileTarget(opensFilesOnFirstWrite: opensCaptureFilesOnFirstWrite)
         let speechController = SpeechController(settingsStore: settingsStore)
         let overlayPanelController = OverlayPanelController()
         let runtimeRefineConfigurationOverride: RefineConfiguration?
@@ -90,13 +93,18 @@ struct SpeakDockApp: App {
                 .commit
             case .continueAfterObservedEdit:
                 .continueAfterObservedEdit
+            case .captureContinueAfterObservedEdit:
+                .captureContinueAfterObservedEdit
             }
             let smokeHotPathRunner = SmokeHotPathRunner(
                 hotPathCoordinator: hotPathCoordinator,
                 mode: smokeHotPathMode,
                 text: launchOptions.smokeText,
                 secondText: launchOptions.smokeSecondText,
-                delay: launchOptions.smokeDelay
+                delay: launchOptions.smokeDelay,
+                captureRootURL: launchOptions.smokeCaptureRootPath.isEmpty
+                    ? nil
+                    : URL(fileURLWithPath: launchOptions.smokeCaptureRootPath, isDirectory: true)
             )
             AppRuntime.onDidFinishLaunching = {
                 AppRuntime.updateActivationPolicy(activateApp: false)
