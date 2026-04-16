@@ -30,6 +30,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
+activate_test_host() {
+  osascript -e 'tell application id "com.leozejia.speakdock.testhost" to activate' >/dev/null 2>&1 || true
+  sleep 0.2
+}
+
 server_ready() {
   python3 - "$PORT" <<'PY'
 import socket
@@ -101,6 +106,8 @@ if [[ ! -f "$READY_FILE" ]]; then
   print -u2 -- "SpeakDockTestHost did not become ready."
   exit 1
 fi
+
+activate_test_host
 
 BASE_URL="http://127.0.0.1:$PORT/v1"
 

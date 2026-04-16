@@ -16,6 +16,7 @@ struct SpeakDockApp: App {
 
     init() {
         let launchOptions = SpeakDockLaunchOptions()
+        AppRuntime.launchMode = launchOptions.mode
         let settingsStore = SettingsStore()
         let termDictionaryStorageURL: URL
         if launchOptions.smokeTermDictionaryStoragePath.isEmpty {

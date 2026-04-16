@@ -232,6 +232,13 @@ final class TermDictionaryStoreTests: XCTestCase {
         XCTAssertEqual(observedCorrections.first?["canonicalTerm"] as? String, "Project Atlas")
         XCTAssertEqual(observedCorrections.first?["alias"] as? String, "project adults")
         XCTAssertEqual(observedCorrections.first?["evidenceCount"] as? Int, 1)
+
+        let learningEvents = try XCTUnwrap(snapshot["learningEvents"] as? [[String: Any]])
+        XCTAssertEqual(learningEvents.count, 1)
+        XCTAssertEqual(learningEvents.first?["canonicalTerm"] as? String, "Project Atlas")
+        XCTAssertEqual(learningEvents.first?["alias"] as? String, "project adults")
+        XCTAssertEqual(learningEvents.first?["outcome"] as? String, "observed")
+        XCTAssertEqual(learningEvents.first?["evidenceCount"] as? Int, 1)
     }
 
     func testRecordManualCorrectionDoesNotDuplicatePendingCandidate() throws {
@@ -309,6 +316,15 @@ final class TermDictionaryStoreTests: XCTestCase {
         let snapshot = try loadPersistedSnapshot(from: storageURL)
         let observedCorrections = try XCTUnwrap(snapshot["observedCorrections"] as? [[String: Any]])
         XCTAssertEqual(observedCorrections.count, 0)
+
+        let learningEvents = try XCTUnwrap(snapshot["learningEvents"] as? [[String: Any]])
+        XCTAssertEqual(learningEvents.count, 3)
+        XCTAssertEqual(learningEvents[0]["outcome"] as? String, "observed")
+        XCTAssertEqual(learningEvents[0]["evidenceCount"] as? Int, 1)
+        XCTAssertEqual(learningEvents[1]["outcome"] as? String, "observed")
+        XCTAssertEqual(learningEvents[1]["evidenceCount"] as? Int, 2)
+        XCTAssertEqual(learningEvents[2]["outcome"] as? String, "promoted")
+        XCTAssertEqual(learningEvents[2]["evidenceCount"] as? Int, 3)
     }
 
     func testRecordManualCorrectionDoesNotPromoteConflictingObservedMappings() throws {
@@ -360,6 +376,16 @@ final class TermDictionaryStoreTests: XCTestCase {
                     && $0["evidenceCount"] as? Int == 1
             }
         )
+
+        let learningEvents = try XCTUnwrap(snapshot["learningEvents"] as? [[String: Any]])
+        XCTAssertEqual(learningEvents.count, 4)
+        XCTAssertEqual(learningEvents[0]["outcome"] as? String, "observed")
+        XCTAssertEqual(learningEvents[1]["outcome"] as? String, "observed")
+        XCTAssertEqual(learningEvents[2]["outcome"] as? String, "observed")
+        XCTAssertEqual(learningEvents[3]["outcome"] as? String, "conflicted")
+        XCTAssertEqual(learningEvents[3]["canonicalTerm"] as? String, "Project Atlas")
+        XCTAssertEqual(learningEvents[3]["alias"] as? String, "project adults")
+        XCTAssertEqual(learningEvents[3]["evidenceCount"] as? Int, 3)
     }
 
     func testRecordManualCorrectionDoesNotAddAlreadyConfirmedAlias() throws {
@@ -386,6 +412,14 @@ final class TermDictionaryStoreTests: XCTestCase {
         )
 
         XCTAssertEqual(store.pendingCandidates, [])
+
+        let snapshot = try loadPersistedSnapshot(from: storageURL)
+        let learningEvents = try XCTUnwrap(snapshot["learningEvents"] as? [[String: Any]])
+        XCTAssertEqual(learningEvents.count, 1)
+        XCTAssertEqual(learningEvents.first?["canonicalTerm"] as? String, "Project Atlas")
+        XCTAssertEqual(learningEvents.first?["alias"] as? String, "project adults")
+        XCTAssertEqual(learningEvents.first?["outcome"] as? String, "skippedConfirmed")
+        XCTAssertEqual(learningEvents.first?["evidenceCount"] as? Int, 0)
     }
 
     private func makeTemporaryDirectory(named prefix: String) throws -> URL {

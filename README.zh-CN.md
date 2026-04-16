@@ -120,6 +120,13 @@ make trace-report
 make trace-report TRACE_WINDOW=20m
 ```
 
+不直接打开 `term-dictionary.json`，直接查看本地词典学习摘要：
+
+```bash
+make term-learning-report
+make term-learning-report TERM_DICTIONARY_STORAGE=/tmp/term-dictionary.json
+```
+
 不录音、不注入文本，只探测 Compose 兼容性：
 
 ```bash
@@ -147,6 +154,7 @@ make traces TRACE_WINDOW=5m
 
 ```bash
 make smoke-term-learning
+make term-learning-report
 make trace-report TRACE_WINDOW=5m
 make traces TRACE_WINDOW=5m
 ```

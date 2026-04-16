@@ -120,6 +120,13 @@ make trace-report
 make trace-report TRACE_WINDOW=20m
 ```
 
+Inspect the local term-learning summary without opening `term-dictionary.json` directly:
+
+```bash
+make term-learning-report
+make term-learning-report TERM_DICTIONARY_STORAGE=/tmp/term-dictionary.json
+```
+
 Probe Compose compatibility without recording or inserting text:
 
 ```bash
@@ -147,6 +154,7 @@ Run the local automated term-learning smoke baseline against an isolated tempora
 
 ```bash
 make smoke-term-learning
+make term-learning-report
 make trace-report TRACE_WINDOW=5m
 make traces TRACE_WINDOW=5m
 ```

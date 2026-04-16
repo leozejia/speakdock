@@ -48,12 +48,19 @@ final class TermDictionaryStore {
         }
     }
 
+    private(set) var learningEvents: [TermDictionaryLearningEvent] {
+        didSet {
+            persistIfReady()
+        }
+    }
+
     private let storageURL: URL
     private let fileManager: FileManager
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
     private let candidateExtractor = TermDictionaryCandidateExtractor()
     private let observationPromotionThreshold: Int
+    private let maximumLearningEvents = 200
     private var isReady = false
 
     init(
@@ -73,6 +80,7 @@ final class TermDictionaryStore {
         self.confirmedDictionary = TermDictionary(entries: snapshot.confirmedEntries)
         self.pendingCandidates = snapshot.pendingCandidates
         self.observedCorrections = snapshot.observedCorrections
+        self.learningEvents = snapshot.learningEvents
         self.isReady = true
     }
 
@@ -85,7 +93,8 @@ final class TermDictionaryStore {
         let snapshot = Snapshot(
             confirmedEntries: confirmedDictionary.entries,
             pendingCandidates: pendingCandidates,
-            observedCorrections: observedCorrections
+            observedCorrections: observedCorrections,
+            learningEvents: learningEvents
         )
         let data = try encoder.encode(snapshot)
         try data.write(to: storageURL, options: .atomic)
@@ -100,6 +109,7 @@ final class TermDictionaryStore {
         confirmedDictionary = TermDictionary(entries: snapshot.confirmedEntries)
         pendingCandidates = snapshot.pendingCandidates
         observedCorrections = snapshot.observedCorrections
+        learningEvents = snapshot.learningEvents
     }
 
     func confirm(_ candidate: TermDictionaryCandidate) throws {
@@ -167,7 +177,17 @@ final class TermDictionaryStore {
             generatedText: generatedText,
             correctedText: correctedText
         )
-        for candidate in candidates where !confirmedDictionaryContains(candidate) {
+        for candidate in candidates {
+            if confirmedDictionaryContains(candidate) {
+                appendLearningEvent(
+                    canonicalTerm: candidate.canonicalTerm,
+                    alias: candidate.alias,
+                    outcome: .skippedConfirmed,
+                    evidenceCount: 0
+                )
+                continue
+            }
+
             recordObservedCorrection(candidate)
         }
 
@@ -195,7 +215,8 @@ final class TermDictionaryStore {
             return Snapshot(
                 confirmedEntries: [],
                 pendingCandidates: [],
-                observedCorrections: []
+                observedCorrections: [],
+                learningEvents: []
             )
         }
 
@@ -334,14 +355,32 @@ final class TermDictionaryStore {
         }
 
         guard observation.evidenceCount >= observationPromotionThreshold else {
+            appendLearningEvent(
+                canonicalTerm: observation.canonicalTerm,
+                alias: observation.alias,
+                outcome: .observed,
+                evidenceCount: observation.evidenceCount
+            )
             return
         }
 
         guard !hasObservedConflict(aliasKey: candidateAliasKey, expectedCanonicalKey: candidateCanonicalKey) else {
+            appendLearningEvent(
+                canonicalTerm: observation.canonicalTerm,
+                alias: observation.alias,
+                outcome: .conflicted,
+                evidenceCount: observation.evidenceCount
+            )
             return
         }
 
         guard !confirmedDictionaryHasConflict(aliasKey: candidateAliasKey, expectedCanonicalKey: candidateCanonicalKey) else {
+            appendLearningEvent(
+                canonicalTerm: observation.canonicalTerm,
+                alias: observation.alias,
+                outcome: .conflicted,
+                evidenceCount: observation.evidenceCount
+            )
             return
         }
 
@@ -357,6 +396,33 @@ final class TermDictionaryStore {
         pendingCandidates.removeAll { pendingCandidate in
             canonicalKey(for: pendingCandidate.alias) == candidateAliasKey
         }
+
+        appendLearningEvent(
+            canonicalTerm: observation.canonicalTerm,
+            alias: observation.alias,
+            outcome: .promoted,
+            evidenceCount: observation.evidenceCount
+        )
+    }
+
+    private func appendLearningEvent(
+        canonicalTerm: String,
+        alias: String,
+        outcome: TermDictionaryLearningEvent.Outcome,
+        evidenceCount: Int
+    ) {
+        learningEvents.append(
+            TermDictionaryLearningEvent(
+                canonicalTerm: canonicalTerm,
+                alias: alias,
+                outcome: outcome,
+                evidenceCount: evidenceCount
+            )
+        )
+
+        if learningEvents.count > maximumLearningEvents {
+            learningEvents.removeFirst(learningEvents.count - maximumLearningEvents)
+        }
     }
 }
 
@@ -364,21 +430,25 @@ private struct Snapshot: Codable, Equatable {
     var confirmedEntries: [TermDictionaryEntry]
     var pendingCandidates: [TermDictionaryCandidate]
     var observedCorrections: [ObservedWordCorrection]
+    var learningEvents: [TermDictionaryLearningEvent]
 
     init(
         confirmedEntries: [TermDictionaryEntry],
         pendingCandidates: [TermDictionaryCandidate],
-        observedCorrections: [ObservedWordCorrection]
+        observedCorrections: [ObservedWordCorrection],
+        learningEvents: [TermDictionaryLearningEvent]
     ) {
         self.confirmedEntries = confirmedEntries
         self.pendingCandidates = pendingCandidates
         self.observedCorrections = observedCorrections
+        self.learningEvents = learningEvents
     }
 
     private enum CodingKeys: String, CodingKey {
         case confirmedEntries
         case pendingCandidates
         case observedCorrections
+        case learningEvents
     }
 
     init(from decoder: Decoder) throws {
@@ -386,5 +456,6 @@ private struct Snapshot: Codable, Equatable {
         confirmedEntries = try container.decodeIfPresent([TermDictionaryEntry].self, forKey: .confirmedEntries) ?? []
         pendingCandidates = try container.decodeIfPresent([TermDictionaryCandidate].self, forKey: .pendingCandidates) ?? []
         observedCorrections = try container.decodeIfPresent([ObservedWordCorrection].self, forKey: .observedCorrections) ?? []
+        learningEvents = try container.decodeIfPresent([TermDictionaryLearningEvent].self, forKey: .learningEvents) ?? []
     }
 }

@@ -10,7 +10,7 @@ CLANG_MODULE_CACHE := $(SWIFT_CACHE)/clang/ModuleCache
 SWIFT_ENV := HOME=$(SWIFT_HOME) XDG_CACHE_HOME=$(SWIFT_CACHE) CLANG_MODULE_CACHE_PATH=$(CLANG_MODULE_CACHE) SWIFTPM_MODULECACHE_OVERRIDE=$(CLANG_MODULE_CACHE)
 TEST_FILTER ?=
 
-.PHONY: build run clean test logs traces trace-report probe-compose smoke-compose smoke-refine smoke-term-learning
+.PHONY: build run clean test logs traces trace-report term-learning-report probe-compose smoke-compose smoke-refine smoke-term-learning
 
 build:
 	./scripts/build-app.sh $(CONFIGURATION)
@@ -26,6 +26,9 @@ traces:
 
 trace-report:
 	python3 ./scripts/report-traces.py --last $(TRACE_WINDOW)
+
+term-learning-report:
+	python3 ./scripts/report-term-learning.py $(if $(TERM_DICTIONARY_STORAGE),--storage $(TERM_DICTIONARY_STORAGE),)
 
 probe-compose:
 	./scripts/run-compose-probe.sh $(CONFIGURATION) $(PROBE_SECONDS)

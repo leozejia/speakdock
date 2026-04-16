@@ -9,7 +9,7 @@
 - 当前唯一 live plan：`docs/plans/CURRENT.md`
 - 仓库启动与权限概览：`README.md`
 - 人工验收顺序：`docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md`
-- 最近一次阶段快照归档：`docs/plans/archive/2026-04-16-speakdock-term-learning-smoke.md`
+- 最近一次阶段快照归档：`docs/plans/archive/2026-04-16-speakdock-term-learning-report.md`
 - 阶段实施执行归档：`docs/plans/archive/2026-04-11-speakdock-macos-v1-execution-log.md`
 
 ## 技术
@@ -25,6 +25,7 @@
 ## 归档
 
 - `docs/plans/archive/2026-04-16-speakdock-term-learning-smoke.md`
+- `docs/plans/archive/2026-04-16-speakdock-term-learning-report.md`
 - `docs/plans/archive/2026-04-16-speakdock-local-trace-report.md`
 - `docs/plans/archive/2026-04-10-speakdock-macos-v1-implementation.md`
 - `docs/plans/archive/2026-04-11-speakdock-macos-v1-execution-log.md`

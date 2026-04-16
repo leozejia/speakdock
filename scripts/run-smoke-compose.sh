@@ -17,6 +17,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
+activate_test_host() {
+  osascript -e 'tell application id "com.leozejia.speakdock.testhost" to activate' >/dev/null 2>&1 || true
+  sleep 0.2
+}
+
 wait_for_state_text() {
   local expected_text="$1"
   local actual_text=""
@@ -46,6 +51,8 @@ if [[ ! -f "$READY_FILE" ]]; then
   print -u2 -- "SpeakDockTestHost did not become ready."
   exit 1
 fi
+
+activate_test_host
 
 print -u2 -- "Running SpeakDock smoke compose..."
 open -g -n -W "$APP_PATH" --args --smoke-hot-path --smoke-text "$SMOKE_TEXT" --smoke-delay "1.5"

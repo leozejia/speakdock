@@ -21,6 +21,15 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("SpeakDock.icns"))
     }
 
+    func testRunDevScriptDoesNotForceNewAppInstance() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-dev.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("open -W"))
+        XCTAssertFalse(script.contains("open -n -W"))
+    }
+
     func testBuildScriptCopiesSwiftPMResourceBundlesIntoAppResources() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/build-app.sh")
@@ -79,6 +88,20 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("/usr/bin/log"))
     }
 
+    func testMakefileExposesTermLearningReportCommandAndScript() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/report-term-learning.py")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(makefile.contains("term-learning-report:"))
+        XCTAssertTrue(makefile.contains("report-term-learning.py"))
+        XCTAssertTrue(script.contains("Term Learning Report"))
+        XCTAssertTrue(script.contains("learning events"))
+    }
+
     func testComposeProbeScriptLaunchesSpeakDockBundleWithProbeArguments() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/run-compose-probe.sh")
@@ -105,6 +128,7 @@ final class BuildScriptTests: XCTestCase {
         let script = try String(contentsOf: scriptURL, encoding: .utf8)
 
         XCTAssertTrue(script.contains("build-test-host.sh"))
+        XCTAssertTrue(script.contains("tell application id \"com.leozejia.speakdock.testhost\" to activate"))
         XCTAssertTrue(script.contains("--smoke-hot-path"))
         XCTAssertTrue(script.contains("--smoke-text"))
         XCTAssertTrue(script.contains("SpeakDockTestHost"))
@@ -116,6 +140,7 @@ final class BuildScriptTests: XCTestCase {
         let script = try String(contentsOf: scriptURL, encoding: .utf8)
 
         XCTAssertTrue(script.contains("run-refine-stub-server.py"))
+        XCTAssertTrue(script.contains("tell application id \"com.leozejia.speakdock.testhost\" to activate"))
         XCTAssertTrue(script.contains("--smoke-refine"))
         XCTAssertTrue(script.contains("--smoke-refine-base-url"))
         XCTAssertTrue(script.contains("SpeakDockTestHost"))
@@ -127,6 +152,7 @@ final class BuildScriptTests: XCTestCase {
         let script = try String(contentsOf: scriptURL, encoding: .utf8)
 
         XCTAssertTrue(script.contains("build-test-host.sh"))
+        XCTAssertTrue(script.contains("tell application id \"com.leozejia.speakdock.testhost\" to activate"))
         XCTAssertTrue(script.contains("--smoke-term-learning"))
         XCTAssertTrue(script.contains("--smoke-term-dictionary-storage"))
         XCTAssertTrue(script.contains("SpeakDockTestHost"))

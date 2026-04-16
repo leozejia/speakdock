@@ -22,6 +22,7 @@
 2. 默认设置下应用在 Dock 中可见，且 Settings 中不再提供 `Show Dock Icon` 之类的可见性切换项。
 3. Settings 可以正常打开。
 4. 首次使用默认 `Fn` trigger 时，如果系统弹出 Accessibility 授权提示，应授权并重启应用。
+5. 正常用户态重复启动 SpeakDock 时，不应出现第二个常驻实例；系统应复用现有实例并把它带到前台。
 
 ## 4. 默认 Trigger
 
@@ -81,6 +82,7 @@
 8. `smoke-refine` 成功后，说明 `Refine HTTP -> workspace apply -> submit` 这条开发闭环仍然成立。
 9. 运行 `make smoke-term-learning` 时，命令会使用隔离的临时词典和测试宿主，连续验证 `词级观察 -> 晋升 -> 下次命中`。
 10. `smoke-term-learning` 成功后，说明 `TermDictionary` 的被动学习链路已有本地自驱基线。
+11. 运行 `make term-learning-report` 时，可以直接查看当前本地词典学习摘要；输出只包含 `alias / canonical / evidence / outcome`，不包含完整正文。
 
 ## 9. Capture
 

@@ -238,9 +238,37 @@
 - `make logs LOG_WINDOW=5m`
 - `make traces TRACE_WINDOW=5m`
 - `make trace-report TRACE_WINDOW=5m`
+- `make term-learning-report`
 - `make smoke-term-learning`
 - 关键链路都能按 category 找到，热路径能看到统一 `trace.finish`
 - 聚合报告能直接看到最近 `kind / result / origin / route / latency`
+- 词典学习报告能直接看到 `observed / promoted / conflicted / skippedConfirmed` 结果分布
+
+### 3.7 正常开发启动不能用 `open -n`
+
+现象：
+
+- `make run` 反复执行后，会出现多个常驻 `SpeakDock`
+- menu bar、Dock、权限和焦点行为开始互相干扰
+
+根因：
+
+- `open -n` 会强制 LaunchServices 新开实例
+- 这会主动绕过正常用户态应有的单实例语义
+
+当前落实位置：
+
+- `scripts/run-dev.sh`
+- `Sources/SpeakDockMac/App/AppRuntime.swift`
+- `Tests/SpeakDockMacTests/BuildScriptTests.swift`
+- `Tests/SpeakDockMacTests/AppRuntimeTests.swift`
+
+验收方式：
+
+- `make run` 连续执行两次
+- 第二次启动后不应出现新的常驻实例
+- 现有实例应被复用并回到前台
+- 只有 `probe / smoke` 这类隔离测试路径允许显式多开
 
 ### 3.8 `App Language` 和 `Input Language` 必须分离
 

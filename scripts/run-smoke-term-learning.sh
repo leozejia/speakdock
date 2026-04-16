@@ -21,6 +21,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
+activate_test_host() {
+  osascript -e 'tell application id "com.leozejia.speakdock.testhost" to activate' >/dev/null 2>&1 || true
+  sleep 0.2
+}
+
 wait_for_state_text() {
   local expected_text="$1"
   local actual_text=""
@@ -53,6 +58,8 @@ set_host_text() {
 }
 
 run_learning_cycle() {
+  activate_test_host
+
   open -g -n -W "$APP_PATH" --args \
     --smoke-term-learning \
     --smoke-text "$SOURCE_TEXT" \
@@ -91,12 +98,15 @@ if [[ ! -f "$READY_FILE" ]]; then
   exit 1
 fi
 
+activate_test_host
+
 for ((run_index = 1; run_index <= EVIDENCE_RUNS; run_index++)); do
   print -u2 -- "Running term-learning evidence cycle $run_index/$EVIDENCE_RUNS..."
   run_learning_cycle
 done
 
 print -u2 -- "Running final term-dictionary apply check..."
+activate_test_host
 open -g -n -W "$APP_PATH" --args \
   --smoke-hot-path \
   --smoke-text "$SOURCE_TEXT" \
