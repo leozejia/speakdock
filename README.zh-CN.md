@@ -106,11 +106,18 @@ make logs
 make logs LOG_WINDOW=2h
 ```
 
-查看最近的交互 trace 摘要：
+查看最近的交互 trace 原始行：
 
 ```bash
 make traces
 make traces TRACE_WINDOW=5m
+```
+
+本地汇总最近 trace 的结果分布和延迟：
+
+```bash
+make trace-report
+make trace-report TRACE_WINDOW=20m
 ```
 
 不录音、不注入文本，只探测 Compose 兼容性：
@@ -124,6 +131,7 @@ make logs LOG_WINDOW=2m
 
 ```bash
 make smoke-compose
+make trace-report TRACE_WINDOW=5m
 make traces TRACE_WINDOW=5m
 ```
 
@@ -131,6 +139,7 @@ make traces TRACE_WINDOW=5m
 
 ```bash
 make smoke-refine
+make trace-report TRACE_WINDOW=5m
 make traces TRACE_WINDOW=5m
 ```
 

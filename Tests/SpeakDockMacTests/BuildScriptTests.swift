@@ -64,6 +64,21 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("/usr/bin/log"))
     }
 
+    func testMakefileExposesTraceReportCommandAndScript() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/report-traces.py")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(makefile.contains("trace-report:"))
+        XCTAssertTrue(makefile.contains("report-traces.py"))
+        XCTAssertTrue(script.contains("Trace Report"))
+        XCTAssertTrue(script.contains("trace.finish"))
+        XCTAssertTrue(script.contains("/usr/bin/log"))
+    }
+
     func testComposeProbeScriptLaunchesSpeakDockBundleWithProbeArguments() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/run-compose-probe.sh")

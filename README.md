@@ -106,11 +106,18 @@ make logs
 make logs LOG_WINDOW=2h
 ```
 
-Show recent interaction trace summaries:
+Show recent raw interaction trace lines:
 
 ```bash
 make traces
 make traces TRACE_WINDOW=5m
+```
+
+Summarize recent trace results and latency locally:
+
+```bash
+make trace-report
+make trace-report TRACE_WINDOW=20m
 ```
 
 Probe Compose compatibility without recording or inserting text:
@@ -124,6 +131,7 @@ Run the local automated Compose smoke baseline against SpeakDock's own test host
 
 ```bash
 make smoke-compose
+make trace-report TRACE_WINDOW=5m
 make traces TRACE_WINDOW=5m
 ```
 
@@ -131,6 +139,7 @@ Run the local automated Refine smoke baseline with a temporary local stub server
 
 ```bash
 make smoke-refine
+make trace-report TRACE_WINDOW=5m
 make traces TRACE_WINDOW=5m
 ```
 

@@ -231,12 +231,15 @@
 - `Sources/SpeakDockMac/Logging/SpeakDockLog.swift`
 - `scripts/show-logs.sh`
 - `scripts/show-traces.sh`
+- `scripts/report-traces.py`
 
 验收方式：
 
 - `make logs LOG_WINDOW=5m`
 - `make traces TRACE_WINDOW=5m`
+- `make trace-report TRACE_WINDOW=5m`
 - 关键链路都能按 category 找到，热路径能看到统一 `trace.finish`
+- 聚合报告能直接看到最近 `kind / result / origin / route / latency`
 
 ### 3.8 `App Language` 和 `Input Language` 必须分离
 
