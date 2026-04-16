@@ -185,6 +185,25 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("find_capture_file"))
     }
 
+    func testMakefileExposesCaptureUndoSmokeTarget() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+
+        XCTAssertTrue(makefile.contains("smoke-capture-undo:"))
+        XCTAssertTrue(makefile.contains("SMOKE_CAPTURE_SCENARIO=undo"))
+    }
+
+    func testSmokeCaptureScriptSupportsUndoScenario() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-smoke-capture.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("capture-undo-recent-submission"))
+        XCTAssertTrue(script.contains("Smoke capture undo passed."))
+        XCTAssertTrue(script.contains("undo)"))
+    }
+
     func testSmokeRefineScriptLaunchesLocalRefineStubAndSmokeMode() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/run-smoke-refine.sh")

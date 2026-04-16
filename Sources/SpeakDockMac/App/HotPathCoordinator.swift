@@ -307,6 +307,16 @@ final class HotPathCoordinator {
         }
     }
 
+    func runSmokeCaptureUndoRecentSubmission(
+        text: String,
+        captureRootURL: URL,
+        onFinished: @escaping @MainActor () -> Void
+    ) {
+        runSmokeCaptureCommit(text: text, captureRootURL: captureRootURL)
+        performSecondaryAction()
+        onFinished()
+    }
+
     private func runSmokeSubmit(
         text: String,
         submitDelay: TimeInterval,

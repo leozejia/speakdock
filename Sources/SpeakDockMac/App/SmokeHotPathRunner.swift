@@ -7,6 +7,7 @@ final class SmokeHotPathRunner {
         case commit
         case continueAfterObservedEdit
         case captureContinueAfterObservedEdit
+        case captureUndoRecentSubmission
         case refineSubmit
         case refineManual
         case refineDirtyUndo
@@ -97,6 +98,32 @@ final class SmokeHotPathRunner {
                 self.hotPathCoordinator.runSmokeCaptureContinueAfterObservedEdit(
                     initialText: self.text,
                     continuedText: self.secondText,
+                    captureRootURL: captureRootURL
+                ) {
+                    Task { @MainActor [weak self] in
+                        guard let self else {
+                            return
+                        }
+
+                        if self.completionDelay > 0 {
+                            try? await Task.sleep(for: .seconds(self.completionDelay))
+                        }
+
+                        SpeakDockLog.lifecycle.notice("smoke hot path finished")
+                        NSApp.terminate(nil)
+                    }
+                }
+
+            case .captureUndoRecentSubmission:
+                guard let captureRootURL = self.captureRootURL else {
+                    SpeakDockLog.capture.error("smoke capture undo missing capture root")
+                    SpeakDockLog.lifecycle.notice("smoke hot path finished")
+                    NSApp.terminate(nil)
+                    return
+                }
+
+                self.hotPathCoordinator.runSmokeCaptureUndoRecentSubmission(
+                    text: self.text,
                     captureRootURL: captureRootURL
                 ) {
                     Task { @MainActor [weak self] in

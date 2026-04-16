@@ -19,6 +19,7 @@ struct SpeakDockLaunchOptions: Equatable {
         case commit
         case continueAfterObservedEdit
         case captureContinueAfterObservedEdit
+        case captureUndoRecentSubmission
     }
 
     static let defaultComposeProbeDuration: TimeInterval = 30
@@ -159,6 +160,8 @@ struct SpeakDockLaunchOptions: Equatable {
             .continueAfterObservedEdit
         case "capture-continue-after-observed-edit":
             .captureContinueAfterObservedEdit
+        case "capture-undo-recent-submission":
+            .captureUndoRecentSubmission
         default:
             .commit
         }

@@ -34,7 +34,8 @@ struct SpeakDockApp: App {
         let composeTarget = ClipboardComposeTarget()
         let opensCaptureFilesOnFirstWrite =
             !(launchOptions.mode == .smokeHotPath &&
-              launchOptions.smokeHotPathPhase == .captureContinueAfterObservedEdit)
+              (launchOptions.smokeHotPathPhase == .captureContinueAfterObservedEdit ||
+               launchOptions.smokeHotPathPhase == .captureUndoRecentSubmission))
         let captureTarget = CaptureFileTarget(opensFilesOnFirstWrite: opensCaptureFilesOnFirstWrite)
         let speechController = SpeechController(settingsStore: settingsStore)
         let overlayPanelController = OverlayPanelController()
@@ -95,6 +96,8 @@ struct SpeakDockApp: App {
                 .continueAfterObservedEdit
             case .captureContinueAfterObservedEdit:
                 .captureContinueAfterObservedEdit
+            case .captureUndoRecentSubmission:
+                .captureUndoRecentSubmission
             }
             let smokeHotPathRunner = SmokeHotPathRunner(
                 hotPathCoordinator: hotPathCoordinator,

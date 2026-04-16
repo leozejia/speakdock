@@ -76,6 +76,23 @@ final class SpeakDockLaunchOptionsTests: XCTestCase {
         XCTAssertEqual(options.smokeCaptureRootPath, "/tmp/speakdock-capture-smoke")
     }
 
+    func testSmokeModeParsesCaptureUndoPhaseAndCaptureRootOverride() {
+        let options = SpeakDockLaunchOptions(
+            arguments: [
+                "SpeakDock",
+                "--smoke-hot-path",
+                "--smoke-hot-path-phase", "capture-undo-recent-submission",
+                "--smoke-text", "hello",
+                "--smoke-capture-root", "/tmp/speakdock-capture-smoke",
+            ]
+        )
+
+        XCTAssertEqual(options.mode, .smokeHotPath)
+        XCTAssertEqual(options.smokeHotPathPhase, .captureUndoRecentSubmission)
+        XCTAssertEqual(options.smokeText, "hello")
+        XCTAssertEqual(options.smokeCaptureRootPath, "/tmp/speakdock-capture-smoke")
+    }
+
     func testSmokeDelayIsBounded() {
         let shortOptions = SpeakDockLaunchOptions(
             arguments: ["SpeakDock", "--smoke-hot-path", "--smoke-text", "hello", "--smoke-delay", "0.1"]
