@@ -40,6 +40,23 @@ final class SpeakDockLaunchOptionsTests: XCTestCase {
         XCTAssertEqual(options.smokeDelay, 1.5)
     }
 
+    func testSmokeModeParsesContinuationPhaseAndSecondText() {
+        let options = SpeakDockLaunchOptions(
+            arguments: [
+                "SpeakDock",
+                "--smoke-hot-path",
+                "--smoke-hot-path-phase", "continue-after-observed-edit",
+                "--smoke-text", "hello",
+                "--smoke-text-2", " again",
+            ]
+        )
+
+        XCTAssertEqual(options.mode, .smokeHotPath)
+        XCTAssertEqual(options.smokeHotPathPhase, .continueAfterObservedEdit)
+        XCTAssertEqual(options.smokeText, "hello")
+        XCTAssertEqual(options.smokeSecondText, " again")
+    }
+
     func testSmokeDelayIsBounded() {
         let shortOptions = SpeakDockLaunchOptions(
             arguments: ["SpeakDock", "--smoke-hot-path", "--smoke-text", "hello", "--smoke-delay", "0.1"]

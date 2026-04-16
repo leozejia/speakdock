@@ -76,6 +76,7 @@
 - 上一轮已完成：workspace handoff 前会先做词级修正结算
 - 本轮已完成：整理后继续口述会把当前可见文本吸收成新的 `raw_context` 基线，不再保留过期的撤回态
 - 本轮已完成：未整理工作区如果被外部手改，同一 live workspace 的下一段口述前会先同步当前文本；这条规则现在同时覆盖 `compose + capture`
+- 本轮已完成：`compose` 路径现在有 `make smoke-compose-continue` 自驱入口，能真实验证“外部手改后继续口述”
 - 本轮已完成：workspace 的 `endLocation` 现在会跟随整理改写、手动改写和撤回后的当前可见文本边界
 - 本轮已完成：手动整理现在有独立的 `make smoke-refine-manual` 自驱入口
 - 本轮已完成：整理后的外部手改现在会在二级动作前先同步回 workspace，再决定是直接撤回还是先确认

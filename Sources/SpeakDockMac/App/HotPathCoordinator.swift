@@ -216,6 +216,52 @@ final class HotPathCoordinator {
         )
     }
 
+    func runSmokeContinueAfterObservedEdit(
+        initialText: String,
+        continuedText: String,
+        onFinished: @escaping @MainActor () -> Void
+    ) {
+        runSmokeCommit(text: initialText)
+
+        Task { @MainActor [weak self] in
+            guard let self else {
+                return
+            }
+
+            var observedEditDetected = false
+
+            for _ in 0..<100 {
+                guard let workspace = self.workspaceState.activeWorkspace else {
+                    try? await Task.sleep(for: .milliseconds(50))
+                    continue
+                }
+
+                if let observedText = self.observedCurrentWorkspaceText(for: workspace),
+                   observedText != workspace.visibleText
+                {
+                    self.synchronizeObservedWorkspaceTextIfNeeded(
+                        for: workspace.mode,
+                        targetID: workspace.targetID
+                    )
+                    observedEditDetected = true
+                    break
+                }
+
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+
+            if observedEditDetected {
+                self.runSmokeCommit(text: continuedText)
+            } else {
+                SpeakDockLog.lifecycle.error(
+                    "smoke live continuation timed out waiting for observed workspace edit"
+                )
+            }
+
+            onFinished()
+        }
+    }
+
     private func runSmokeSubmit(
         text: String,
         submitDelay: TimeInterval,

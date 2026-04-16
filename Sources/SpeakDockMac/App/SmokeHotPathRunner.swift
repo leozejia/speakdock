@@ -5,6 +5,7 @@ import Foundation
 final class SmokeHotPathRunner {
     enum Mode: String {
         case commit
+        case continueAfterObservedEdit
         case refineSubmit
         case refineManual
         case refineDirtyUndo
@@ -14,6 +15,7 @@ final class SmokeHotPathRunner {
     private let hotPathCoordinator: HotPathCoordinator
     private let mode: Mode
     private let text: String
+    private let secondText: String
     private let delay: TimeInterval
     private let submitDelay: TimeInterval
     private let completionDelay: TimeInterval
@@ -22,6 +24,7 @@ final class SmokeHotPathRunner {
         hotPathCoordinator: HotPathCoordinator,
         mode: Mode = .commit,
         text: String,
+        secondText: String = "",
         delay: TimeInterval,
         submitDelay: TimeInterval = 0.8,
         completionDelay: TimeInterval = 0.8
@@ -29,6 +32,7 @@ final class SmokeHotPathRunner {
         self.hotPathCoordinator = hotPathCoordinator
         self.mode = mode
         self.text = text
+        self.secondText = secondText
         self.delay = delay
         self.submitDelay = submitDelay
         self.completionDelay = completionDelay
@@ -58,6 +62,25 @@ final class SmokeHotPathRunner {
 
                 SpeakDockLog.lifecycle.notice("smoke hot path finished")
                 NSApp.terminate(nil)
+
+            case .continueAfterObservedEdit:
+                self.hotPathCoordinator.runSmokeContinueAfterObservedEdit(
+                    initialText: self.text,
+                    continuedText: self.secondText
+                ) {
+                    Task { @MainActor [weak self] in
+                        guard let self else {
+                            return
+                        }
+
+                        if self.completionDelay > 0 {
+                            try? await Task.sleep(for: .seconds(self.completionDelay))
+                        }
+
+                        SpeakDockLog.lifecycle.notice("smoke hot path finished")
+                        NSApp.terminate(nil)
+                    }
+                }
 
             case .refineSubmit:
                 self.hotPathCoordinator.runSmokeRefineSubmit(

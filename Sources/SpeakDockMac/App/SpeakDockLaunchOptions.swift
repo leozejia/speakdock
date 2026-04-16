@@ -15,6 +15,11 @@ struct SpeakDockLaunchOptions: Equatable {
         case dirtyUndo
     }
 
+    enum SmokeHotPathPhase: Equatable {
+        case commit
+        case continueAfterObservedEdit
+    }
+
     static let defaultComposeProbeDuration: TimeInterval = 30
     static let minimumComposeProbeDuration: TimeInterval = 5
     static let maximumComposeProbeDuration: TimeInterval = 300
@@ -29,8 +34,10 @@ struct SpeakDockLaunchOptions: Equatable {
     let mode: Mode
     let composeProbeDuration: TimeInterval
     let smokeText: String
+    let smokeSecondText: String
     let smokeDelay: TimeInterval
     let smokeSubmitDelay: TimeInterval
+    let smokeHotPathPhase: SmokeHotPathPhase
     let smokeRefinePhase: SmokeRefinePhase
     let smokeRefineBaseURL: String
     let smokeRefineAPIKey: String
@@ -79,6 +86,11 @@ struct SpeakDockLaunchOptions: Equatable {
             after: "--smoke-text",
             in: arguments
         ) ?? Self.defaultSmokeText
+        smokeSecondText = Self.stringValue(
+            after: "--smoke-text-2",
+            in: arguments
+        ) ?? ""
+        smokeHotPathPhase = Self.smokeHotPathPhaseValue(in: arguments)
         smokeRefinePhase = Self.smokeRefinePhaseValue(in: arguments)
         smokeRefineBaseURL = Self.stringValue(
             after: "--smoke-refine-base-url",
@@ -132,6 +144,15 @@ struct SpeakDockLaunchOptions: Equatable {
             .dirtyUndo
         default:
             .submit
+        }
+    }
+
+    private static func smokeHotPathPhaseValue(in arguments: [String]) -> SmokeHotPathPhase {
+        switch stringValue(after: "--smoke-hot-path-phase", in: arguments) {
+        case "continue-after-observed-edit":
+            .continueAfterObservedEdit
+        default:
+            .commit
         }
     }
 }

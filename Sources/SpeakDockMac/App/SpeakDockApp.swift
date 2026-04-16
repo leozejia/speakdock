@@ -85,10 +85,17 @@ struct SpeakDockApp: App {
                 composeProbeRunner.start()
             }
         case .smokeHotPath:
+            let smokeHotPathMode: SmokeHotPathRunner.Mode = switch launchOptions.smokeHotPathPhase {
+            case .commit:
+                .commit
+            case .continueAfterObservedEdit:
+                .continueAfterObservedEdit
+            }
             let smokeHotPathRunner = SmokeHotPathRunner(
                 hotPathCoordinator: hotPathCoordinator,
-                mode: .commit,
+                mode: smokeHotPathMode,
                 text: launchOptions.smokeText,
+                secondText: launchOptions.smokeSecondText,
                 delay: launchOptions.smokeDelay
             )
             AppRuntime.onDidFinishLaunching = {

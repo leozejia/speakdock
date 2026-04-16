@@ -144,6 +144,27 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("SpeakDockTestHost"))
     }
 
+    func testMakefileExposesComposeContinuationSmokeTarget() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+
+        XCTAssertTrue(makefile.contains("smoke-compose-continue:"))
+        XCTAssertTrue(makefile.contains("SMOKE_COMPOSE_SCENARIO=continue"))
+    }
+
+    func testSmokeComposeScriptSupportsContinuationScenario() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-smoke-compose.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("SMOKE_COMPOSE_SCENARIO"))
+        XCTAssertTrue(script.contains("continue"))
+        XCTAssertTrue(script.contains("--command-file"))
+        XCTAssertTrue(script.contains("--smoke-hot-path-phase"))
+        XCTAssertTrue(script.contains("--smoke-text-2"))
+    }
+
     func testSmokeRefineScriptLaunchesLocalRefineStubAndSmokeMode() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/run-smoke-refine.sh")

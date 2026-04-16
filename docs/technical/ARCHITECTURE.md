@@ -881,6 +881,7 @@ macOS v1 的工程收口写死为：
   - 正常用户态启动默认保持单实例；重复启动应复用现有 `SpeakDock`，而不是再起一个新的常驻实例
   - 第三方 App `Compose` 兼容性扫测优先通过 `make probe-compose` 执行；probe 只检查前台 App 的可编辑目标，不录音、不注入、不改剪贴板
   - 自驱 smoke 优先通过 `make smoke-compose` 执行；smoke 使用 SpeakDock 自带测试宿主验证最小 Compose 注入闭环
+  - `Compose continuation` 自驱基线优先通过 `make smoke-compose-continue` 执行；该命令必须验证“第一次注入后，外部手改被同步进同一 live workspace，第二次继续口述会接在当前文本后面”
   - `Refine` 自驱基线优先通过 `make smoke-refine` 执行；该命令使用本地临时 stub server 覆盖真实 HTTP refine 请求与发送前整理闭环
   - 手动 `Refine` 自驱基线优先通过 `make smoke-refine-manual` 执行；该命令必须验证“当前 workspace 手动整理后，整理结果已写回目标”
   - `Refine dirty undo` 自驱基线优先通过 `make smoke-refine-dirty-undo` 执行；该命令必须验证“整理后手动改字会先进入 dirty，再经过确认后撤回到 `raw_context`”
