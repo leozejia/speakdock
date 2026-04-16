@@ -103,6 +103,9 @@
 3. 已确认条目可删除，删除后重新启动仍保持删除状态。
 4. 已确认条目保存在用户本地，不进入仓库 Git 管理。
 5. 如果存在 pending candidate，用户可以显式 `Confirm / Dismiss`，并在重启后保持结果。
+6. 在“可直接读回文本”的 compose 输入框里，手动改正 SpeakDock 刚刚写入的词并提交后，会新增本地 pending candidate。
+7. 同一候选不会在 pending 中重复堆积；已经 confirmed 的同一 alias 不会再次进入 pending。
+8. 对 paste-only fallback 或无法可靠读回文本的目标，不要求一定生成候选；系统应保守跳过，而不是静默入库。
 
 ## 13. 基线性能
 

@@ -36,6 +36,7 @@ struct SpeakDockApp: App {
             captureTarget: captureTarget,
             speechController: speechController,
             overlayPanelController: overlayPanelController,
+            termDictionaryStore: termDictionaryStore,
             cleanNormalizer: CleanNormalizer(
                 termDictionaryProvider: {
                     termDictionaryStore.confirmedDictionary

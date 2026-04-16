@@ -18,6 +18,7 @@ final class HotPathCoordinator {
     private let overlayPanelController: OverlayPanelController
     private let cleanNormalizer: CleanNormalizer
     private let refineEngine: any RefineEngine
+    private let manualCorrectionCandidateRecorder: ManualCorrectionCandidateRecorder
     private let clock: () -> TimeInterval
 
     private var workspaceState = WorkspaceState()
@@ -35,6 +36,7 @@ final class HotPathCoordinator {
         captureTarget: CaptureFileTarget,
         speechController: SpeechController,
         overlayPanelController: OverlayPanelController,
+        termDictionaryStore: TermDictionaryStore,
         cleanNormalizer: CleanNormalizer = CleanNormalizer(),
         refineEngine: any RefineEngine = OpenAICompatibleRefineEngine(),
         clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
@@ -48,6 +50,12 @@ final class HotPathCoordinator {
         self.overlayPanelController = overlayPanelController
         self.cleanNormalizer = cleanNormalizer
         self.refineEngine = refineEngine
+        self.manualCorrectionCandidateRecorder = ManualCorrectionCandidateRecorder(
+            termDictionaryStore: termDictionaryStore,
+            observeComposeText: { targetID in
+                composeTarget.observedWorkspaceText(expectedTargetID: targetID)
+            }
+        )
         self.clock = clock
 
         wireDependencies()
@@ -150,6 +158,7 @@ final class HotPathCoordinator {
             cancelRefineTask()
             cancelRecognitionTimeout()
             speechController.cancelSession()
+            recordManualCorrectionCandidateIfPossible()
             submitCurrentWorkspaceIfPossible()
             WorkspaceReducer.reduce(state: &workspaceState, action: .workspaceEnded)
             renderedSegmentsByWorkspaceID.removeAll()
@@ -543,6 +552,16 @@ final class HotPathCoordinator {
         } catch {
             SpeakDockLog.compose.error("compose submit failed: \(error.localizedDescription, privacy: .private)")
             overlayPanelController.showError(error.localizedDescription)
+        }
+    }
+
+    private func recordManualCorrectionCandidateIfPossible() {
+        do {
+            try manualCorrectionCandidateRecorder.recordIfNeeded(for: workspaceState.activeWorkspace)
+        } catch {
+            SpeakDockLog.compose.error(
+                "manual correction candidate recording failed: \(error.localizedDescription, privacy: .private)"
+            )
         }
     }
 

@@ -46,6 +46,7 @@ final class TermDictionaryStore {
     private let fileManager: FileManager
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
+    private let candidateExtractor = TermDictionaryCandidateExtractor()
     private var isReady = false
 
     init(
@@ -138,6 +139,26 @@ final class TermDictionaryStore {
         try save()
     }
 
+    func recordManualCorrection(
+        generatedText: String,
+        correctedText: String
+    ) throws {
+        let candidates = candidateExtractor.candidates(
+            generatedText: generatedText,
+            correctedText: correctedText
+        )
+        let newCandidates = candidates.filter { candidate in
+            !pendingCandidates.contains(candidate) && !confirmedDictionaryContains(candidate)
+        }
+
+        guard !newCandidates.isEmpty else {
+            return
+        }
+
+        pendingCandidates.append(contentsOf: newCandidates)
+        try save()
+    }
+
     private func persistIfReady() {
         guard isReady else {
             return
@@ -221,6 +242,18 @@ final class TermDictionaryStore {
 
         return normalizedAliases.sorted {
             $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
+        }
+    }
+
+    private func confirmedDictionaryContains(_ candidate: TermDictionaryCandidate) -> Bool {
+        let candidateCanonicalKey = canonicalKey(for: candidate.canonicalTerm)
+        let candidateAliasKey = canonicalKey(for: candidate.alias)
+
+        return confirmedDictionary.entries.contains { entry in
+            canonicalKey(for: entry.canonicalTerm) == candidateCanonicalKey
+                && entry.aliases.contains { alias in
+                    canonicalKey(for: alias) == candidateAliasKey
+                }
         }
     }
 

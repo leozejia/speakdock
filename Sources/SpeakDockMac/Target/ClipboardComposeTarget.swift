@@ -27,6 +27,7 @@ final class ClipboardComposeTarget {
     private struct FocusedEditableTarget {
         let element: AXUIElement
         let targetID: String
+        let observationContext: EditableTextObservationContext?
     }
 
     private struct PasteOnlyApplicationTarget {
@@ -182,7 +183,8 @@ final class ClipboardComposeTarget {
         if isEditableTextElement(focusedElement) {
             let target = FocusedEditableTarget(
                 element: focusedElement,
-                targetID: targetIdentifier(for: focusedElement)
+                targetID: targetIdentifier(for: focusedElement),
+                observationContext: captureTarget ? makeObservationContext(for: focusedElement) : nil
             )
             if captureTarget {
                 capturedTarget = .focusedEditableElement(target)
@@ -269,6 +271,36 @@ final class ClipboardComposeTarget {
         workspace.frontmostApplication?.bundleIdentifier
     }
 
+    func observedWorkspaceText(expectedTargetID: String) -> String? {
+        guard let target = capturedFocusedEditableTarget(expectedTargetID: expectedTargetID) else {
+            return nil
+        }
+
+        guard let observationContext = target.observationContext else {
+            SpeakDockLog.compose.debug("compose observation skipped because no editable text context was captured")
+            return nil
+        }
+
+        do {
+            try ensureAvailableTargetOrRestoreCapturedTarget(expectedTargetID: expectedTargetID)
+        } catch {
+            SpeakDockLog.compose.debug("compose observation skipped because target is no longer available")
+            return nil
+        }
+
+        guard let fullText = stringAttribute(kAXValueAttribute, on: target.element) else {
+            SpeakDockLog.compose.debug("compose observation skipped because current AX value is unavailable")
+            return nil
+        }
+
+        guard let observedText = observationContext.observedText(in: fullText) else {
+            SpeakDockLog.compose.debug("compose observation skipped because captured boundary no longer matches")
+            return nil
+        }
+
+        return observedText
+    }
+
     private func ensureAvailableTarget(expectedTargetID: String) throws {
         if case let .available(targetID) = availability(), targetID == expectedTargetID {
             return
@@ -310,6 +342,18 @@ final class ClipboardComposeTarget {
 
     private func postPasteShortcut() {
         postKeyboardShortcut(keyCode: 0x09, flags: .maskCommand)
+    }
+
+    private func capturedFocusedEditableTarget(expectedTargetID: String) -> FocusedEditableTarget? {
+        guard let capturedTarget, capturedTarget.targetID == expectedTargetID else {
+            return nil
+        }
+
+        guard case let .focusedEditableElement(target) = capturedTarget else {
+            return nil
+        }
+
+        return target
     }
 
     private func postKeyboardShortcut(keyCode: CGKeyCode, flags: CGEventFlags) {
@@ -561,6 +605,18 @@ final class ClipboardComposeTarget {
         return "\(pid):\(role):\(title)"
     }
 
+    private func makeObservationContext(for element: AXUIElement) -> EditableTextObservationContext? {
+        guard let fullText = stringAttribute(kAXValueAttribute, on: element),
+              let selectedRange = selectedTextRange(on: element) else {
+            return nil
+        }
+
+        return EditableTextObservationContext(
+            fullText: fullText,
+            selectedRange: selectedRange
+        )
+    }
+
     private func boolAttribute(_ attribute: String, on element: AXUIElement) -> Bool? {
         var value: CFTypeRef?
         let error = AXUIElementCopyAttributeValue(element, attribute as CFString, &value)
@@ -628,6 +684,35 @@ final class ClipboardComposeTarget {
         }
 
         return value as? String
+    }
+
+    private func selectedTextRange(on element: AXUIElement) -> NSRange? {
+        var value: CFTypeRef?
+        let error = AXUIElementCopyAttributeValue(
+            element,
+            kAXSelectedTextRangeAttribute as CFString,
+            &value
+        )
+        guard error == .success,
+              let value,
+              CFGetTypeID(value) == AXValueGetTypeID() else {
+            return nil
+        }
+
+        let axValue = value as! AXValue
+        guard AXValueGetType(axValue) == .cfRange else {
+            return nil
+        }
+
+        var range = CFRange()
+        guard AXValueGetValue(axValue, .cfRange, &range),
+              range.location != kCFNotFound,
+              range.location >= 0,
+              range.length >= 0 else {
+            return nil
+        }
+
+        return NSRange(location: range.location, length: range.length)
     }
 
     private func logValue(_ value: Bool?) -> String {
