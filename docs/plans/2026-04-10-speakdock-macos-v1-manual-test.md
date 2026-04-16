@@ -76,6 +76,8 @@
 3. `SpeakDock` 会在不依赖真实 `Fn` 和真实说话的前提下，把指定文本注入测试宿主。
 4. smoke 成功后，说明最小 `Compose` 热路径闭环仍然成立。
 5. smoke 失败后，优先运行 `make traces TRACE_WINDOW=5m` 查看最近交互结果码和阶段耗时。
+6. 运行 `make smoke-refine` 时，命令会额外临时拉起一个本地 OpenAI-compatible stub server。
+7. `smoke-refine` 成功后，说明 `Refine HTTP -> workspace apply -> submit` 这条开发闭环仍然成立。
 
 ## 9. Capture
 

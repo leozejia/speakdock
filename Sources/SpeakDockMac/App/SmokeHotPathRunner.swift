@@ -3,18 +3,26 @@ import Foundation
 
 @MainActor
 final class SmokeHotPathRunner {
+    enum Mode: String {
+        case commit
+        case refineSubmit
+    }
+
     private let hotPathCoordinator: HotPathCoordinator
+    private let mode: Mode
     private let text: String
     private let delay: TimeInterval
     private let completionDelay: TimeInterval
 
     init(
         hotPathCoordinator: HotPathCoordinator,
+        mode: Mode = .commit,
         text: String,
         delay: TimeInterval,
         completionDelay: TimeInterval = 0.8
     ) {
         self.hotPathCoordinator = hotPathCoordinator
+        self.mode = mode
         self.text = text
         self.delay = delay
         self.completionDelay = completionDelay
@@ -22,7 +30,7 @@ final class SmokeHotPathRunner {
 
     func start() {
         SpeakDockLog.lifecycle.notice(
-            "smoke hot path started: delay=\(self.delay, privacy: .public), textLength=\(self.text.count, privacy: .public)"
+            "smoke hot path started: mode=\(self.mode.rawValue, privacy: .public), delay=\(self.delay, privacy: .public), textLength=\(self.text.count, privacy: .public)"
         )
 
         Task { @MainActor [weak self] in
@@ -34,14 +42,33 @@ final class SmokeHotPathRunner {
                 try? await Task.sleep(for: .seconds(delay))
             }
 
-            self.hotPathCoordinator.runSmokeCommit(text: self.text)
+            switch self.mode {
+            case .commit:
+                self.hotPathCoordinator.runSmokeCommit(text: self.text)
 
-            if self.completionDelay > 0 {
-                try? await Task.sleep(for: .seconds(self.completionDelay))
+                if self.completionDelay > 0 {
+                    try? await Task.sleep(for: .seconds(self.completionDelay))
+                }
+
+                SpeakDockLog.lifecycle.notice("smoke hot path finished")
+                NSApp.terminate(nil)
+
+            case .refineSubmit:
+                self.hotPathCoordinator.runSmokeRefineSubmit(text: self.text) {
+                    Task { @MainActor [weak self] in
+                        guard let self else {
+                            return
+                        }
+
+                        if self.completionDelay > 0 {
+                            try? await Task.sleep(for: .seconds(self.completionDelay))
+                        }
+
+                        SpeakDockLog.lifecycle.notice("smoke hot path finished")
+                        NSApp.terminate(nil)
+                    }
+                }
             }
-
-            SpeakDockLog.lifecycle.notice("smoke hot path finished")
-            NSApp.terminate(nil)
         }
     }
 }

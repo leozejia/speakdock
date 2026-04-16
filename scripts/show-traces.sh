@@ -9,4 +9,4 @@ exec /usr/bin/log show \
   --info \
   --debug \
   --last "$TRACE_WINDOW" \
-  --style compact | /usr/bin/grep 'trace.finish'
+  --style compact | /usr/bin/grep 'trace.finish' || true

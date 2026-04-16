@@ -28,6 +28,17 @@ struct SpeakDockApp: App {
         let captureTarget = CaptureFileTarget()
         let speechController = SpeechController(settingsStore: settingsStore)
         let overlayPanelController = OverlayPanelController()
+        let runtimeRefineConfigurationOverride: RefineConfiguration?
+        if launchOptions.mode == .smokeRefine {
+            runtimeRefineConfigurationOverride = RefineConfiguration(
+                enabled: true,
+                baseURL: launchOptions.smokeRefineBaseURL,
+                apiKey: launchOptions.smokeRefineAPIKey,
+                model: launchOptions.smokeRefineModel
+            )
+        } else {
+            runtimeRefineConfigurationOverride = nil
+        }
         let hotPathCoordinator = HotPathCoordinator(
             settingsStore: settingsStore,
             triggerController: triggerController,
@@ -41,7 +52,8 @@ struct SpeakDockApp: App {
                 termDictionaryProvider: {
                     termDictionaryStore.confirmedDictionary
                 }
-            )
+            ),
+            runtimeRefineConfigurationOverride: runtimeRefineConfigurationOverride
         )
         switch launchOptions.mode {
         case .normal:
@@ -61,6 +73,18 @@ struct SpeakDockApp: App {
         case .smokeHotPath:
             let smokeHotPathRunner = SmokeHotPathRunner(
                 hotPathCoordinator: hotPathCoordinator,
+                mode: .commit,
+                text: launchOptions.smokeText,
+                delay: launchOptions.smokeDelay
+            )
+            AppRuntime.onDidFinishLaunching = {
+                AppRuntime.updateActivationPolicy(activateApp: false)
+                smokeHotPathRunner.start()
+            }
+        case .smokeRefine:
+            let smokeHotPathRunner = SmokeHotPathRunner(
+                hotPathCoordinator: hotPathCoordinator,
+                mode: .refineSubmit,
                 text: launchOptions.smokeText,
                 delay: launchOptions.smokeDelay
             )

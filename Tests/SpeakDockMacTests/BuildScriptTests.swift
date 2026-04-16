@@ -94,4 +94,15 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("--smoke-text"))
         XCTAssertTrue(script.contains("SpeakDockTestHost"))
     }
+
+    func testSmokeRefineScriptLaunchesLocalRefineStubAndSmokeMode() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-smoke-refine.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("run-refine-stub-server.py"))
+        XCTAssertTrue(script.contains("--smoke-refine"))
+        XCTAssertTrue(script.contains("--smoke-refine-base-url"))
+        XCTAssertTrue(script.contains("SpeakDockTestHost"))
+    }
 }

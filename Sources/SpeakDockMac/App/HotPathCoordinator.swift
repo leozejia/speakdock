@@ -20,6 +20,7 @@ final class HotPathCoordinator {
     private let recognitionCommitPreparer: RecognitionCommitPreparer
     private let workspaceRefinePreparer: WorkspaceRefinePreparer
     private let refineEngine: any RefineEngine
+    private let runtimeRefineConfigurationOverride: RefineConfiguration?
     private let wordCorrectionObservationRecorder: WordCorrectionObservationRecorder
     private let clock: () -> TimeInterval
 
@@ -42,6 +43,7 @@ final class HotPathCoordinator {
         termDictionaryStore: TermDictionaryStore,
         cleanNormalizer: CleanNormalizer = CleanNormalizer(),
         refineEngine: any RefineEngine = OpenAICompatibleRefineEngine(),
+        runtimeRefineConfigurationOverride: RefineConfiguration? = nil,
         clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
     ) {
         self.settingsStore = settingsStore
@@ -55,6 +57,7 @@ final class HotPathCoordinator {
         self.recognitionCommitPreparer = RecognitionCommitPreparer(cleanNormalizer: cleanNormalizer)
         self.workspaceRefinePreparer = WorkspaceRefinePreparer(cleanNormalizer: cleanNormalizer)
         self.refineEngine = refineEngine
+        self.runtimeRefineConfigurationOverride = runtimeRefineConfigurationOverride
         self.wordCorrectionObservationRecorder = WordCorrectionObservationRecorder(
             termDictionaryStore: termDictionaryStore,
             observeComposeText: { targetID in
@@ -113,6 +116,26 @@ final class HotPathCoordinator {
         logInteractionStage("recognitionFinal", extras: ["synthetic=true"])
         overlayPanelController.updateTranscript(cleanedText)
         commitRecognizedText(cleanedText)
+    }
+
+    func runSmokeRefineSubmit(
+        text: String,
+        submitDelay: TimeInterval = 0.8,
+        onFinished: @escaping @MainActor () -> Void
+    ) {
+        runSmokeCommit(text: text)
+
+        Task { @MainActor [weak self] in
+            guard let self else {
+                return
+            }
+
+            if submitDelay > 0 {
+                try? await Task.sleep(for: .seconds(submitDelay))
+            }
+
+            self.beginSubmitAction(origin: .smoke, onFinished: onFinished)
+        }
     }
 
     private func wireDependencies() {
@@ -195,13 +218,7 @@ final class HotPathCoordinator {
 
         case .submit:
             SpeakDockLog.trigger.notice("submit action received")
-            startInteractionTrace(kind: .submit)
-            logInteractionStage("submitStarted")
-            cancelRefineTask()
-            cancelRecognitionTimeout()
-            speechController.cancelSession()
-            recordWordCorrectionEvidenceIfPossible()
-            submitCurrentWorkspaceAfterOptionalRefine()
+            beginSubmitAction(origin: .live)
         }
     }
 
@@ -591,10 +608,29 @@ final class HotPathCoordinator {
         }
     }
 
-    private func submitCurrentWorkspaceAfterOptionalRefine() {
+    private func beginSubmitAction(
+        origin: HotPathInteractionTrace.Origin = .live,
+        onFinished: (@MainActor () -> Void)? = nil
+    ) {
+        startInteractionTrace(kind: .submit, origin: origin)
+        logInteractionStage("submitStarted")
+        cancelRefineTask()
+        cancelRecognitionTimeout()
+        speechController.cancelSession()
+
+        if origin == .live {
+            recordWordCorrectionEvidenceIfPossible()
+        }
+
+        submitCurrentWorkspaceAfterOptionalRefine(onFinished: onFinished)
+    }
+
+    private func submitCurrentWorkspaceAfterOptionalRefine(
+        onFinished: (@MainActor () -> Void)? = nil
+    ) {
         guard let workspace = workspaceState.activeWorkspace, workspace.mode == .compose else {
             finishInteractionTrace(result: .submitFailed)
-            completeSubmitAction()
+            completeSubmitAction(onFinished: onFinished)
             return
         }
 
@@ -606,7 +642,7 @@ final class HotPathCoordinator {
 
         guard preparation.shouldCallModel, !preparation.modelInputText.isEmpty else {
             submitCurrentWorkspaceIfPossible()
-            completeSubmitAction()
+            completeSubmitAction(onFinished: onFinished)
             return
         }
 
@@ -658,13 +694,13 @@ final class HotPathCoordinator {
                 }
 
                 self.submitCurrentWorkspaceIfPossible()
-                self.completeSubmitAction()
+                self.completeSubmitAction(onFinished: onFinished)
                 self.activeRefineTask = nil
             }
         }
     }
 
-    private func completeSubmitAction() {
+    private func completeSubmitAction(onFinished: (@MainActor () -> Void)? = nil) {
         WorkspaceReducer.reduce(state: &workspaceState, action: .workspaceEnded)
         renderedSegmentsByWorkspaceID.removeAll()
         undoFlowState.clearPendingConfirmation()
@@ -672,6 +708,7 @@ final class HotPathCoordinator {
         composeTargetSession.end()
         refreshSecondaryAction()
         overlayPanelController.dismiss(after: 0.1)
+        onFinished?()
     }
 
     private func recordWordCorrectionEvidenceIfPossible() {
@@ -685,7 +722,11 @@ final class HotPathCoordinator {
     }
 
     private var currentRefineConfiguration: RefineConfiguration {
-        RefineConfiguration(
+        if let runtimeRefineConfigurationOverride {
+            return runtimeRefineConfigurationOverride
+        }
+
+        return RefineConfiguration(
             enabled: settingsStore.settings.refineEnabled,
             baseURL: settingsStore.settings.refineBaseURL,
             apiKey: settingsStore.settings.refineAPIKey,

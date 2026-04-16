@@ -127,6 +127,13 @@ make smoke-compose
 make traces TRACE_WINDOW=5m
 ```
 
+Run the local automated Refine smoke baseline with a temporary local stub server:
+
+```bash
+make smoke-refine
+make traces TRACE_WINDOW=5m
+```
+
 ## Permissions
 
 SpeakDock asks macOS for the permissions required by the current path:

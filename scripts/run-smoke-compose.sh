@@ -17,6 +17,23 @@ cleanup() {
 }
 trap cleanup EXIT
 
+wait_for_state_text() {
+  local expected_text="$1"
+  local actual_text=""
+
+  for _ in {1..50}; do
+    if [[ -f "$STATE_FILE" ]]; then
+      actual_text="$(cat "$STATE_FILE")"
+      if [[ "$actual_text" == "$expected_text" ]]; then
+        return 0
+      fi
+    fi
+    sleep 0.1
+  done
+
+  return 1
+}
+
 print -u2 -- "Launching SpeakDockTestHost..."
 open -n "$HOST_APP_PATH" --args --state-file "$STATE_FILE" --ready-file "$READY_FILE"
 
@@ -34,7 +51,9 @@ print -u2 -- "Running SpeakDock smoke compose..."
 open -g -n -W "$APP_PATH" --args --smoke-hot-path --smoke-text "$SMOKE_TEXT" --smoke-delay "1.5"
 
 ACTUAL_TEXT=""
-if [[ -f "$STATE_FILE" ]]; then
+if wait_for_state_text "$SMOKE_TEXT"; then
+  ACTUAL_TEXT="$(cat "$STATE_FILE")"
+elif [[ -f "$STATE_FILE" ]]; then
   ACTUAL_TEXT="$(cat "$STATE_FILE")"
 fi
 

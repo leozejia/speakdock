@@ -84,10 +84,10 @@ private struct SpeakDockTestHostView: View {
         .padding(20)
         .frame(minWidth: 640, minHeight: 220)
         .onAppear {
-            model.markReady()
             NSApp.activate(ignoringOtherApps: true)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 inputFocused = true
+                model.markReady()
             }
         }
         .onChange(of: model.text) { _, _ in

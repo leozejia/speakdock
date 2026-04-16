@@ -51,4 +51,25 @@ final class SpeakDockLaunchOptionsTests: XCTestCase {
         XCTAssertEqual(shortOptions.smokeDelay, SpeakDockLaunchOptions.minimumSmokeDelay)
         XCTAssertEqual(longOptions.smokeDelay, SpeakDockLaunchOptions.maximumSmokeDelay)
     }
+
+    func testSmokeRefineModeParsesEndpointOverrides() {
+        let options = SpeakDockLaunchOptions(
+            arguments: [
+                "SpeakDock",
+                "--smoke-refine",
+                "--smoke-text", "Project Atlas",
+                "--smoke-delay", "1.2",
+                "--smoke-refine-base-url", "http://127.0.0.1:8080/v1",
+                "--smoke-refine-api-key", "smoke-token",
+                "--smoke-refine-model", "smoke-model",
+            ]
+        )
+
+        XCTAssertEqual(options.mode, .smokeRefine)
+        XCTAssertEqual(options.smokeText, "Project Atlas")
+        XCTAssertEqual(options.smokeDelay, 1.2)
+        XCTAssertEqual(options.smokeRefineBaseURL, "http://127.0.0.1:8080/v1")
+        XCTAssertEqual(options.smokeRefineAPIKey, "smoke-token")
+        XCTAssertEqual(options.smokeRefineModel, "smoke-model")
+    }
 }

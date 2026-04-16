@@ -851,6 +851,7 @@ macOS v1 的工程收口写死为：
   - 本地 trace 摘要入口优先通过 `make traces`
   - 第三方 App `Compose` 兼容性扫测优先通过 `make probe-compose` 执行；probe 只检查前台 App 的可编辑目标，不录音、不注入、不改剪贴板
   - 自驱 smoke 优先通过 `make smoke-compose` 执行；smoke 使用 SpeakDock 自带测试宿主验证最小 Compose 注入闭环
+  - `Refine` 自驱基线优先通过 `make smoke-refine` 执行；该命令使用本地临时 stub server 覆盖真实 HTTP refine 请求与发送前整理闭环
 
 ### 10.4 与 README_CN 的反向映射
 

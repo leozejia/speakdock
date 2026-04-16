@@ -127,6 +127,13 @@ make smoke-compose
 make traces TRACE_WINDOW=5m
 ```
 
+运行本地自动化 Refine smoke 基线，命令会临时拉起一个本地 stub server：
+
+```bash
+make smoke-refine
+make traces TRACE_WINDOW=5m
+```
+
 ## 权限
 
 SpeakDock 只请求当前路径需要的 macOS 权限：

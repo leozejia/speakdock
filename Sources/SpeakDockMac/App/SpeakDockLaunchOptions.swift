@@ -5,6 +5,7 @@ struct SpeakDockLaunchOptions: Equatable {
         case normal
         case composeProbe
         case smokeHotPath
+        case smokeRefine
     }
 
     static let defaultComposeProbeDuration: TimeInterval = 30
@@ -19,10 +20,15 @@ struct SpeakDockLaunchOptions: Equatable {
     let composeProbeDuration: TimeInterval
     let smokeText: String
     let smokeDelay: TimeInterval
+    let smokeRefineBaseURL: String
+    let smokeRefineAPIKey: String
+    let smokeRefineModel: String
 
     init(arguments: [String] = CommandLine.arguments) {
         if arguments.contains("--probe-compose") {
             mode = .composeProbe
+        } else if arguments.contains("--smoke-refine") {
+            mode = .smokeRefine
         } else if arguments.contains("--smoke-hot-path") {
             mode = .smokeHotPath
         } else {
@@ -50,6 +56,18 @@ struct SpeakDockLaunchOptions: Equatable {
             after: "--smoke-text",
             in: arguments
         ) ?? Self.defaultSmokeText
+        smokeRefineBaseURL = Self.stringValue(
+            after: "--smoke-refine-base-url",
+            in: arguments
+        ) ?? ""
+        smokeRefineAPIKey = Self.stringValue(
+            after: "--smoke-refine-api-key",
+            in: arguments
+        ) ?? ""
+        smokeRefineModel = Self.stringValue(
+            after: "--smoke-refine-model",
+            in: arguments
+        ) ?? ""
     }
 
     private static func durationValue(after flag: String, in arguments: [String]) -> TimeInterval? {
