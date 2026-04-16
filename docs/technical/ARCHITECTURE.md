@@ -283,6 +283,7 @@ macOS v1 的主入口写死为：
 补充说明：
 
 - `Word Correction` 只处理词或短语，不处理句子
+- 只有当前 workspace 已经包含 SpeakDock 产出的 spoken content 时，才允许记录词级观察；纯用户自写文本不进入学习
 - 句子级修改一律归 `Refine` 语义，不进入词典学习
 - 当前 v1 的默认阈值是 `3` 次一致观察后自动晋升
 - 同一 alias 只要出现冲突 canonical，就不自动晋升，继续停留在观察层
