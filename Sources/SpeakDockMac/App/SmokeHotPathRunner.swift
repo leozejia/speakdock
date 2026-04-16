@@ -7,6 +7,7 @@ final class SmokeHotPathRunner {
         case commit
         case refineSubmit
         case refineManual
+        case refineDirtyUndo
         case termLearningSubmit
     }
 
@@ -79,6 +80,22 @@ final class SmokeHotPathRunner {
 
             case .refineManual:
                 self.hotPathCoordinator.runSmokeManualRefine(text: self.text) {
+                    Task { @MainActor [weak self] in
+                        guard let self else {
+                            return
+                        }
+
+                        if self.completionDelay > 0 {
+                            try? await Task.sleep(for: .seconds(self.completionDelay))
+                        }
+
+                        SpeakDockLog.lifecycle.notice("smoke hot path finished")
+                        NSApp.terminate(nil)
+                    }
+                }
+
+            case .refineDirtyUndo:
+                self.hotPathCoordinator.runSmokeDirtyUndoRefine(text: self.text) {
                     Task { @MainActor [weak self] in
                         guard let self else {
                             return

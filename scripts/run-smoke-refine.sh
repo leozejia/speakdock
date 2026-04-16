@@ -10,12 +10,14 @@ SCENARIO="${SMOKE_REFINE_SCENARIO:-success}"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/speakdock-refine-smoke.XXXXXX")"
 STATE_FILE="$WORK_DIR/text.txt"
 READY_FILE="$WORK_DIR/ready.txt"
+COMMAND_FILE="$WORK_DIR/command.txt"
 SERVER_LOG="$WORK_DIR/refine-server.log"
 HOST_APP_PATH="$("$ROOT_DIR/scripts/build-test-host.sh" "$CONFIGURATION")"
 APP_PATH="$("$ROOT_DIR/scripts/build-app.sh" "$CONFIGURATION")"
 EXPECTED_TEXT="$REFINED_TEXT"
 STUB_STATUS_CODE="200"
 APP_REFINE_PHASE="submit"
+HOST_COMMAND_TEXT=""
 PORT="$(python3 - <<'PY'
 import socket
 
@@ -31,6 +33,11 @@ case "$SCENARIO" in
   manual)
     APP_REFINE_PHASE="manual"
     ;;
+  dirty-undo)
+    EXPECTED_TEXT="$SOURCE_TEXT"
+    APP_REFINE_PHASE="dirty-undo"
+    HOST_COMMAND_TEXT="$REFINED_TEXT edited"
+    ;;
   fallback)
     EXPECTED_TEXT="$SOURCE_TEXT"
     STUB_STATUS_CODE="500"
@@ -44,6 +51,9 @@ esac
 cleanup() {
   if [[ -n "${SERVER_PID:-}" ]]; then
     kill "$SERVER_PID" >/dev/null 2>&1 || true
+  fi
+  if [[ -n "${COMMAND_WRITER_PID:-}" ]]; then
+    kill "$COMMAND_WRITER_PID" >/dev/null 2>&1 || true
   fi
   osascript -e 'tell application id "com.leozejia.speakdock.testhost" to quit' >/dev/null 2>&1 || true
   rm -rf "$WORK_DIR"
@@ -116,7 +126,7 @@ if ! server_ready; then
 fi
 
 print -u2 -- "Launching SpeakDockTestHost..."
-open -n "$HOST_APP_PATH" --args --state-file "$STATE_FILE" --ready-file "$READY_FILE"
+open -n "$HOST_APP_PATH" --args --state-file "$STATE_FILE" --ready-file "$READY_FILE" --command-file "$COMMAND_FILE"
 
 for _ in {1..50}; do
   [[ -f "$READY_FILE" ]] && break
@@ -129,6 +139,15 @@ if [[ ! -f "$READY_FILE" ]]; then
 fi
 
 activate_test_host
+
+if [[ -n "$HOST_COMMAND_TEXT" ]]; then
+  (
+    if wait_for_state_text "$REFINED_TEXT"; then
+      print -n -- "$HOST_COMMAND_TEXT" > "$COMMAND_FILE"
+    fi
+  ) &
+  COMMAND_WRITER_PID=$!
+fi
 
 BASE_URL="http://127.0.0.1:$PORT/v1"
 
@@ -159,6 +178,8 @@ fi
 
 if [[ "$SCENARIO" == "fallback" ]]; then
   print -u2 -- "Smoke refine fallback passed."
+elif [[ "$SCENARIO" == "dirty-undo" ]]; then
+  print -u2 -- "Smoke refine dirty undo passed."
 elif [[ "$SCENARIO" == "manual" ]]; then
   print -u2 -- "Smoke manual refine passed."
 else

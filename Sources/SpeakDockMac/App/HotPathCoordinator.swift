@@ -74,6 +74,8 @@ final class HotPathCoordinator {
     }
 
     func performSecondaryAction() {
+        synchronizeObservedWorkspaceTextIfNeeded()
+
         let action = undoFlowState.handleSecondaryAction(
             for: workspaceState.activeWorkspace,
             now: clock()
@@ -158,6 +160,45 @@ final class HotPathCoordinator {
                 try? await Task.sleep(for: .milliseconds(50))
             }
 
+            onFinished()
+        }
+    }
+
+    func runSmokeDirtyUndoRefine(
+        text: String,
+        onFinished: @escaping @MainActor () -> Void
+    ) {
+        runSmokeCommit(text: text)
+        undoFlowState.clearRecentSubmission()
+        refreshSecondaryAction()
+        performSecondaryAction()
+
+        Task { @MainActor [weak self] in
+            guard let self else {
+                return
+            }
+
+            for _ in 0..<100 {
+                if self.activeRefineTask == nil,
+                   self.workspaceState.activeWorkspace?.isRefined == true
+                {
+                    break
+                }
+
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+
+            for _ in 0..<100 {
+                self.synchronizeObservedWorkspaceTextIfNeeded()
+                if self.workspaceState.activeWorkspace?.dirty == true {
+                    break
+                }
+
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+
+            self.performSecondaryAction()
+            self.performSecondaryAction()
             onFinished()
         }
     }
@@ -823,6 +864,27 @@ final class HotPathCoordinator {
         case .capture, .wiki:
             nil
         }
+    }
+
+    private func synchronizeObservedWorkspaceTextIfNeeded() {
+        guard let workspace = workspaceState.activeWorkspace else {
+            return
+        }
+
+        guard let action = ObservedWorkspaceTextSync.action(
+            currentVisibleText: workspace.visibleText,
+            observedText: observedCurrentWorkspaceText(for: workspace)
+        ) else {
+            return
+        }
+
+        WorkspaceReducer.reduce(state: &workspaceState, action: action)
+
+        if let updatedWorkspace = workspaceState.activeWorkspace {
+            overlayPanelController.updateTranscript(updatedWorkspace.visibleText)
+        }
+
+        refreshSecondaryAction()
     }
 
     private func refreshSecondaryAction() {

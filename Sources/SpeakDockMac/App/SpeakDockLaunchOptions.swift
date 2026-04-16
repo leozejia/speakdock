@@ -12,6 +12,7 @@ struct SpeakDockLaunchOptions: Equatable {
     enum SmokeRefinePhase: Equatable {
         case submit
         case manual
+        case dirtyUndo
     }
 
     static let defaultComposeProbeDuration: TimeInterval = 30
@@ -127,6 +128,8 @@ struct SpeakDockLaunchOptions: Equatable {
         switch stringValue(after: "--smoke-refine-phase", in: arguments) {
         case "manual":
             .manual
+        case "dirty-undo":
+            .dirtyUndo
         default:
             .submit
         }

@@ -193,6 +193,24 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("--smoke-refine-phase"))
     }
 
+    func testMakefileExposesDirtyUndoRefineSmokeTarget() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+
+        XCTAssertTrue(makefile.contains("smoke-refine-dirty-undo:"))
+        XCTAssertTrue(makefile.contains("SMOKE_REFINE_SCENARIO=dirty-undo"))
+    }
+
+    func testSmokeRefineScriptSupportsDirtyUndoScenario() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-smoke-refine.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("dirty-undo"))
+        XCTAssertTrue(script.contains("--command-file"))
+    }
+
     func testSmokeTermLearningScriptLaunchesSmokeModeAgainstIsolatedTermDictionaryStore() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/run-smoke-term-learning.sh")

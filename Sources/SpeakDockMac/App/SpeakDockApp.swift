@@ -101,6 +101,8 @@ struct SpeakDockApp: App {
                 .refineSubmit
             case .manual:
                 .refineManual
+            case .dirtyUndo:
+                .refineDirtyUndo
             }
             let smokeHotPathRunner = SmokeHotPathRunner(
                 hotPathCoordinator: hotPathCoordinator,
