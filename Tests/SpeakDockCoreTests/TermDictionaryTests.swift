@@ -75,4 +75,15 @@ final class TermDictionaryTests: XCTestCase {
             "Project Atlas 进入下一步"
         )
     }
+
+    func testConfirmedAliasesDoNotRewriteInsideLongerASCIIWords() {
+        let dictionary = TermDictionary(entries: [
+            TermDictionaryEntry(canonicalTerm: "Project Atlas", aliases: ["atlas"]),
+        ])
+
+        XCTAssertEqual(
+            dictionary.applying(to: "atlassian atlas atlas2"),
+            "atlassian Project Atlas atlas2"
+        )
+    }
 }

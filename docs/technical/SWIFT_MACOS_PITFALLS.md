@@ -426,6 +426,34 @@
 - `make test TEST_FILTER=TermLearningReportScriptTests`
 - 不再出现 unhandled fixture warning
 
+### 3.12 词典替换不能直接用裸 `replacingOccurrences`
+
+现象：
+
+- alias 是 `atlas` 时，会把 `atlassian` 一起改坏
+- 这种错误会直接污染 `Clean / ASR 后处理 / Refine` 热路径
+
+错误做法：
+
+- 对所有 alias 直接做整段字符串替换
+- 不区分独立词命中和更长英文 token 内部命中
+
+正确做法：
+
+- 对包含 ASCII 词字符的 alias，至少检查前后边界
+- 只允许命中独立词，不允许替换进更长英文词内部
+- 先补失败测试，再修实现，防止以后回退成裸替换
+
+当前落实位置：
+
+- `Sources/SpeakDockCore/Refine/TermDictionary.swift`
+- `Tests/SpeakDockCoreTests/TermDictionaryTests.swift`
+
+验收方式：
+
+- `swift test --filter TermDictionaryTests/testConfirmedAliasesDoNotRewriteInsideLongerASCIIWords`
+- `make test TEST_FILTER=TermDictionary`
+
 ## 4. 每轮结束前的固定检查
 
 所有涉及 Swift/macOS 行为改动的任务，结束前至少检查：

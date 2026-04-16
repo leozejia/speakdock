@@ -12,7 +12,7 @@
 
 - 阶段：P1 `AI 语音输入法`
 - 当前 focus：把真实热路径里的词级手动改词观察链路收稳，并补齐自驱验证
-- 状态：`Ready`
+- 状态：`In Progress`
 
 ## 3. 为什么现在做
 
@@ -69,6 +69,7 @@
 
 ## 9. 最近完成
 
+- 当前轮已完成：`TermDictionary` 对 ASCII alias 不再替换进更长英文词内部，避免误伤 `Clean / ASR 后处理 / Refine` 热路径
 - 当前轮已完成：词级学习现在只会基于 SpeakDock 实际说过并写出的内容；纯用户自写文本不会进入学习
 - 当前轮已完成：`Capture` 工作区现在也能读取当前文件内容做词级观察；缺文件时保守跳过
 - 当前轮已完成：`WordCorrectionObservationRecorderTests` 已覆盖 `Compose / Capture / 文件缺失跳过` 三类基础边界
