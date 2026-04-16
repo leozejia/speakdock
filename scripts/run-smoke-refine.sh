@@ -44,6 +44,11 @@ case "$SCENARIO" in
     HOST_COMMAND_TEXT="$REFINED_TEXT edited"
     HOST_COMMAND_TRIGGER_TEXT="$REFINED_TEXT"
     ;;
+  manual-fallback)
+    EXPECTED_TEXT="$SOURCE_TEXT"
+    APP_REFINE_PHASE="manual"
+    STUB_STATUS_CODE="500"
+    ;;
   fallback)
     EXPECTED_TEXT="$SOURCE_TEXT"
     STUB_STATUS_CODE="500"
@@ -283,6 +288,8 @@ if [[ "$SCENARIO" == "fallback" ]]; then
   print -u2 -- "Smoke refine fallback passed."
 elif [[ "$SCENARIO" == "dirty-undo" ]]; then
   print -u2 -- "Smoke refine dirty undo passed."
+elif [[ "$SCENARIO" == "manual-fallback" ]]; then
+  print -u2 -- "Smoke capture manual fallback passed."
 elif [[ "$SCENARIO" == "manual" ]]; then
   print -u2 -- "Smoke manual refine passed."
 elif [[ "$SCENARIO" == "submit-observed-edit" ]]; then

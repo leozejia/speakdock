@@ -373,7 +373,36 @@
 - `make smoke-capture-refine-dirty-undo`
 - `make test TEST_FILTER=BuildScriptTests`
 
-### 3.12 正常开发启动不能用 `open -n`
+### 3.12 `manual refine fallback` 不能偷换成发送前 fallback
+
+现象：
+
+- 已有的 `fallback` smoke 覆盖的是发送前整理失败
+- 但 `capture` 用户更常见的是真实文件已经在工作区里，再点击手动整理时失败
+
+错误做法：
+
+- 看到 `smoke-refine-fallback` 已经存在，就默认“失败路径已经测过了”
+- 不区分 `submit` 和 `manual` 两条触发入口
+
+正确做法：
+
+- `manual fallback` 必须显式切到 `APP_REFINE_PHASE="manual"`
+- stub 继续返回失败，但验收条件改成“当前文本或文件保持原文”
+- `capture` 侧优先跑隔离文件版本，确认失败不会污染真实输出
+
+当前落实位置：
+
+- `Makefile`
+- `scripts/run-smoke-refine.sh`
+- `Tests/SpeakDockMacTests/BuildScriptTests.swift`
+
+验收方式：
+
+- `make smoke-capture-refine-fallback`
+- `make test TEST_FILTER=BuildScriptTests`
+
+### 3.13 正常开发启动不能用 `open -n`
 
 现象：
 
@@ -399,7 +428,7 @@
 - 现有实例应被复用并回到前台
 - 只有 `probe / smoke` 这类隔离测试路径允许显式多开
 
-### 3.13 `App Language` 和 `Input Language` 必须分离
+### 3.14 `App Language` 和 `Input Language` 必须分离
 
 现象：
 

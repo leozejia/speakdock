@@ -225,6 +225,16 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(makefile.contains("SMOKE_REFINE_SCENARIO=fallback"))
     }
 
+    func testMakefileExposesCaptureRefineFallbackSmokeTarget() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+
+        XCTAssertTrue(makefile.contains("smoke-capture-refine-fallback:"))
+        XCTAssertTrue(makefile.contains("SMOKE_REFINE_TARGET=capture"))
+        XCTAssertTrue(makefile.contains("SMOKE_REFINE_SCENARIO=manual-fallback"))
+    }
+
     func testSmokeRefineScriptSupportsFallbackScenario() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/run-smoke-refine.sh")
@@ -233,6 +243,15 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("SMOKE_REFINE_SCENARIO"))
         XCTAssertTrue(script.contains("--status-code"))
         XCTAssertTrue(script.contains("fallback"))
+    }
+
+    func testSmokeRefineScriptSupportsManualFallbackScenario() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-smoke-refine.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("manual-fallback"))
+        XCTAssertTrue(script.contains("APP_REFINE_PHASE=\"manual\""))
     }
 
     func testMakefileExposesManualRefineSmokeTarget() throws {
