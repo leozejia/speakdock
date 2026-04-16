@@ -187,6 +187,35 @@ final class WorkspaceReducerTests: XCTestCase {
         XCTAssertEqual(workspace.visibleText, "Hello, world! again")
     }
 
+    func testRefineAppliedUpdatesEndLocationToMatchVisibleTextLength() throws {
+        var state = WorkspaceState()
+
+        WorkspaceReducer.reduce(
+            state: &state,
+            action: .focusChanged(
+                targetID: "field-1",
+                mode: .compose,
+                cursorLocation: 1
+            )
+        )
+
+        WorkspaceReducer.reduce(
+            state: &state,
+            action: .speechAppended("hello")
+        )
+
+        WorkspaceReducer.reduce(
+            state: &state,
+            action: .refineApplied("Hello, world.")
+        )
+
+        let workspace = try XCTUnwrap(state.activeWorkspace)
+
+        XCTAssertEqual(workspace.startLocation, 1)
+        XCTAssertEqual(workspace.endLocation, 14)
+        XCTAssertEqual(workspace.visibleText, "Hello, world.")
+    }
+
     func testSpeechAppendAfterRefineAbsorbsRefinedTextAsNewBase() throws {
         var state = WorkspaceState()
 

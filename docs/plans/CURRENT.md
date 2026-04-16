@@ -75,6 +75,7 @@
 - 上一轮已完成：`TermDictionary` 的大小写不敏感、独立词边界、最长 alias 优先都已落地
 - 上一轮已完成：workspace handoff 前会先做词级修正结算
 - 本轮已完成：整理后继续口述会把当前可见文本吸收成新的 `raw_context` 基线，不再保留过期的撤回态
+- 本轮已完成：workspace 的 `endLocation` 现在会跟随整理改写、手动改写和撤回后的当前可见文本边界
 - 更早已完成：Settings 的 `Passive Learning` 面板现在能展示 `observed / promoted / conflicted / skippedConfirmed` 状态计数
 - 更早已完成：Settings 现在能展示最近学习事件，且只暴露 `alias / canonical / evidence / outcome`
 - 更早已完成：项目已经收敛到 `OSLog.Logger + make logs + make traces + make trace-report + make term-learning-report + make smoke-term-learning + make smoke-refine` 的统一调试入口

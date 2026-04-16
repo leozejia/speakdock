@@ -81,6 +81,7 @@ public enum WorkspaceReducer {
             }
 
             workspace.visibleText = text
+            workspace.endLocation = workspace.startLocation + text.count
             workspace.isRefined = true
             workspace.dirty = false
             state.activeWorkspace = workspace
@@ -99,6 +100,7 @@ public enum WorkspaceReducer {
                 workspace.dirty = false
             }
 
+            workspace.endLocation = workspace.startLocation + text.count
             state.activeWorkspace = workspace
 
         case .undoRefineRequested:
@@ -107,6 +109,7 @@ public enum WorkspaceReducer {
             }
 
             workspace.visibleText = workspace.rawContext
+            workspace.endLocation = workspace.startLocation + workspace.rawContext.count
             workspace.isRefined = false
             workspace.dirty = false
             state.activeWorkspace = workspace
