@@ -69,6 +69,14 @@
 6. 微信如果出现 `compose target capture using paste-only frontmost application fallback` 和 `availability=available`，说明通过微信专用 paste-only 捕获；仍需做真实 `Fn` 录音注入确认粘贴行为。
 7. probe 不替代最终注入验收；通过 probe 后，仍需对重点 App 做一次真实 `Fn` 录音注入。
 
+## 8.2 开发期自动化基线
+
+1. 运行 `make smoke-compose`。
+2. 该命令会自动启动 `SpeakDockTestHost`，再以 smoke mode 启动 `SpeakDock`。
+3. `SpeakDock` 会在不依赖真实 `Fn` 和真实说话的前提下，把指定文本注入测试宿主。
+4. smoke 成功后，说明最小 `Compose` 热路径闭环仍然成立。
+5. smoke 失败后，优先运行 `make traces TRACE_WINDOW=5m` 查看最近交互结果码和阶段耗时。
+
 ## 9. Capture
 
 1. 当前无输入框时，首句会生成 `speakdock-YYYYMMDD-HHMMSS.md`。

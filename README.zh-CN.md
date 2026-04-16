@@ -106,11 +106,25 @@ make logs
 make logs LOG_WINDOW=2h
 ```
 
+查看最近的交互 trace 摘要：
+
+```bash
+make traces
+make traces TRACE_WINDOW=5m
+```
+
 不录音、不注入文本，只探测 Compose 兼容性：
 
 ```bash
 make probe-compose PROBE_SECONDS=30
 make logs LOG_WINDOW=2m
+```
+
+运行本地自动化 Compose smoke 基线，目标是 SpeakDock 自带测试宿主：
+
+```bash
+make smoke-compose
+make traces TRACE_WINDOW=5m
 ```
 
 ## 权限

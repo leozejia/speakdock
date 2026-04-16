@@ -11,92 +11,75 @@
 ## 2. 当前阶段
 
 - 阶段：P1 `AI 语音输入法`
-- 当前 focus：把 `Word Correction` 落成 `TermDictionary` 之下的被动词级学习链路
+- 当前 focus：补开发用全链路遥测与自驱 smoke，减少反复人工测试
 - 状态：`Completed`
 
 ## 3. 为什么现在做
 
-模型文档已经校正完成，下一步必须把代码也拉回同一套心智，否则产品会继续被过渡实现带偏：
+词典被动学习这一轮已经落地，但当前开发闭环仍然过度依赖人工验收：
 
-- 现在代码还在把一次手动修改直接写成 `pending candidate`，这不符合“被动学习 + 重复证据晋升”的设计
-- 如果不先把证据层做出来，后面 `Refine`、端侧整理、LLM 接入都会继续混入词级事实判断
-- 用户的真实体验应该是“说完就发、必要时手改、系统自己慢慢学”，而不是用户理解一套显式候选流
-- 这一轮需要把“词典事实”“词级被动学习”“workspace 级整理”在代码里彻底拆开
+- 现在日志虽然已经结构化，但还缺“同一次交互”的统一串联，定位问题仍然靠人工拼时间线
+- 现在能做 `compose probe`，但它只覆盖 target 捕获，不覆盖整条热路径
+- 现在很多改动仍然要你亲手跑一遍真实场景，迭代效率偏低
+- 如果不先补开发态可观测性，后面继续做 `Refine`、端侧模型接入、更多 target 兼容性时，排障成本会快速上升
 
-这一轮从最小闭环开始：只做词级观察、证据累计、达到阈值后自动晋升到 `TermDictionary`。句子级整理仍然留在 `Refine`，不混入词典学习。
+这一轮的目标不是做产品化 analytics，而是搭建开发期闭环：
+
+1. 让一次真实交互从 `press -> audio -> speech -> clean/refine -> compose/capture -> submit` 都能被同一条 trace 串起来
+2. 让热路径可以在不依赖真实 `Fn`、真实说话、真实第三方 App 的情况下做自驱 smoke
+3. 只把少量真实第三方 App 验证保留到里程碑阶段，而不是每次小改动都人工回归
 
 ## 4. 本轮范围
 
-1. 把一次性 `pending candidate` 路径改成“先记词级证据，不立刻晋升”
-2. 增加本地证据存储，只保存最小词级映射与计数，不保存整段文本历史
-3. 让重复且一致的词级修正达到阈值后自动进入 `TermDictionary`
-4. 明确冲突映射不会自动晋升，避免把不稳定修正写成事实
-5. 明确句子级改写不会进入词典学习
-6. 同步 live plan / 架构文档 / 手测文档，写清当前实现边界
+1. 给热路径补 `interaction_id`
+2. 给关键阶段补耗时与统一结果码
+3. 增加本地 trace 摘要脚本与 `make` 入口
+4. 增加 smoke hot path 启动模式，用自动驱动文本提交跑完整热路径
+5. 增加稳定测试宿主，用于自动验证注入基线
+6. 同步 live plan、架构文档和调试文档
 
 ## 5. 明确不做
 
-- 不在这一轮接入 LLM 或端侧整理模型
-- 不在这一轮扩张 `Refine` 能力
-- 不把句子级改写纳入词典学习
-- 不把翻译混进默认 `Refine`
-- 不保存整段聊天内容、整段 transcript 或剪贴板历史
-- 不为了兼容旧心智继续强化显式候选流
+- 不接远程 telemetry 服务
+- 不记录音频内容、完整 transcript、剪贴板正文、Refine 正文
+- 不试图把所有第三方 App 变成全自动回归主战场
+- 不为了自驱 smoke 改坏正常产品热路径
+- 不在这一轮扩张 `Refine` 产品能力
 
 ## 6. 执行顺序
 
-1. 更新 live plan，锁定这一轮是词级被动学习实现
-2. 先用测试钉住“第一次只记证据，第三次一致才晋升”
-3. 落地最小证据模型与本地持久化
-4. 补上冲突映射与句子级过滤
-5. 更新架构文档和手测文档，收口这一轮
+1. 更新 live plan，锁定这一轮是开发用可观测性与自驱闭环
+2. 先给热路径补统一 trace：交互 ID、阶段耗时、结果码
+3. 增加本地 trace 摘要脚本，降低日志阅读成本
+4. 增加 smoke hot path 模式，用自动驱动文本 + 稳定测试宿主跑完整链路
+5. 增加稳定测试宿主与相关测试
+6. 更新文档并跑全量验证
 
 ## 7. 完成定义
 
 满足以下条件才算这一轮完成：
 
-- 第一次手动词级修正只记录证据，不直接进入激活词典
-- 同一映射达到阈值后会自动写入 `TermDictionary`
-- 冲突映射不会被自动晋升
-- 句子级改写不会进入词典学习
-- 本地只保存最小词级证据，不保存整段文本历史
-- 文档与代码都符合这次确认过的产品模型
+- 同一次热路径交互能被统一 `interaction_id` 串联
+- 日志能直接看出主要阶段耗时和最终结果
+- 本地有摘要命令，不需要每次手工读整段 `log show`
+- 我可以在本地跑自驱 smoke，覆盖热路径主链路
+- 稳定测试宿主可以承接自动注入基线测试
+- 文档明确写出“哪些能自动闭环，哪些仍然需要少量人工验收”
 
 ## 8. 阻塞项
 
 - 当前无外部阻塞
-- 这一轮完成后，再决定词典设置页如何展示“观察中”的词级证据
+- 与真实第三方 App 的最终行为仍然受系统权限、第三方 UI 状态和 App 版本影响
 
 ## 9. 最近完成
 
-- `App Language` / `Input Language` 设置模型已拆分，ASR 已只消费 `Input Language`
-- Settings / Menu Bar / overlay / 运行时错误文案 已完成 `English + 简体中文` 本地化
-- 主 app bundle 已补齐 `en + zh-Hans` 本地化声明，左上角菜单会跟随保存的 `App Language`
-- `SettingsPane` 模型已落地，当前固定为 `General / Dictionary / Refine`
-- `SettingsView` 已重构为侧边栏 pane 壳体，`Term Dictionary` 已从旧单页中拆出
-- Dock 可见性已收敛为默认行为，`显示 Dock 图标` / `保存` / `操作` 残留控件已从设置页移除
-- Settings 窗口宽度与次级信息栏宽度已固定，pane 切换不再依赖内容自然撑开
-- 品牌图形调研笔记已补到 `docs/research/2026-04-15-brand-icon-research.md`
-- Swift/macOS 唯一踩坑记录已补到 `docs/technical/SWIFT_MACOS_PITFALLS.md`
-- `Settings` 与 `menu popup` 现在直接复用生成后的 app icon 资源，不再各画一套品牌图
-- app icon 已重画为更明确的麦克风主体，`icns` 与运行时 `png` 均已重新生成
-- menu bar glyph 已收敛为独立模板化麦克风图形，不再尝试直接缩小 app icon
-- Settings 主壳已改为统一窗体表面，detail 不再是壳里再套一个独立大卡片
-- `General / Dictionary / Refine` 已收敛到统一双列节奏，减少 pane 切换时的壳体割裂感
-- `Refine` 右侧重复 `连接测试` 区域已移除，改为单一 `当前状态` 面板
-- `Settings` 左侧主编辑区已从重卡片结构收回到更轻的原生表单层级
-- `LabeledContent` 造成的窄容器渲染异常已从 `Settings` 主路径移除
-- `Refine` 已进一步重构为单一主操作区：配置与测试合并，右侧不再镜像空配置
-- `Refine` 右侧信息栏已改为主路径工作方式说明，不再重复显示整理开关与占位字段
-- sidebar 顶部全局整理状态 badge 已移除，减少页面内外重复监控
-- 当前主线已切回词典闭环，UI 收口进入已完成态，不再作为 live focus
-- `TermDictionaryStore` 已新增人工修正候选写入入口，并补齐 pending / confirmed 去重护栏
-- `EditableTextObservationContext` 已落地，用于从可观测输入框的前后文边界中保守提取当前工作区文本
-- `HotPathCoordinator` 已在 `submit` 前接入手动修正候选记录；当前只对可读回文本的 compose 目标生效
-- 当前代码里的 `pending candidate` 仍是过渡实现，只用于验证词级观察链路，不代表最终产品心智
-- 本轮开始优先纠正文档：`TermDictionary` 是词级事实层，`Word Correction` 从属于词典，`Refine` 是 workspace 级整理层
-- 当前 live focus 已切到下一步：把“观察证据 -> 达阈值晋升词典”的真实学习链路做出来
-- 本轮已完成：手动词级修正现在先写入本地观察证据，不再直接新增 `pending candidate`
-- 本轮已完成：同一 `alias -> canonical` 默认连续一致 `3` 次后自动晋升进 `TermDictionary`
-- 本轮已完成：冲突映射不会自动晋升，句子级改写不会进入词典学习
+- `Word Correction` 已回到 `TermDictionary` 之下的被动词级学习模型
+- 单次手动修正现在只记录本地观察证据，不再直接新增 `pending candidate`
+- 同一 `alias -> canonical` 默认连续一致 `3` 次后自动晋升进 `TermDictionary`
+- 冲突映射不会自动晋升，句子级改写不会进入词典学习
 - `Settings` 右侧已改成被动学习说明与观察计数；`pending candidate` 只作为旧本地数据的兼容显示保留
+- 项目已经收敛到 `OSLog.Logger + make logs + make probe-compose` 的统一调试入口
+- 本轮已完成：热路径已经补上统一 `interaction_id`、结果码和阶段耗时摘要
+- 本轮已完成：本地新增 `make traces`，不再需要每次手工翻整段 unified log
+- 本轮已完成：`SpeakDock` 已支持 smoke hot path mode，可在不依赖真实 `Fn` 和真实说话的前提下自驱热路径
+- 本轮已完成：`SpeakDockTestHost` 与 `make smoke-compose` 已落地，可自动验证最小 Compose 注入闭环

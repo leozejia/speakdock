@@ -6,6 +6,7 @@ enum SpeakDockLog {
     enum Category: String, CaseIterable {
         case lifecycle
         case permission
+        case trace
         case trigger
         case audio
         case speech
@@ -16,6 +17,7 @@ enum SpeakDockLog {
 
     static let lifecycle = logger(.lifecycle)
     static let permission = logger(.permission)
+    static let trace = logger(.trace)
     static let trigger = logger(.trigger)
     static let audio = logger(.audio)
     static let speech = logger(.speech)

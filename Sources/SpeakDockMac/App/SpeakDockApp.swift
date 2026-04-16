@@ -58,6 +58,16 @@ struct SpeakDockApp: App {
                 AppRuntime.updateActivationPolicy()
                 composeProbeRunner.start()
             }
+        case .smokeHotPath:
+            let smokeHotPathRunner = SmokeHotPathRunner(
+                hotPathCoordinator: hotPathCoordinator,
+                text: launchOptions.smokeText,
+                delay: launchOptions.smokeDelay
+            )
+            AppRuntime.onDidFinishLaunching = {
+                AppRuntime.updateActivationPolicy(activateApp: false)
+                smokeHotPathRunner.start()
+            }
         }
 
         _settingsStore = State(initialValue: settingsStore)

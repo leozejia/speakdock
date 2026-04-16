@@ -53,6 +53,17 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("--last"))
     }
 
+    func testShowTracesScriptFiltersByTraceCategory() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/show-traces.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("subsystem == \"com.leozejia.speakdock\""))
+        XCTAssertTrue(script.contains("category == \"trace\""))
+        XCTAssertTrue(script.contains("trace.finish"))
+        XCTAssertTrue(script.contains("/usr/bin/log"))
+    }
+
     func testComposeProbeScriptLaunchesSpeakDockBundleWithProbeArguments() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/run-compose-probe.sh")
@@ -61,5 +72,26 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("scripts/build-app.sh"))
         XCTAssertTrue(script.contains("open -n -W"))
         XCTAssertTrue(script.contains("--args --probe-compose --probe-compose-duration"))
+    }
+
+    func testBuildTestHostScriptBuildsHostBundle() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/build-test-host.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("--product SpeakDockTestHost"))
+        XCTAssertTrue(script.contains("SpeakDockTestHost.app"))
+        XCTAssertTrue(script.contains("Sources/SpeakDockTestHost/Resources/Info.plist"))
+    }
+
+    func testSmokeComposeScriptLaunchesSmokeModeAgainstTestHost() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-smoke-compose.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("build-test-host.sh"))
+        XCTAssertTrue(script.contains("--smoke-hot-path"))
+        XCTAssertTrue(script.contains("--smoke-text"))
+        XCTAssertTrue(script.contains("SpeakDockTestHost"))
     }
 }

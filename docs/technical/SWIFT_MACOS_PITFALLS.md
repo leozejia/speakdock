@@ -224,17 +224,19 @@
 
 - 统一使用 `os.Logger`
 - subsystem 固定为 `com.leozejia.speakdock`
-- category 按生命周期、权限、触发器、语音、音频、注入等稳定拆分
+- category 按生命周期、权限、trace、触发器、语音、音频、注入等稳定拆分
 
 当前落实位置：
 
-- `Sources/SpeakDockMac/SpeakDockLog.swift`
+- `Sources/SpeakDockMac/Logging/SpeakDockLog.swift`
 - `scripts/show-logs.sh`
+- `scripts/show-traces.sh`
 
 验收方式：
 
 - `make logs LOG_WINDOW=5m`
-- 关键链路都能按 category 找到
+- `make traces TRACE_WINDOW=5m`
+- 关键链路都能按 category 找到，热路径能看到统一 `trace.finish`
 
 ### 3.8 `App Language` 和 `Input Language` 必须分离
 

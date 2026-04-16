@@ -826,13 +826,16 @@ macOS v1 的工程收口写死为：
 - 调试与观测
   - macOS v1 使用 Apple Unified Logging / `OSLog.Logger` 作为长期调试日志方案
   - subsystem 固定为 `com.leozejia.speakdock`
-  - category 至少覆盖 `lifecycle / permission / trigger / audio / speech / compose / capture / refine`
+  - category 至少覆盖 `lifecycle / permission / trace / trigger / audio / speech / compose / capture / refine`
   - 日志只记录状态、边界事件、权限结果、错误类型和非敏感枚举
   - 不记录音频内容、转写正文、剪贴板内容、API Key、完整 refine 请求正文
   - Apple Speech 任务错误必须记录脱敏的 `NSError.domain` 与 `NSError.code`，用于区分系统 ASR、权限、会话和短音频类失败
   - CoreAudio realtime tap 回调内不直接写日志；只在录音启动、停止、失败等边界记录
   - 本地调试入口优先通过 `make logs` 或等价的 `log show --predicate 'subsystem == "com.leozejia.speakdock"'`
+  - 开发期热路径必须输出交互级 trace summary，至少包含 `interaction_id / kind / origin / result / total_duration`
+  - 本地 trace 摘要入口优先通过 `make traces`
   - 第三方 App `Compose` 兼容性扫测优先通过 `make probe-compose` 执行；probe 只检查前台 App 的可编辑目标，不录音、不注入、不改剪贴板
+  - 自驱 smoke 优先通过 `make smoke-compose` 执行；smoke 使用 SpeakDock 自带测试宿主验证最小 Compose 注入闭环
 
 ### 10.4 与 README_CN 的反向映射
 

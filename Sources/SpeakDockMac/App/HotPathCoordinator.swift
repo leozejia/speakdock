@@ -24,6 +24,7 @@ final class HotPathCoordinator {
     private var workspaceState = WorkspaceState()
     private var undoFlowState = UndoFlowState()
     private var composeTargetSession = ComposeTargetSession()
+    private var activeInteractionTrace: HotPathInteractionTrace?
     private var activeRefineTask: Task<Void, Never>?
     private var pendingRecognitionTimeoutTask: Task<Void, Never>?
     private var renderedSegmentsByWorkspaceID: [UUID: [String]] = [:]
@@ -87,6 +88,29 @@ final class HotPathCoordinator {
         }
     }
 
+    func runSmokeCommit(text: String) {
+        startInteractionTrace(kind: .recording, origin: .smoke)
+        let composeAvailabilityAtStart = composeTarget.captureCurrentTarget()
+        composeTargetSession.begin(availability: composeAvailabilityAtStart)
+        logInteractionStage(
+            "smokeStarted",
+            extras: ["capturedTarget=\(composeTargetSession.hasCapturedTarget)"]
+        )
+
+        let cleanedText = cleanNormalizer.normalize(text)
+        guard !cleanedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            finishInteractionTrace(result: .emptyTranscript)
+            return
+        }
+
+        mutateInteractionTrace {
+            $0.markRecognitionFinal(at: clock())
+        }
+        logInteractionStage("recognitionFinal", extras: ["synthetic=true"])
+        overlayPanelController.updateTranscript(cleanedText)
+        commitRecognizedText(cleanedText)
+    }
+
     private func wireDependencies() {
         overlayPanelController.onSecondaryAction = { [weak self] in
             self?.performSecondaryAction()
@@ -102,6 +126,7 @@ final class HotPathCoordinator {
             }
 
             self?.cancelRecognitionTimeout()
+            self?.finishInteractionTrace(result: .microphoneUnavailable)
             self?.overlayPanelController.showError(label)
         }
 
@@ -114,6 +139,7 @@ final class HotPathCoordinator {
             }
 
             self?.cancelRecognitionTimeout()
+            self?.finishInteractionTrace(result: .speechUnavailable)
             self?.overlayPanelController.showError(label)
         }
 
@@ -128,6 +154,7 @@ final class HotPathCoordinator {
     private func handlePressStateChanged(_ isPressed: Bool) {
         if isPressed {
             SpeakDockLog.trigger.notice("press started")
+            startInteractionTrace(kind: .recording)
             cancelRefineTask()
             cancelRecognitionTimeout()
             let composeAvailabilityAtPressStart = composeTarget.captureCurrentTarget()
@@ -135,11 +162,19 @@ final class HotPathCoordinator {
             if composeTargetSession.hasCapturedTarget {
                 SpeakDockLog.compose.notice("compose target captured at press start")
             }
+            logInteractionStage(
+                "pressStarted",
+                extras: ["capturedTarget=\(composeTargetSession.hasCapturedTarget)"]
+            )
             overlayPanelController.showListening()
             speechController.startSession()
             audioCaptureEngine.start()
         } else {
             SpeakDockLog.trigger.notice("press ended")
+            mutateInteractionTrace {
+                $0.markPressEnded(at: clock())
+            }
+            logInteractionStage("pressEnded")
             audioCaptureEngine.stop()
             speechController.finishSession()
             overlayPanelController.dismiss(after: 0.35)
@@ -150,11 +185,14 @@ final class HotPathCoordinator {
         switch action {
         case .recording:
             SpeakDockLog.trigger.notice("recording action completed")
+            logInteractionStage("recordingCompleted")
             overlayPanelController.showThinking(transcript: speechController.latestTranscript)
             scheduleRecognitionTimeout()
 
         case .submit:
             SpeakDockLog.trigger.notice("submit action received")
+            startInteractionTrace(kind: .submit)
+            logInteractionStage("submitStarted")
             cancelRefineTask()
             cancelRecognitionTimeout()
             speechController.cancelSession()
@@ -176,6 +214,7 @@ final class HotPathCoordinator {
         if trimmedText.isEmpty {
             if result.isFinal {
                 cancelRecognitionTimeout()
+                finishInteractionTrace(result: .emptyTranscript)
                 overlayPanelController.dismiss(after: 0.2)
             }
             return
@@ -188,6 +227,10 @@ final class HotPathCoordinator {
         }
 
         cancelRecognitionTimeout()
+        mutateInteractionTrace {
+            $0.markRecognitionFinal(at: clock())
+        }
+        logInteractionStage("recognitionFinal")
         let cleanedText = cleanNormalizer.normalize(trimmedText)
         let configuration = currentRefineConfiguration
 
@@ -198,6 +241,7 @@ final class HotPathCoordinator {
 
         case .refineThenSubmit:
             SpeakDockLog.refine.notice("refine enabled; starting inline refine request")
+            logInteractionStage("refineStarted")
             overlayPanelController.showRefining(transcript: cleanedText)
             cancelRefineTask()
             activeRefineTask = Task { [weak self] in
@@ -213,9 +257,15 @@ final class HotPathCoordinator {
                     )
                     let trimmedResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
                     refinedText = trimmedResponse.isEmpty ? cleanedText : trimmedResponse
+                    await MainActor.run {
+                        self.logInteractionStage("refineFinished", extras: ["outcome=success"])
+                    }
                 } catch {
                     SpeakDockLog.refine.error("inline refine request failed; falling back to clean text")
                     refinedText = cleanedText
+                    await MainActor.run {
+                        self.logInteractionStage("refineFinished", extras: ["outcome=fallback"])
+                    }
                 }
 
                 guard !Task.isCancelled else {
@@ -235,6 +285,7 @@ final class HotPathCoordinator {
         cancelRecognitionTimeout()
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty else {
+            finishInteractionTrace(result: .emptyTranscript)
             overlayPanelController.dismiss(after: 0.2)
             return
         }
@@ -251,14 +302,17 @@ final class HotPathCoordinator {
             SpeakDockLog.compose.notice("using compose target captured at press start")
             switch resolvedComposeAvailability {
             case let .available(targetID):
+                markCommitStarted(route: .compose)
                 commitToCompose(trimmedText, targetID: targetID)
 
             case .noTarget:
                 SpeakDockLog.compose.warning("captured compose target disappeared before commit")
+                finishInteractionTrace(result: .composeTargetLost)
                 overlayPanelController.showError(AppLocalizer.string(.hotPathComposeUnavailable))
 
             case let .unavailable(reason):
                 SpeakDockLog.compose.warning("captured compose target unavailable before commit: \(reason, privacy: .private)")
+                finishInteractionTrace(result: .composeUnavailable)
                 overlayPanelController.showError(reason)
             }
             return
@@ -273,14 +327,17 @@ final class HotPathCoordinator {
 
         switch resolvedComposeAvailability {
         case let .available(targetID):
+            markCommitStarted(route: .compose)
             commitToCompose(trimmedText, targetID: targetID)
 
         case .noTarget:
             SpeakDockLog.compose.debug("no compose target; using capture")
+            markCommitStarted(route: .capture)
             commitToCapture(trimmedText)
 
         case let .unavailable(reason):
             SpeakDockLog.compose.warning("compose unavailable: \(reason, privacy: .private)")
+            finishInteractionTrace(result: .composeUnavailable)
             overlayPanelController.showError(reason)
         }
     }
@@ -290,6 +347,7 @@ final class HotPathCoordinator {
             try composeTarget.inject(text, expectedTargetID: targetID)
             captureTarget.resetSession()
             SpeakDockLog.compose.notice("compose commit succeeded")
+            finishInteractionTrace(result: .composeCommitted)
 
             let workspace = activateWorkspace(mode: .compose, targetID: targetID)
             WorkspaceReducer.reduce(state: &workspaceState, action: .speechAppended(text))
@@ -310,6 +368,7 @@ final class HotPathCoordinator {
             overlayPanelController.dismiss(after: 0.5)
         } catch {
             SpeakDockLog.compose.error("compose commit failed: \(error.localizedDescription, privacy: .private)")
+            finishInteractionTrace(result: .composeCommitFailed)
             overlayPanelController.showError(error.localizedDescription)
         }
     }
@@ -323,6 +382,7 @@ final class HotPathCoordinator {
         do {
             let fileURL = try captureTarget.write(text, captureRootURL: captureRootURL)
             SpeakDockLog.capture.notice("capture commit succeeded")
+            finishInteractionTrace(result: .captureCommitted)
             let workspace = activateWorkspace(mode: .capture, targetID: fileURL.path)
             WorkspaceReducer.reduce(state: &workspaceState, action: .speechAppended(text))
 
@@ -342,6 +402,7 @@ final class HotPathCoordinator {
             overlayPanelController.dismiss(after: 0.5)
         } catch {
             SpeakDockLog.capture.error("capture commit failed: \(error.localizedDescription, privacy: .private)")
+            finishInteractionTrace(result: .captureCommitFailed)
             overlayPanelController.showError(error.localizedDescription)
         }
     }
@@ -543,14 +604,17 @@ final class HotPathCoordinator {
 
     private func submitCurrentWorkspaceIfPossible() {
         guard let workspace = workspaceState.activeWorkspace, workspace.mode == .compose else {
+            finishInteractionTrace(result: .submitFailed)
             return
         }
 
         do {
             try composeTarget.submitCurrentTarget(expectedTargetID: workspace.targetID)
             SpeakDockLog.compose.notice("compose submit succeeded")
+            finishInteractionTrace(result: .submitSucceeded)
         } catch {
             SpeakDockLog.compose.error("compose submit failed: \(error.localizedDescription, privacy: .private)")
+            finishInteractionTrace(result: .submitFailed)
             overlayPanelController.showError(error.localizedDescription)
         }
     }
@@ -613,6 +677,7 @@ final class HotPathCoordinator {
                 }
 
                 SpeakDockLog.speech.error("speech recognition timed out while waiting for final result")
+                self.finishInteractionTrace(result: .speechTimedOut)
                 self.overlayPanelController.showError(AppLocalizer.string(.hotPathSpeechTimedOut))
                 self.pendingRecognitionTimeoutTask = nil
             }
@@ -622,6 +687,55 @@ final class HotPathCoordinator {
     private func cancelRecognitionTimeout() {
         pendingRecognitionTimeoutTask?.cancel()
         pendingRecognitionTimeoutTask = nil
+    }
+
+    private func startInteractionTrace(
+        kind: HotPathInteractionTrace.Kind,
+        origin: HotPathInteractionTrace.Origin = .live
+    ) {
+        let trace = HotPathInteractionTrace(
+            kind: kind,
+            origin: origin,
+            startedAt: clock()
+        )
+        activeInteractionTrace = trace
+        SpeakDockLog.trace.notice("\(trace.startLogMessage, privacy: .public)")
+    }
+
+    private func mutateInteractionTrace(_ body: (inout HotPathInteractionTrace) -> Void) {
+        guard var trace = activeInteractionTrace else {
+            return
+        }
+
+        body(&trace)
+        activeInteractionTrace = trace
+    }
+
+    private func logInteractionStage(_ stage: String, extras: [String] = []) {
+        guard let trace = activeInteractionTrace else {
+            return
+        }
+
+        SpeakDockLog.trace.notice(
+            "\(trace.stageLogMessage(stage, at: self.clock(), extras: extras), privacy: .public)"
+        )
+    }
+
+    private func markCommitStarted(route: HotPathInteractionTrace.Route) {
+        mutateInteractionTrace {
+            $0.markCommitStarted(route: route, at: clock())
+        }
+        logInteractionStage("commitStarted", extras: ["route=\(route.rawValue)"])
+    }
+
+    private func finishInteractionTrace(result: HotPathInteractionTrace.Result) {
+        guard let trace = activeInteractionTrace else {
+            return
+        }
+
+        let summary = trace.finish(result: result, at: clock())
+        SpeakDockLog.trace.notice("\(summary.logMessage, privacy: .public)")
+        activeInteractionTrace = nil
     }
 }
 

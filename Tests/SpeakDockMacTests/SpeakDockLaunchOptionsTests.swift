@@ -29,4 +29,26 @@ final class SpeakDockLaunchOptionsTests: XCTestCase {
         XCTAssertEqual(shortOptions.composeProbeDuration, SpeakDockLaunchOptions.minimumComposeProbeDuration)
         XCTAssertEqual(longOptions.composeProbeDuration, SpeakDockLaunchOptions.maximumComposeProbeDuration)
     }
+
+    func testSmokeModeParsesTextAndDelay() {
+        let options = SpeakDockLaunchOptions(
+            arguments: ["SpeakDock", "--smoke-hot-path", "--smoke-text", "Project Atlas", "--smoke-delay", "1.5"]
+        )
+
+        XCTAssertEqual(options.mode, .smokeHotPath)
+        XCTAssertEqual(options.smokeText, "Project Atlas")
+        XCTAssertEqual(options.smokeDelay, 1.5)
+    }
+
+    func testSmokeDelayIsBounded() {
+        let shortOptions = SpeakDockLaunchOptions(
+            arguments: ["SpeakDock", "--smoke-hot-path", "--smoke-text", "hello", "--smoke-delay", "0.1"]
+        )
+        let longOptions = SpeakDockLaunchOptions(
+            arguments: ["SpeakDock", "--smoke-hot-path", "--smoke-text", "hello", "--smoke-delay", "99"]
+        )
+
+        XCTAssertEqual(shortOptions.smokeDelay, SpeakDockLaunchOptions.minimumSmokeDelay)
+        XCTAssertEqual(longOptions.smokeDelay, SpeakDockLaunchOptions.maximumSmokeDelay)
+    }
 }

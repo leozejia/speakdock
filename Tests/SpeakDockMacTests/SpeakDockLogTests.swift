@@ -9,6 +9,7 @@ final class SpeakDockLogTests: XCTestCase {
             [
                 "lifecycle",
                 "permission",
+                "trace",
                 "trigger",
                 "audio",
                 "speech",

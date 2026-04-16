@@ -106,11 +106,25 @@ make logs
 make logs LOG_WINDOW=2h
 ```
 
+Show recent interaction trace summaries:
+
+```bash
+make traces
+make traces TRACE_WINDOW=5m
+```
+
 Probe Compose compatibility without recording or inserting text:
 
 ```bash
 make probe-compose PROBE_SECONDS=30
 make logs LOG_WINDOW=2m
+```
+
+Run the local automated Compose smoke baseline against SpeakDock's own test host:
+
+```bash
+make smoke-compose
+make traces TRACE_WINDOW=5m
 ```
 
 ## Permissions

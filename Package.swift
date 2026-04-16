@@ -17,6 +17,10 @@ let package = Package(
             name: "SpeakDockMac",
             targets: ["SpeakDockMac"]
         ),
+        .executable(
+            name: "SpeakDockTestHost",
+            targets: ["SpeakDockTestHost"]
+        ),
     ],
     targets: [
         .target(
@@ -32,6 +36,13 @@ let package = Package(
             ],
             resources: [
                 .process("Resources/Localization"),
+            ]
+        ),
+        .executableTarget(
+            name: "SpeakDockTestHost",
+            path: "Sources/SpeakDockTestHost",
+            exclude: [
+                "Resources/Info.plist",
             ]
         ),
         .testTarget(
