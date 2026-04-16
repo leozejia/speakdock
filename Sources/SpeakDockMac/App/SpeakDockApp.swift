@@ -96,9 +96,15 @@ struct SpeakDockApp: App {
                 smokeHotPathRunner.start()
             }
         case .smokeRefine:
+            let smokeRefineMode: SmokeHotPathRunner.Mode = switch launchOptions.smokeRefinePhase {
+            case .submit:
+                .refineSubmit
+            case .manual:
+                .refineManual
+            }
             let smokeHotPathRunner = SmokeHotPathRunner(
                 hotPathCoordinator: hotPathCoordinator,
-                mode: .refineSubmit,
+                mode: smokeRefineMode,
                 text: launchOptions.smokeText,
                 delay: launchOptions.smokeDelay,
                 submitDelay: launchOptions.smokeSubmitDelay

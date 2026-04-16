@@ -10,7 +10,7 @@ CLANG_MODULE_CACHE := $(SWIFT_CACHE)/clang/ModuleCache
 SWIFT_ENV := HOME=$(SWIFT_HOME) XDG_CACHE_HOME=$(SWIFT_CACHE) CLANG_MODULE_CACHE_PATH=$(CLANG_MODULE_CACHE) SWIFTPM_MODULECACHE_OVERRIDE=$(CLANG_MODULE_CACHE)
 TEST_FILTER ?=
 
-.PHONY: build run clean test logs traces trace-report term-learning-report probe-compose smoke-compose smoke-refine smoke-refine-fallback smoke-term-learning smoke-term-learning-conflict
+.PHONY: build run clean test logs traces trace-report term-learning-report probe-compose smoke-compose smoke-refine smoke-refine-manual smoke-refine-fallback smoke-term-learning smoke-term-learning-conflict
 
 build:
 	./scripts/build-app.sh $(CONFIGURATION)
@@ -38,6 +38,9 @@ smoke-compose:
 
 smoke-refine:
 	./scripts/run-smoke-refine.sh $(CONFIGURATION)
+
+smoke-refine-manual:
+	SMOKE_REFINE_SCENARIO=manual ./scripts/run-smoke-refine.sh $(CONFIGURATION)
 
 smoke-refine-fallback:
 	SMOKE_REFINE_SCENARIO=fallback ./scripts/run-smoke-refine.sh $(CONFIGURATION)

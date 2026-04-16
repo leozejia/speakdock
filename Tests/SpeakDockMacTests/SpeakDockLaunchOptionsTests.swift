@@ -73,6 +73,20 @@ final class SpeakDockLaunchOptionsTests: XCTestCase {
         XCTAssertEqual(options.smokeRefineModel, "smoke-model")
     }
 
+    func testSmokeRefineModeParsesManualPhaseOverride() {
+        let options = SpeakDockLaunchOptions(
+            arguments: [
+                "SpeakDock",
+                "--smoke-refine",
+                "--smoke-refine-phase", "manual",
+                "--smoke-text", "Project Atlas",
+            ]
+        )
+
+        XCTAssertEqual(options.mode, .smokeRefine)
+        XCTAssertEqual(options.smokeRefinePhase, .manual)
+    }
+
     func testSmokeTermLearningModeParsesSubmitDelayAndStorageOverride() {
         let options = SpeakDockLaunchOptions(
             arguments: [

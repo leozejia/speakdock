@@ -134,6 +134,34 @@ final class HotPathCoordinator {
         )
     }
 
+    func runSmokeManualRefine(
+        text: String,
+        onFinished: @escaping @MainActor () -> Void
+    ) {
+        runSmokeCommit(text: text)
+        undoFlowState.clearRecentSubmission()
+        refreshSecondaryAction()
+        performSecondaryAction()
+
+        Task { @MainActor [weak self] in
+            guard let self else {
+                return
+            }
+
+            for _ in 0..<100 {
+                if self.activeRefineTask == nil,
+                   self.workspaceState.activeWorkspace?.isRefined == true
+                {
+                    break
+                }
+
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+
+            onFinished()
+        }
+    }
+
     func runSmokeTermLearningSubmit(
         text: String,
         submitDelay: TimeInterval = 0.8,

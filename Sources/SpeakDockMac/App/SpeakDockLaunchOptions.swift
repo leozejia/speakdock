@@ -9,6 +9,11 @@ struct SpeakDockLaunchOptions: Equatable {
         case smokeTermLearning
     }
 
+    enum SmokeRefinePhase: Equatable {
+        case submit
+        case manual
+    }
+
     static let defaultComposeProbeDuration: TimeInterval = 30
     static let minimumComposeProbeDuration: TimeInterval = 5
     static let maximumComposeProbeDuration: TimeInterval = 300
@@ -25,6 +30,7 @@ struct SpeakDockLaunchOptions: Equatable {
     let smokeText: String
     let smokeDelay: TimeInterval
     let smokeSubmitDelay: TimeInterval
+    let smokeRefinePhase: SmokeRefinePhase
     let smokeRefineBaseURL: String
     let smokeRefineAPIKey: String
     let smokeRefineModel: String
@@ -72,6 +78,7 @@ struct SpeakDockLaunchOptions: Equatable {
             after: "--smoke-text",
             in: arguments
         ) ?? Self.defaultSmokeText
+        smokeRefinePhase = Self.smokeRefinePhaseValue(in: arguments)
         smokeRefineBaseURL = Self.stringValue(
             after: "--smoke-refine-base-url",
             in: arguments
@@ -114,5 +121,14 @@ struct SpeakDockLaunchOptions: Equatable {
         }
 
         return arguments[valueIndex]
+    }
+
+    private static func smokeRefinePhaseValue(in arguments: [String]) -> SmokeRefinePhase {
+        switch stringValue(after: "--smoke-refine-phase", in: arguments) {
+        case "manual":
+            .manual
+        default:
+            .submit
+        }
     }
 }

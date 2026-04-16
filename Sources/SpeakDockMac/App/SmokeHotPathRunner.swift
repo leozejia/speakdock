@@ -6,6 +6,7 @@ final class SmokeHotPathRunner {
     enum Mode: String {
         case commit
         case refineSubmit
+        case refineManual
         case termLearningSubmit
     }
 
@@ -62,6 +63,22 @@ final class SmokeHotPathRunner {
                     text: self.text,
                     submitDelay: self.submitDelay
                 ) {
+                    Task { @MainActor [weak self] in
+                        guard let self else {
+                            return
+                        }
+
+                        if self.completionDelay > 0 {
+                            try? await Task.sleep(for: .seconds(self.completionDelay))
+                        }
+
+                        SpeakDockLog.lifecycle.notice("smoke hot path finished")
+                        NSApp.terminate(nil)
+                    }
+                }
+
+            case .refineManual:
+                self.hotPathCoordinator.runSmokeManualRefine(text: self.text) {
                     Task { @MainActor [weak self] in
                         guard let self else {
                             return

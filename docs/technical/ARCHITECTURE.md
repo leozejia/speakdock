@@ -878,6 +878,7 @@ macOS v1 的工程收口写死为：
   - 第三方 App `Compose` 兼容性扫测优先通过 `make probe-compose` 执行；probe 只检查前台 App 的可编辑目标，不录音、不注入、不改剪贴板
   - 自驱 smoke 优先通过 `make smoke-compose` 执行；smoke 使用 SpeakDock 自带测试宿主验证最小 Compose 注入闭环
   - `Refine` 自驱基线优先通过 `make smoke-refine` 执行；该命令使用本地临时 stub server 覆盖真实 HTTP refine 请求与发送前整理闭环
+  - 手动 `Refine` 自驱基线优先通过 `make smoke-refine-manual` 执行；该命令必须验证“当前 workspace 手动整理后，整理结果已写回目标”
   - `Refine fallback` 自驱基线优先通过 `make smoke-refine-fallback` 执行；该命令必须验证“模型失败时仍按当前 workspace 文本继续提交”
   - `TermDictionary` 被动学习自驱基线优先通过 fixture-driven `make smoke-term-learning` 执行；默认回放匿名 `promotion` 场景
   - 冲突 alias 的保守路径优先通过 `make smoke-term-learning-conflict` 执行；该命令必须验证“冲突不晋升、最终保持原 alias”

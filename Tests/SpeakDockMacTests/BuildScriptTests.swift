@@ -175,6 +175,24 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("fallback"))
     }
 
+    func testMakefileExposesManualRefineSmokeTarget() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+
+        XCTAssertTrue(makefile.contains("smoke-refine-manual:"))
+        XCTAssertTrue(makefile.contains("SMOKE_REFINE_SCENARIO=manual"))
+    }
+
+    func testSmokeRefineScriptSupportsManualScenario() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-smoke-refine.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("manual"))
+        XCTAssertTrue(script.contains("--smoke-refine-phase"))
+    }
+
     func testSmokeTermLearningScriptLaunchesSmokeModeAgainstIsolatedTermDictionaryStore() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/run-smoke-term-learning.sh")

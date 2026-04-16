@@ -15,6 +15,7 @@ HOST_APP_PATH="$("$ROOT_DIR/scripts/build-test-host.sh" "$CONFIGURATION")"
 APP_PATH="$("$ROOT_DIR/scripts/build-app.sh" "$CONFIGURATION")"
 EXPECTED_TEXT="$REFINED_TEXT"
 STUB_STATUS_CODE="200"
+APP_REFINE_PHASE="submit"
 PORT="$(python3 - <<'PY'
 import socket
 
@@ -26,6 +27,9 @@ PY
 
 case "$SCENARIO" in
   success)
+    ;;
+  manual)
+    APP_REFINE_PHASE="manual"
     ;;
   fallback)
     EXPECTED_TEXT="$SOURCE_TEXT"
@@ -131,6 +135,7 @@ BASE_URL="http://127.0.0.1:$PORT/v1"
 print -u2 -- "Running SpeakDock smoke refine ($SCENARIO)..."
 open -g -n -W "$APP_PATH" --args \
   --smoke-refine \
+  --smoke-refine-phase "$APP_REFINE_PHASE" \
   --smoke-text "$SOURCE_TEXT" \
   --smoke-delay "1.5" \
   --smoke-refine-base-url "$BASE_URL" \
@@ -154,6 +159,8 @@ fi
 
 if [[ "$SCENARIO" == "fallback" ]]; then
   print -u2 -- "Smoke refine fallback passed."
+elif [[ "$SCENARIO" == "manual" ]]; then
+  print -u2 -- "Smoke manual refine passed."
 else
   print -u2 -- "Smoke refine passed."
 fi

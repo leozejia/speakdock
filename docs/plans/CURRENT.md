@@ -52,7 +52,7 @@
 1. 审视现有 `Refine` 相关测试和真实调用点
 2. 先补最小 failing test，锁定真实热路径里的整理边界
 3. 再补最小实现或修正
-4. 跑定向测试与 `make smoke-refine / make smoke-refine-fallback`
+4. 跑定向测试与 `make smoke-refine / make smoke-refine-manual / make smoke-refine-fallback`
 5. 同步文档并归档本轮结果
 
 ## 7. 完成定义
@@ -76,6 +76,7 @@
 - 上一轮已完成：workspace handoff 前会先做词级修正结算
 - 本轮已完成：整理后继续口述会把当前可见文本吸收成新的 `raw_context` 基线，不再保留过期的撤回态
 - 本轮已完成：workspace 的 `endLocation` 现在会跟随整理改写、手动改写和撤回后的当前可见文本边界
+- 本轮已完成：手动整理现在有独立的 `make smoke-refine-manual` 自驱入口
 - 本轮已完成：`Refine fallback` 现在有独立的 `make smoke-refine-fallback` 自驱入口
 - 更早已完成：Settings 的 `Passive Learning` 面板现在能展示 `observed / promoted / conflicted / skippedConfirmed` 状态计数
 - 更早已完成：Settings 现在能展示最近学习事件，且只暴露 `alias / canonical / evidence / outcome`
