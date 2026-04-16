@@ -40,6 +40,11 @@
 "settings.term_dictionary.confirmed_terms" = "已确认术语";
 "settings.term_dictionary.saved_count" = "已保存 %d 条";
 "settings.term_dictionary.no_confirmed" = "还没有已确认术语。";
+"settings.term_dictionary.learning_title" = "被动学习";
+"settings.term_dictionary.observed_count" = "当前在本地观察 %d 条映射";
+"settings.term_dictionary.learning_single_edit" = "单次手动改词只记录本地证据，不会直接入词典。";
+"settings.term_dictionary.learning_promotion" = "同一 alias 到 canonical 连续一致出现 3 次后，才会自动晋升。";
+"settings.term_dictionary.learning_conflict" = "冲突映射或句子级改写不会进入激活词典。";
 "settings.term_dictionary.pending_candidates" = "待确认候选";
 "settings.term_dictionary.pending_count" = "待确认 %d 条";
 "settings.term_dictionary.no_pending" = "当前没有待确认候选。";

@@ -117,6 +117,31 @@ final class TermDictionaryStoreTests: XCTestCase {
         )
     }
 
+    func testAddEntryClearsMatchingObservedCorrection() throws {
+        let rootDirectory = try makeTemporaryDirectory(named: "term-dictionary-store")
+        let storageURL = rootDirectory
+            .appendingPathComponent("Application Support", isDirectory: true)
+            .appendingPathComponent("SpeakDock", isDirectory: true)
+            .appendingPathComponent("term-dictionary.json")
+
+        let store = TermDictionaryStore(
+            storageURL: storageURL,
+            fileManager: fileManager
+        )
+
+        try store.recordManualCorrection(
+            generatedText: "project adults 已经完成",
+            correctedText: "Project Atlas 已经完成"
+        )
+
+        try store.addEntry(
+            canonicalTerm: "Project Atlas",
+            aliases: ["project adults"]
+        )
+
+        XCTAssertEqual(store.observedCorrections, [])
+    }
+
     func testRemoveEntryAndDismissCandidatePersist() throws {
         let rootDirectory = try makeTemporaryDirectory(named: "term-dictionary-store")
         let storageURL = rootDirectory
@@ -181,7 +206,7 @@ final class TermDictionaryStoreTests: XCTestCase {
         }
     }
 
-    func testRecordManualCorrectionAddsPendingCandidate() throws {
+    func testRecordManualCorrectionStoresObservedEvidenceBeforePromotionThreshold() throws {
         let rootDirectory = try makeTemporaryDirectory(named: "term-dictionary-store")
         let storageURL = rootDirectory
             .appendingPathComponent("Application Support", isDirectory: true)
@@ -198,16 +223,15 @@ final class TermDictionaryStoreTests: XCTestCase {
             correctedText: "Project Atlas 已经完成"
         )
 
-        XCTAssertEqual(
-            store.pendingCandidates,
-            [
-                TermDictionaryCandidate(
-                    canonicalTerm: "Project Atlas",
-                    alias: "project adults",
-                    source: .manualCorrection
-                ),
-            ]
-        )
+        XCTAssertEqual(store.confirmedDictionary, .empty)
+        XCTAssertEqual(store.pendingCandidates, [])
+
+        let snapshot = try loadPersistedSnapshot(from: storageURL)
+        let observedCorrections = try XCTUnwrap(snapshot["observedCorrections"] as? [[String: Any]])
+        XCTAssertEqual(observedCorrections.count, 1)
+        XCTAssertEqual(observedCorrections.first?["canonicalTerm"] as? String, "Project Atlas")
+        XCTAssertEqual(observedCorrections.first?["alias"] as? String, "project adults")
+        XCTAssertEqual(observedCorrections.first?["evidenceCount"] as? Int, 1)
     }
 
     func testRecordManualCorrectionDoesNotDuplicatePendingCandidate() throws {
@@ -246,6 +270,98 @@ final class TermDictionaryStoreTests: XCTestCase {
         )
     }
 
+    func testRecordManualCorrectionPromotesObservedCorrectionAfterThreeConsistentMatches() throws {
+        let rootDirectory = try makeTemporaryDirectory(named: "term-dictionary-store")
+        let storageURL = rootDirectory
+            .appendingPathComponent("Application Support", isDirectory: true)
+            .appendingPathComponent("SpeakDock", isDirectory: true)
+            .appendingPathComponent("term-dictionary.json")
+
+        let store = TermDictionaryStore(
+            storageURL: storageURL,
+            fileManager: fileManager
+        )
+
+        try store.recordManualCorrection(
+            generatedText: "project adults 已经完成",
+            correctedText: "Project Atlas 已经完成"
+        )
+        try store.recordManualCorrection(
+            generatedText: "project adults 明天继续",
+            correctedText: "Project Atlas 明天继续"
+        )
+        try store.recordManualCorrection(
+            generatedText: "project adults 现在开始",
+            correctedText: "Project Atlas 现在开始"
+        )
+
+        XCTAssertEqual(
+            store.confirmedDictionary,
+            TermDictionary(entries: [
+                TermDictionaryEntry(
+                    canonicalTerm: "Project Atlas",
+                    aliases: ["project adults"]
+                ),
+            ])
+        )
+        XCTAssertEqual(store.pendingCandidates, [])
+
+        let snapshot = try loadPersistedSnapshot(from: storageURL)
+        let observedCorrections = try XCTUnwrap(snapshot["observedCorrections"] as? [[String: Any]])
+        XCTAssertEqual(observedCorrections.count, 0)
+    }
+
+    func testRecordManualCorrectionDoesNotPromoteConflictingObservedMappings() throws {
+        let rootDirectory = try makeTemporaryDirectory(named: "term-dictionary-store")
+        let storageURL = rootDirectory
+            .appendingPathComponent("Application Support", isDirectory: true)
+            .appendingPathComponent("SpeakDock", isDirectory: true)
+            .appendingPathComponent("term-dictionary.json")
+
+        let store = TermDictionaryStore(
+            storageURL: storageURL,
+            fileManager: fileManager
+        )
+
+        try store.recordManualCorrection(
+            generatedText: "project adults 已经完成",
+            correctedText: "Project Atlas 已经完成"
+        )
+        try store.recordManualCorrection(
+            generatedText: "project adults 已经完成",
+            correctedText: "Project Alice 已经完成"
+        )
+        try store.recordManualCorrection(
+            generatedText: "project adults 明天继续",
+            correctedText: "Project Atlas 明天继续"
+        )
+        try store.recordManualCorrection(
+            generatedText: "project adults 现在开始",
+            correctedText: "Project Atlas 现在开始"
+        )
+
+        XCTAssertEqual(store.confirmedDictionary, .empty)
+        XCTAssertEqual(store.pendingCandidates, [])
+
+        let snapshot = try loadPersistedSnapshot(from: storageURL)
+        let observedCorrections = try XCTUnwrap(snapshot["observedCorrections"] as? [[String: Any]])
+        XCTAssertEqual(observedCorrections.count, 2)
+        XCTAssertTrue(
+            observedCorrections.contains {
+                $0["canonicalTerm"] as? String == "Project Atlas"
+                    && $0["alias"] as? String == "project adults"
+                    && $0["evidenceCount"] as? Int == 3
+            }
+        )
+        XCTAssertTrue(
+            observedCorrections.contains {
+                $0["canonicalTerm"] as? String == "Project Alice"
+                    && $0["alias"] as? String == "project adults"
+                    && $0["evidenceCount"] as? Int == 1
+            }
+        )
+    }
+
     func testRecordManualCorrectionDoesNotAddAlreadyConfirmedAlias() throws {
         let rootDirectory = try makeTemporaryDirectory(named: "term-dictionary-store")
         let storageURL = rootDirectory
@@ -277,5 +393,11 @@ final class TermDictionaryStoreTests: XCTestCase {
             .appendingPathComponent("\(prefix)-\(UUID().uuidString)", isDirectory: true)
         try fileManager.createDirectory(at: url, withIntermediateDirectories: true)
         return url
+    }
+
+    private func loadPersistedSnapshot(from storageURL: URL) throws -> [String: Any] {
+        let data = try Data(contentsOf: storageURL)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        return object
     }
 }

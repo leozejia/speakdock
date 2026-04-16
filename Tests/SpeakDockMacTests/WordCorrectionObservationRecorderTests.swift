@@ -3,15 +3,15 @@ import XCTest
 import SpeakDockCore
 
 @MainActor
-final class ManualCorrectionCandidateRecorderTests: XCTestCase {
+final class WordCorrectionObservationRecorderTests: XCTestCase {
     private let fileManager = FileManager.default
 
-    func testComposeWorkspaceRecordsPendingCandidateFromObservedText() throws {
+    func testComposeWorkspaceRecordsObservedCorrectionFromObservedText() throws {
         let store = TermDictionaryStore(
             storageURL: try makeStorageURL(),
             fileManager: fileManager
         )
-        let recorder = ManualCorrectionCandidateRecorder(
+        let recorder = WordCorrectionObservationRecorder(
             termDictionaryStore: store,
             observeComposeText: { targetID in
                 XCTAssertEqual(targetID, "compose-target")
@@ -29,15 +29,16 @@ final class ManualCorrectionCandidateRecorderTests: XCTestCase {
         try recorder.recordIfNeeded(for: workspace)
 
         XCTAssertEqual(
-            store.pendingCandidates,
+            store.observedCorrections,
             [
-                TermDictionaryCandidate(
+                ObservedWordCorrection(
                     canonicalTerm: "Project Atlas",
                     alias: "project adults",
-                    source: .manualCorrection
+                    evidenceCount: 1
                 ),
             ]
         )
+        XCTAssertEqual(store.pendingCandidates, [])
     }
 
     private func makeStorageURL() throws -> URL {

@@ -261,7 +261,7 @@ macOS v1 的主入口写死为：
 1. SpeakDock 在 active workspace 内无感观察词级修改，不打断用户
 2. 用户发送或工作区结束时，系统只批量分析词或短语级别的替换
 3. 单次修改先进入本地观察层，只记证据，不直接进入 active dictionary
-4. 同一 `alias -> canonical` 在多个 workspace 中重复且一致时，才晋升进 `TermDictionary`
+4. 同一 `alias -> canonical` 只有在重复且一致达到阈值后，才晋升进 `TermDictionary`
 5. `TermDictionary` 再用于 `Clean`、ASR 后处理和 `RefineRequest` 上下文
 6. 词典条目必须可撤回、可删除、可导出
 
@@ -269,11 +269,13 @@ macOS v1 的主入口写死为：
 
 - `Word Correction` 只处理词或短语，不处理句子
 - 句子级修改一律归 `Refine` 语义，不进入词典学习
+- 当前 v1 的默认阈值是 `3` 次一致观察后自动晋升
+- 同一 alias 只要出现冲突 canonical，就不自动晋升，继续停留在观察层
 - 如果工作区还没经过 `Refine`，词级观察通常基于当前 `raw_context` 和用户最终保留文本的局部差异
 - 如果工作区已经过 `Refine`，词级观察必须以整理后的当前可见文本为基线，不能回退到更早的口语基线
 - v1 只在当前目标仍然可观测时尝试提取这份局部差异
 - paste-only fallback 或不可读回文本的目标，不承诺生成词级证据；此时系统应该保守跳过，而不是猜测
-- 当前代码里的 `pending candidate` 只是过渡实现，用来验证观察链路，不代表长期产品心智
+- Settings 里的 `pending candidate` 只作为旧本地数据的兼容显示保留，不再是新学习链路的主路径
 
 词典存储规则：
 
@@ -282,7 +284,7 @@ macOS v1 的主入口写死为：
 - 默认保存在用户本地 Application Support 或等价的本地配置目录
 - 不记录完整聊天内容、完整转写正文或剪贴板内容
 - active 词典只保存已经稳定的术语、别名、替换规则和可选备注
-- 观察层只保存最小必要的词级纠错证据和统计，不保存整段文本历史
+- 观察层只保存最小必要的词级纠错证据和统计，例如 `alias / canonical / count`，不保存整段文本历史
 
 `StyleProfile` 与 `TermDictionary` 分开。
 

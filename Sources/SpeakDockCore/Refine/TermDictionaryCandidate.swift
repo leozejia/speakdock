@@ -22,9 +22,17 @@ public struct TermDictionaryCandidate: Equatable, Codable, Sendable {
 
 public struct TermDictionaryCandidateExtractor: Sendable {
     private let maximumCandidateCharacters: Int
+    private let maximumWhitespaceSeparatedWords: Int
+    private let maximumUnspacedCJKCharacters: Int
 
-    public init(maximumCandidateCharacters: Int = 40) {
+    public init(
+        maximumCandidateCharacters: Int = 40,
+        maximumWhitespaceSeparatedWords: Int = 4,
+        maximumUnspacedCJKCharacters: Int = 8
+    ) {
         self.maximumCandidateCharacters = maximumCandidateCharacters
+        self.maximumWhitespaceSeparatedWords = maximumWhitespaceSeparatedWords
+        self.maximumUnspacedCJKCharacters = maximumUnspacedCJKCharacters
     }
 
     public func candidates(
@@ -112,6 +120,8 @@ public struct TermDictionaryCandidateExtractor: Sendable {
               canonicalTerm.count <= maximumCandidateCharacters,
               !alias.contains(where: \.isNewline),
               !canonicalTerm.contains(where: \.isNewline),
+              isShortPhrase(alias),
+              isShortPhrase(canonicalTerm),
               containsMeaningfulCharacter(alias),
               containsMeaningfulCharacter(canonicalTerm) else {
             return false
@@ -120,9 +130,30 @@ public struct TermDictionaryCandidateExtractor: Sendable {
         return true
     }
 
+    private func isShortPhrase(_ text: String) -> Bool {
+        let wordCount = text.split(whereSeparator: \.isWhitespace).count
+        if wordCount > 1 {
+            return wordCount <= maximumWhitespaceSeparatedWords
+        }
+
+        guard containsCJKCharacter(text) else {
+            return true
+        }
+
+        return text.count <= maximumUnspacedCJKCharacters
+    }
+
     private func containsMeaningfulCharacter(_ text: String) -> Bool {
         text.unicodeScalars.contains { scalar in
             CharacterSet.letters.contains(scalar) || CharacterSet.decimalDigits.contains(scalar)
+        }
+    }
+
+    private func containsCJKCharacter(_ text: String) -> Bool {
+        text.unicodeScalars.contains { scalar in
+            (0x3400...0x4DBF).contains(scalar.value)
+                || (0x4E00...0x9FFF).contains(scalar.value)
+                || (0xF900...0xFAFF).contains(scalar.value)
         }
     }
 

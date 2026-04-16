@@ -44,6 +44,17 @@ final class TermDictionaryTests: XCTestCase {
         )
     }
 
+    func testManualCorrectionIgnoresSentenceLevelRewrite() {
+        let extractor = TermDictionaryCandidateExtractor()
+
+        let candidates = extractor.candidates(
+            generatedText: "今天先讨论项目排期",
+            correctedText: "我们今天先讨论一下项目排期"
+        )
+
+        XCTAssertEqual(candidates, [])
+    }
+
     func testNormalizerCanReadCurrentDictionaryFromProviderWithoutRecreation() {
         var currentDictionary = TermDictionary.empty
         let normalizer = CleanNormalizer(

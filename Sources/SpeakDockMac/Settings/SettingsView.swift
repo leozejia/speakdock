@@ -414,16 +414,29 @@ struct SettingsView: View {
         } secondary: {
             VStack(alignment: .leading, spacing: Layout.sectionSpacing) {
                 SettingsShellSection(
-                    title: localized(.settingsTermDictionaryPendingCandidates),
+                    title: localized(.settingsTermDictionaryLearningTitle),
                     subtitle: localizedFormat(
-                        .settingsTermDictionaryPendingCount,
-                        termDictionaryStore.pendingCandidates.count
+                        .settingsTermDictionaryObservedCount,
+                        termDictionaryStore.observedCorrections.count
                     ),
                     style: .panel
                 ) {
-                    if termDictionaryStore.pendingCandidates.isEmpty {
-                        emptyStateView(localized(.settingsTermDictionaryNoPending))
-                    } else {
+                    VStack(alignment: .leading, spacing: 10) {
+                        learningSummaryRow(localized(.settingsTermDictionaryLearningSingleEdit))
+                        learningSummaryRow(localized(.settingsTermDictionaryLearningPromotion))
+                        learningSummaryRow(localized(.settingsTermDictionaryLearningConflict))
+                    }
+                }
+
+                if !termDictionaryStore.pendingCandidates.isEmpty {
+                    SettingsShellSection(
+                        title: localized(.settingsTermDictionaryPendingCandidates),
+                        subtitle: localizedFormat(
+                            .settingsTermDictionaryPendingCount,
+                            termDictionaryStore.pendingCandidates.count
+                        ),
+                        style: .panel
+                    ) {
                         VStack(alignment: .leading, spacing: 10) {
                             ForEach(
                                 Array(termDictionaryStore.pendingCandidates.enumerated()),
@@ -862,6 +875,21 @@ struct SettingsView: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(SpeakDockVisualStyle.line, lineWidth: 1)
         )
+    }
+
+    @ViewBuilder
+    private func learningSummaryRow(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Circle()
+                .fill(SpeakDockVisualStyle.accent)
+                .frame(width: 5, height: 5)
+                .padding(.top, 6)
+
+            Text(text)
+                .font(.system(size: 12))
+                .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     @ViewBuilder

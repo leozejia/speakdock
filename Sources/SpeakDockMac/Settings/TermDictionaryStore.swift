@@ -42,19 +42,28 @@ final class TermDictionaryStore {
         }
     }
 
+    private(set) var observedCorrections: [ObservedWordCorrection] {
+        didSet {
+            persistIfReady()
+        }
+    }
+
     private let storageURL: URL
     private let fileManager: FileManager
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
     private let candidateExtractor = TermDictionaryCandidateExtractor()
+    private let observationPromotionThreshold: Int
     private var isReady = false
 
     init(
         storageURL: URL = TermDictionaryStore.defaultStorageURL,
-        fileManager: FileManager = .default
+        fileManager: FileManager = .default,
+        observationPromotionThreshold: Int = 3
     ) {
         self.storageURL = storageURL
         self.fileManager = fileManager
+        self.observationPromotionThreshold = max(1, observationPromotionThreshold)
 
         let snapshot = Self.loadSnapshot(
             from: storageURL,
@@ -63,6 +72,7 @@ final class TermDictionaryStore {
         )
         self.confirmedDictionary = TermDictionary(entries: snapshot.confirmedEntries)
         self.pendingCandidates = snapshot.pendingCandidates
+        self.observedCorrections = snapshot.observedCorrections
         self.isReady = true
     }
 
@@ -74,7 +84,8 @@ final class TermDictionaryStore {
 
         let snapshot = Snapshot(
             confirmedEntries: confirmedDictionary.entries,
-            pendingCandidates: pendingCandidates
+            pendingCandidates: pendingCandidates,
+            observedCorrections: observedCorrections
         )
         let data = try encoder.encode(snapshot)
         try data.write(to: storageURL, options: .atomic)
@@ -88,6 +99,7 @@ final class TermDictionaryStore {
         )
         confirmedDictionary = TermDictionary(entries: snapshot.confirmedEntries)
         pendingCandidates = snapshot.pendingCandidates
+        observedCorrections = snapshot.observedCorrections
     }
 
     func confirm(_ candidate: TermDictionaryCandidate) throws {
@@ -99,6 +111,10 @@ final class TermDictionaryStore {
             aliases: [candidate.alias]
         )
         confirmedDictionary = TermDictionary(entries: entries)
+        removeObservedCorrections(
+            canonicalTerm: candidate.canonicalTerm,
+            aliases: [candidate.alias]
+        )
         pendingCandidates.removeAll { $0 == candidate }
         try save()
     }
@@ -123,6 +139,10 @@ final class TermDictionaryStore {
             aliases: normalizedAliases
         )
         confirmedDictionary = TermDictionary(entries: entries)
+        removeObservedCorrections(
+            canonicalTerm: normalizedCanonicalTerm,
+            aliases: normalizedAliases
+        )
         try save()
     }
 
@@ -147,15 +167,10 @@ final class TermDictionaryStore {
             generatedText: generatedText,
             correctedText: correctedText
         )
-        let newCandidates = candidates.filter { candidate in
-            !pendingCandidates.contains(candidate) && !confirmedDictionaryContains(candidate)
+        for candidate in candidates where !confirmedDictionaryContains(candidate) {
+            recordObservedCorrection(candidate)
         }
 
-        guard !newCandidates.isEmpty else {
-            return
-        }
-
-        pendingCandidates.append(contentsOf: newCandidates)
         try save()
     }
 
@@ -179,7 +194,8 @@ final class TermDictionaryStore {
         else {
             return Snapshot(
                 confirmedEntries: [],
-                pendingCandidates: []
+                pendingCandidates: [],
+                observedCorrections: []
             )
         }
 
@@ -257,13 +273,118 @@ final class TermDictionaryStore {
         }
     }
 
+    private func hasObservedConflict(aliasKey: String, expectedCanonicalKey: String) -> Bool {
+        observedCorrections.contains { observation in
+            canonicalKey(for: observation.alias) == aliasKey
+                && canonicalKey(for: observation.canonicalTerm) != expectedCanonicalKey
+        }
+    }
+
+    private func confirmedDictionaryHasConflict(aliasKey: String, expectedCanonicalKey: String) -> Bool {
+        confirmedDictionary.entries.contains { entry in
+            canonicalKey(for: entry.canonicalTerm) != expectedCanonicalKey
+                && entry.aliases.contains { alias in
+                    canonicalKey(for: alias) == aliasKey
+                }
+        }
+    }
+
     private func canonicalKey(for text: String) -> String {
         text.trimmingCharacters(in: .whitespacesAndNewlines)
             .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+    }
+
+    private func removeObservedCorrections(
+        canonicalTerm: String,
+        aliases: [String]
+    ) {
+        let canonicalTermKey = canonicalKey(for: canonicalTerm)
+        let aliasKeys = Set(aliases.map(canonicalKey(for:)))
+
+        observedCorrections.removeAll { observation in
+            canonicalKey(for: observation.canonicalTerm) == canonicalTermKey
+                && aliasKeys.contains(canonicalKey(for: observation.alias))
+        }
+    }
+
+    private func recordObservedCorrection(_ candidate: TermDictionaryCandidate) {
+        let candidateCanonicalKey = canonicalKey(for: candidate.canonicalTerm)
+        let candidateAliasKey = canonicalKey(for: candidate.alias)
+
+        if let index = observedCorrections.firstIndex(where: {
+            canonicalKey(for: $0.canonicalTerm) == candidateCanonicalKey
+                && canonicalKey(for: $0.alias) == candidateAliasKey
+        }) {
+            observedCorrections[index].evidenceCount += 1
+        } else {
+            observedCorrections.append(
+                ObservedWordCorrection(
+                    canonicalTerm: candidate.canonicalTerm,
+                    alias: candidate.alias,
+                    evidenceCount: 1
+                )
+            )
+        }
+
+        guard let observation = observedCorrections.first(where: {
+            canonicalKey(for: $0.canonicalTerm) == candidateCanonicalKey
+                && canonicalKey(for: $0.alias) == candidateAliasKey
+        }) else {
+            return
+        }
+
+        guard observation.evidenceCount >= observationPromotionThreshold else {
+            return
+        }
+
+        guard !hasObservedConflict(aliasKey: candidateAliasKey, expectedCanonicalKey: candidateCanonicalKey) else {
+            return
+        }
+
+        guard !confirmedDictionaryHasConflict(aliasKey: candidateAliasKey, expectedCanonicalKey: candidateCanonicalKey) else {
+            return
+        }
+
+        let entries = upsert(
+            entries: confirmedDictionary.entries,
+            canonicalTerm: observation.canonicalTerm,
+            aliases: [observation.alias]
+        )
+        confirmedDictionary = TermDictionary(entries: entries)
+        observedCorrections.removeAll { observationCandidate in
+            canonicalKey(for: observationCandidate.alias) == candidateAliasKey
+        }
+        pendingCandidates.removeAll { pendingCandidate in
+            canonicalKey(for: pendingCandidate.alias) == candidateAliasKey
+        }
     }
 }
 
 private struct Snapshot: Codable, Equatable {
     var confirmedEntries: [TermDictionaryEntry]
     var pendingCandidates: [TermDictionaryCandidate]
+    var observedCorrections: [ObservedWordCorrection]
+
+    init(
+        confirmedEntries: [TermDictionaryEntry],
+        pendingCandidates: [TermDictionaryCandidate],
+        observedCorrections: [ObservedWordCorrection]
+    ) {
+        self.confirmedEntries = confirmedEntries
+        self.pendingCandidates = pendingCandidates
+        self.observedCorrections = observedCorrections
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case confirmedEntries
+        case pendingCandidates
+        case observedCorrections
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        confirmedEntries = try container.decodeIfPresent([TermDictionaryEntry].self, forKey: .confirmedEntries) ?? []
+        pendingCandidates = try container.decodeIfPresent([TermDictionaryCandidate].self, forKey: .pendingCandidates) ?? []
+        observedCorrections = try container.decodeIfPresent([ObservedWordCorrection].self, forKey: .observedCorrections) ?? []
+    }
 }

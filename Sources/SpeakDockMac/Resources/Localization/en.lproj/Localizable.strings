@@ -40,6 +40,11 @@
 "settings.term_dictionary.confirmed_terms" = "Confirmed Terms";
 "settings.term_dictionary.saved_count" = "%d saved";
 "settings.term_dictionary.no_confirmed" = "No confirmed terms yet.";
+"settings.term_dictionary.learning_title" = "Passive Learning";
+"settings.term_dictionary.observed_count" = "Observing %d mappings locally";
+"settings.term_dictionary.learning_single_edit" = "A single manual word edit only records local evidence.";
+"settings.term_dictionary.learning_promotion" = "The same alias to canonical mapping auto-promotes after 3 consistent corrections.";
+"settings.term_dictionary.learning_conflict" = "Conflicting or sentence-level edits do not enter the active dictionary.";
 "settings.term_dictionary.pending_candidates" = "Pending Candidates";
 "settings.term_dictionary.pending_count" = "%d pending";
 "settings.term_dictionary.no_pending" = "No pending candidates.";

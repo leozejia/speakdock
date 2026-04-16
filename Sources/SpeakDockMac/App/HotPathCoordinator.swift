@@ -18,7 +18,7 @@ final class HotPathCoordinator {
     private let overlayPanelController: OverlayPanelController
     private let cleanNormalizer: CleanNormalizer
     private let refineEngine: any RefineEngine
-    private let manualCorrectionCandidateRecorder: ManualCorrectionCandidateRecorder
+    private let wordCorrectionObservationRecorder: WordCorrectionObservationRecorder
     private let clock: () -> TimeInterval
 
     private var workspaceState = WorkspaceState()
@@ -50,7 +50,7 @@ final class HotPathCoordinator {
         self.overlayPanelController = overlayPanelController
         self.cleanNormalizer = cleanNormalizer
         self.refineEngine = refineEngine
-        self.manualCorrectionCandidateRecorder = ManualCorrectionCandidateRecorder(
+        self.wordCorrectionObservationRecorder = WordCorrectionObservationRecorder(
             termDictionaryStore: termDictionaryStore,
             observeComposeText: { targetID in
                 composeTarget.observedWorkspaceText(expectedTargetID: targetID)
@@ -158,7 +158,7 @@ final class HotPathCoordinator {
             cancelRefineTask()
             cancelRecognitionTimeout()
             speechController.cancelSession()
-            recordManualCorrectionCandidateIfPossible()
+            recordWordCorrectionEvidenceIfPossible()
             submitCurrentWorkspaceIfPossible()
             WorkspaceReducer.reduce(state: &workspaceState, action: .workspaceEnded)
             renderedSegmentsByWorkspaceID.removeAll()
@@ -555,12 +555,12 @@ final class HotPathCoordinator {
         }
     }
 
-    private func recordManualCorrectionCandidateIfPossible() {
+    private func recordWordCorrectionEvidenceIfPossible() {
         do {
-            try manualCorrectionCandidateRecorder.recordIfNeeded(for: workspaceState.activeWorkspace)
+            try wordCorrectionObservationRecorder.recordIfNeeded(for: workspaceState.activeWorkspace)
         } catch {
             SpeakDockLog.compose.error(
-                "manual correction candidate recording failed: \(error.localizedDescription, privacy: .private)"
+                "word correction evidence recording failed: \(error.localizedDescription, privacy: .private)"
             )
         }
     }

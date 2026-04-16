@@ -2,7 +2,7 @@ import Foundation
 import SpeakDockCore
 
 @MainActor
-struct ManualCorrectionCandidateRecorder {
+struct WordCorrectionObservationRecorder {
     var termDictionaryStore: TermDictionaryStore
     var observeComposeText: (String) -> String? = { _ in nil }
     var observeCaptureText: (String) -> String? = { _ in nil }
