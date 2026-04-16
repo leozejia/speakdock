@@ -146,4 +146,40 @@ final class AppLocalizerTests: XCTestCase {
             "Fn 当前不可用，请去设置里手动切换触发方式。"
         )
     }
+
+    func testTermDictionaryLearningLabelsAreLocalized() {
+        XCTAssertEqual(
+            AppLocalizer.string(
+                .settingsTermDictionaryLearningRecent,
+                appLanguage: .english,
+                preferredLanguages: ["en"]
+            ),
+            "Recent Learning"
+        )
+        XCTAssertEqual(
+            AppLocalizer.string(
+                .settingsTermDictionaryLearningSkippedConfirmedStatus,
+                appLanguage: .english,
+                preferredLanguages: ["en"]
+            ),
+            "Already Confirmed"
+        )
+        XCTAssertEqual(
+            AppLocalizer.formatted(
+                .settingsTermDictionaryLearningEvidenceCount,
+                appLanguage: .english,
+                preferredLanguages: ["en"],
+                [3]
+            ),
+            "Evidence 3"
+        )
+        XCTAssertEqual(
+            AppLocalizer.string(
+                .settingsTermDictionaryLearningPrivacyNote,
+                appLanguage: .simplifiedChinese,
+                preferredLanguages: ["en"]
+            ),
+            "这里只显示词级映射，不保存整句内容。"
+        )
+    }
 }

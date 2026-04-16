@@ -66,7 +66,7 @@ SpeakDock 现在处于早期 macOS 实现阶段。第一阶段目标是把热路
 - 在“可读回文本”的目标里支持保守的被动词级学习，重复且稳定的修正会晋升进本地 active 词典。
 - 最近一次写入撤回和 refine 撤回。
 - 第三方输入框兼容性诊断。
-- Settings 已覆盖 trigger、capture 根目录、本地词典和 refine 配置。
+- Settings 已覆盖 trigger、capture 根目录、本地词典、最近学习状态和 refine 配置。
 - 基于 `OSLog.Logger` 的 Apple Unified Logging。
 
 还没有交付：
@@ -126,6 +126,8 @@ make trace-report TRACE_WINDOW=20m
 make term-learning-report
 make term-learning-report TERM_DICTIONARY_STORAGE=/tmp/term-dictionary.json
 ```
+
+同一份词级摘要现在也可以直接在 `Settings -> Dictionary` 里看到，包括“观察中 / 已晋升 / 有冲突 / 已确认”四类最近学习状态卡片和事件列表。
 
 不录音、不注入文本，只探测 Compose 兼容性：
 

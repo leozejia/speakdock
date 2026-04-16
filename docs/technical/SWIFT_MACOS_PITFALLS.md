@@ -244,6 +244,7 @@
 - 关键链路都能按 category 找到，热路径能看到统一 `trace.finish`
 - 聚合报告能直接看到最近 `kind / result / origin / route / latency`
 - 词典学习报告能直接看到 `observed / promoted / conflicted / skippedConfirmed` 结果分布
+- Settings 的 `Passive Learning` 面板能看到同一套结果分布，而且仍然只显示 `alias / canonical / evidence / outcome`
 - `promotion` 和 `conflict` 两条匿名 smoke 都能自驱回归
 
 ### 3.12 `smoke-term-learning` 不能继续硬编码样本

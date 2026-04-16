@@ -422,6 +422,73 @@ final class TermDictionaryStoreTests: XCTestCase {
         XCTAssertEqual(learningEvents.first?["evidenceCount"] as? Int, 0)
     }
 
+    func testLearningEventProjectionExposesOutcomeCountsAndRecentEvents() throws {
+        let rootDirectory = try makeTemporaryDirectory(named: "term-dictionary-store")
+        let storageURL = rootDirectory
+            .appendingPathComponent("Application Support", isDirectory: true)
+            .appendingPathComponent("SpeakDock", isDirectory: true)
+            .appendingPathComponent("term-dictionary.json")
+
+        let store = TermDictionaryStore(
+            storageURL: storageURL,
+            fileManager: fileManager
+        )
+
+        try store.recordManualCorrection(
+            generatedText: "project adults 已经完成",
+            correctedText: "Project Atlas 已经完成"
+        )
+        try store.recordManualCorrection(
+            generatedText: "project adults 明天继续",
+            correctedText: "Project Atlas 明天继续"
+        )
+        try store.recordManualCorrection(
+            generatedText: "project adults 今天同步",
+            correctedText: "Product Atlas 今天同步"
+        )
+        try store.recordManualCorrection(
+            generatedText: "project adults 现在开始",
+            correctedText: "Project Atlas 现在开始"
+        )
+        try store.addEntry(
+            canonicalTerm: "SpeakDock",
+            aliases: ["speak dock"]
+        )
+        try store.recordManualCorrection(
+            generatedText: "speak dock 已发布",
+            correctedText: "SpeakDock 已发布"
+        )
+
+        XCTAssertEqual(store.learningEventCount(for: .observed), 3)
+        XCTAssertEqual(store.learningEventCount(for: .promoted), 0)
+        XCTAssertEqual(store.learningEventCount(for: .conflicted), 1)
+        XCTAssertEqual(store.learningEventCount(for: .skippedConfirmed), 1)
+
+        XCTAssertEqual(
+            store.recentLearningEvents(limit: 3),
+            [
+                TermDictionaryLearningEvent(
+                    canonicalTerm: "SpeakDock",
+                    alias: "speak dock",
+                    outcome: .skippedConfirmed,
+                    evidenceCount: 0
+                ),
+                TermDictionaryLearningEvent(
+                    canonicalTerm: "Project Atlas",
+                    alias: "project adults",
+                    outcome: .conflicted,
+                    evidenceCount: 3
+                ),
+                TermDictionaryLearningEvent(
+                    canonicalTerm: "Product Atlas",
+                    alias: "project adults",
+                    outcome: .observed,
+                    evidenceCount: 1
+                ),
+            ]
+        )
+    }
+
     private func makeTemporaryDirectory(named prefix: String) throws -> URL {
         let url = fileManager.temporaryDirectory
             .appendingPathComponent("\(prefix)-\(UUID().uuidString)", isDirectory: true)

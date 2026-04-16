@@ -66,7 +66,7 @@ What works today:
 - Conservative passive word-level learning in readable targets, with repeated stable corrections promoted into the local term dictionary.
 - Recent insertion undo and refine undo.
 - Compatibility diagnostics for third-party text targets.
-- Settings for trigger, capture root, local term dictionary, and refine configuration.
+- Settings for trigger, capture root, local term dictionary, recent learning status, and refine configuration.
 - Apple Unified Logging through `OSLog.Logger`.
 
 Not shipped yet:
@@ -126,6 +126,8 @@ Inspect the local term-learning summary without opening `term-dictionary.json` d
 make term-learning-report
 make term-learning-report TERM_DICTIONARY_STORAGE=/tmp/term-dictionary.json
 ```
+
+The same word-level summary is also visible in `Settings -> Dictionary`, with recent learning status cards and events for observed, promoted, conflicted, and already-confirmed mappings.
 
 Probe Compose compatibility without recording or inserting text:
 

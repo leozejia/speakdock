@@ -42,6 +42,14 @@
 "settings.term_dictionary.no_confirmed" = "No confirmed terms yet.";
 "settings.term_dictionary.learning_title" = "Passive Learning";
 "settings.term_dictionary.observed_count" = "Observing %d mappings locally";
+"settings.term_dictionary.learning_recent" = "Recent Learning";
+"settings.term_dictionary.learning_recent_empty" = "No word-level learning events yet.";
+"settings.term_dictionary.learning_evidence_count" = "Evidence %d";
+"settings.term_dictionary.learning_privacy_note" = "Only word-level mappings appear here. SpeakDock does not store full sentences in this panel.";
+"settings.term_dictionary.learning_status.observed" = "Observed";
+"settings.term_dictionary.learning_status.promoted" = "Promoted";
+"settings.term_dictionary.learning_status.conflicted" = "Conflicted";
+"settings.term_dictionary.learning_status.skipped_confirmed" = "Already Confirmed";
 "settings.term_dictionary.learning_single_edit" = "A single manual word edit only records local evidence.";
 "settings.term_dictionary.learning_promotion" = "The same alias to canonical mapping auto-promotes after 3 consistent corrections.";
 "settings.term_dictionary.learning_conflict" = "Conflicting or sentence-level edits do not enter the active dictionary.";

@@ -11,60 +11,57 @@
 ## 2. 当前阶段
 
 - 阶段：P1 `AI 语音输入法`
-- 当前 focus：把词典学习结果从开发者 smoke/report 基线推进到 Settings 内的用户可读体验
+- 当前 focus：把真实热路径里的词级手动改词观察链路收稳，并补齐自驱验证
 - 状态：`Ready`
 
 ## 3. 为什么现在做
 
-现在的事实状态是：
+刚完成的上一轮，已经把词典学习结果推进到了 Settings 的可读层：
 
-- 仓库里已经有匿名术语夹具
-- `TermDictionaryStore` 回放测试、`term-learning-report`、`smoke-term-learning` 已经吃同一份夹具
-- 但当前用户侧仍然主要只能看到已确认词典、pending candidate 和少量学习统计
+- 用户现在能在 `Settings -> Dictionary` 里看到状态计数和最近学习事件
+- CLI 报告与 Settings 也已经对齐到同一套词级最小字段
 
-这意味着开发者基线已经收稳，但用户可感知体验还没有跟上：
+但更核心的问题还在真实热路径本身：
 
-- 用户还看不清最近到底学到了哪些 alias
-- `observed / promoted / conflicted / skippedConfirmed` 这些状态主要还停留在 CLI 报告里
-- 如果后面继续调词典学习策略，没有 app 内可读层，产品侧很难判断体验是否成立
+- 词典学习最终不是为了报告，而是为了在真实 workspace 里稳定记住正确词
+- 当前 `WordCorrectionObservationRecorder` 已经存在，但还需要继续收紧真实 `Compose / Capture` 路径的边界
+- 如果这条链路不够稳，Settings 面板再清楚也只是展示一个不够可信的来源
 
-所以下一轮先把词典学习结果推进到 Settings 可读层，而不是继续扩新功能。
+所以下一轮不扩 UI，先把“真实工作区里的手动改词观察”继续做扎实。
 
 ## 4. 本轮范围
 
-1. 审视当前 `Term Dictionary` Settings 页，确认手工词典和被动学习的边界是否清楚
-2. 在 Settings 里补最近学习结果的可读视图，但只暴露词级最小必要信息
-3. 让用户能区分 `observed / promoted / conflicted / skippedConfirmed`
-4. 保持隐私边界，不记录或暴露完整真实正文
-5. 同步 README、技术文档和手测文档
-6. 跑测试，确认词典学习和现有 smoke 基线不回退
+1. 重新审视 `WordCorrectionObservationRecorder` 和 `HotPathCoordinator` 的真实调用边界
+2. 明确哪些路径允许记录词级修正，哪些路径必须保守跳过
+3. 补 `Compose / Capture / 无法读回 / 句子级改写` 相关测试
+4. 优先把验证做成自驱，而不是依赖人工反复点测
+5. 同步文档，避免产品语义和实现再次漂移
 
 ## 5. 明确不做
 
-- 不改 `Refine` 语义
-- 不改模型策略
-- 不把词级学习扩成句子级改写
-- 不把 Settings 做成日志面板或调试器替代品
-- 不记录完整聊天内容、完整转写正文或剪贴板正文
-- 不引入新运行时或新后台服务
+- 不扩 `Refine` 语义
+- 不把词级学习升级成句子级改写
+- 不引入新的模型运行时
+- 不做正式打包发布
+- 不改 Wiki 长线方向
 
 ## 6. 执行顺序
 
-1. 更新 live plan，锁定这一轮是 Settings 内的词典学习可读层
-2. 先梳理现有 `TermDictionaryStore` 可直接安全展示的字段
-3. 在 Settings 里补最近学习结果和状态分布
-4. 同步文档
-5. 跑测试和相关 smoke 验证
+1. 审视现有 `WordCorrectionObservationRecorder` 测试和真实调用点
+2. 先补最小 failing test，锁定真实热路径的词级观察边界
+3. 再补最小实现或修正
+4. 跑定向测试与相关 smoke
+5. 同步文档并归档本轮结果
 
 ## 7. 完成定义
 
 满足以下条件才算完成：
 
-- Settings 内能看到最近学习结果，而不是只靠 CLI
-- 用户能区分 `observed / promoted / conflicted / skippedConfirmed`
-- Settings 暴露的信息仍然只保留词级最小必要字段
-- README、手测文档和技术文档都能找到新的入口
-- `make test`、`make smoke-term-learning`、`make smoke-term-learning-conflict` 和相关既有基线仍然通过
+- 真实热路径里哪些场景会记录词级修正，已经有明确测试覆盖
+- `Compose / Capture / 跳过场景` 的边界是可解释且稳定的
+- 句子级改写仍然不会进入词典学习
+- 验证优先可脚本化、自驱
+- 文档能准确说明新的真实边界
 
 ## 8. 阻塞项
 
@@ -72,10 +69,8 @@
 
 ## 9. 最近完成
 
-- 上一轮已完成：`smoke-term-learning` 默认已直接读取匿名夹具，不再依赖脚本硬编码样本
-- 上一轮已完成：新增 `make smoke-term-learning-conflict`，可稳定验证冲突 alias 不晋升
-- 上一轮已完成：`smoke-term-learning`、`TermDictionaryStore` 回放测试和 `term-learning-report` 已共享同一份匿名夹具
-- 更早已完成：新增 `make term-learning-report`，可直接汇总本地词典学习摘要
-- 更早已完成：`TermDictionaryStore` 已持久化最小学习事件，可区分 `observed / promoted / conflicted / skippedConfirmed`
-- 更早已完成：测试宿主已支持 command file，可在自驱场景下稳定模拟用户手动改词
+- 上一轮已完成：Settings 的 `Passive Learning` 面板现在能展示 `observed / promoted / conflicted / skippedConfirmed` 状态计数
+- 上一轮已完成：Settings 现在能展示最近学习事件，且只暴露 `alias / canonical / evidence / outcome`
+- 上一轮已完成：README、手测文档、架构文档和 Swift 踩坑记录已同步到新的词级可读层
+- 更早已完成：`smoke-term-learning`、`TermDictionaryStore` 回放测试和 `term-learning-report` 已共享同一份匿名夹具
 - 更早已完成：项目已经收敛到 `OSLog.Logger + make logs + make traces + make trace-report + make term-learning-report + make smoke-term-learning` 的统一调试入口

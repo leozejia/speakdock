@@ -42,6 +42,14 @@
 "settings.term_dictionary.no_confirmed" = "还没有已确认术语。";
 "settings.term_dictionary.learning_title" = "被动学习";
 "settings.term_dictionary.observed_count" = "当前在本地观察 %d 条映射";
+"settings.term_dictionary.learning_recent" = "最近学习";
+"settings.term_dictionary.learning_recent_empty" = "还没有词级学习记录。";
+"settings.term_dictionary.learning_evidence_count" = "证据 %d";
+"settings.term_dictionary.learning_privacy_note" = "这里只显示词级映射，不保存整句内容。";
+"settings.term_dictionary.learning_status.observed" = "观察中";
+"settings.term_dictionary.learning_status.promoted" = "已晋升";
+"settings.term_dictionary.learning_status.conflicted" = "有冲突";
+"settings.term_dictionary.learning_status.skipped_confirmed" = "已确认";
 "settings.term_dictionary.learning_single_edit" = "单次手动改词只记录本地证据，不会直接入词典。";
 "settings.term_dictionary.learning_promotion" = "同一 alias 到 canonical 连续一致出现 3 次后，才会自动晋升。";
 "settings.term_dictionary.learning_conflict" = "冲突映射或句子级改写不会进入激活词典。";

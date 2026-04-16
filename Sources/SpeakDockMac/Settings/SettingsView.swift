@@ -421,10 +421,40 @@ struct SettingsView: View {
                     ),
                     style: .panel
                 ) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        learningSummaryRow(localized(.settingsTermDictionaryLearningSingleEdit))
-                        learningSummaryRow(localized(.settingsTermDictionaryLearningPromotion))
-                        learningSummaryRow(localized(.settingsTermDictionaryLearningConflict))
+                    VStack(alignment: .leading, spacing: 16) {
+                        learningOutcomeGrid
+
+                        dividerLine
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(localized(.settingsTermDictionaryLearningRecent))
+                                .font(.system(size: 11.5, weight: .semibold))
+                                .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+
+                            if recentLearningEvents.isEmpty {
+                                emptyStateView(localized(.settingsTermDictionaryLearningRecentEmpty))
+                            } else {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    ForEach(Array(recentLearningEvents.enumerated()), id: \.offset) { _, event in
+                                        learningEventRow(event)
+                                    }
+                                }
+                            }
+                        }
+
+                        dividerLine
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(localized(.settingsTermDictionaryLearningPromotion))
+                                .font(.system(size: 11.5, weight: .medium))
+                                .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+                                .fixedSize(horizontal: false, vertical: true)
+
+                            Text(localized(.settingsTermDictionaryLearningPrivacyNote))
+                                .font(.system(size: 11))
+                                .foregroundStyle(SpeakDockVisualStyle.tertiaryText)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                 }
 
@@ -606,6 +636,10 @@ struct SettingsView: View {
     private var canAddTermEntry: Bool {
         let canonical = termCanonicalTerm.trimmingCharacters(in: .whitespacesAndNewlines)
         return !canonical.isEmpty && !parsedAliases(from: termAliasesText).isEmpty
+    }
+
+    private var recentLearningEvents: [TermDictionaryLearningEvent] {
+        termDictionaryStore.recentLearningEvents(limit: 6)
     }
 
     private var isRefineConfigurationComplete: Bool {
@@ -877,18 +911,35 @@ struct SettingsView: View {
         )
     }
 
-    @ViewBuilder
-    private func learningSummaryRow(_ text: String) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Circle()
-                .fill(SpeakDockVisualStyle.accent)
-                .frame(width: 5, height: 5)
-                .padding(.top, 6)
-
-            Text(text)
-                .font(.system(size: 12))
-                .foregroundStyle(SpeakDockVisualStyle.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
+    private var learningOutcomeGrid: some View {
+        LazyVGrid(
+            columns: [
+                GridItem(.flexible(), spacing: 10),
+                GridItem(.flexible(), spacing: 10),
+            ],
+            alignment: .leading,
+            spacing: 10
+        ) {
+            learningMetricCard(
+                title: localized(.settingsTermDictionaryLearningObservedStatus),
+                count: termDictionaryStore.learningEventCount(for: .observed),
+                tone: .neutral
+            )
+            learningMetricCard(
+                title: localized(.settingsTermDictionaryLearningPromotedStatus),
+                count: termDictionaryStore.learningEventCount(for: .promoted),
+                tone: .success
+            )
+            learningMetricCard(
+                title: localized(.settingsTermDictionaryLearningConflictedStatus),
+                count: termDictionaryStore.learningEventCount(for: .conflicted),
+                tone: .warning
+            )
+            learningMetricCard(
+                title: localized(.settingsTermDictionaryLearningSkippedConfirmedStatus),
+                count: termDictionaryStore.learningEventCount(for: .skippedConfirmed),
+                tone: .accent
+            )
         }
     }
 
@@ -906,14 +957,117 @@ struct SettingsView: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(SpeakDockVisualStyle.line, lineWidth: 1)
-            )
+                .stroke(SpeakDockVisualStyle.line, lineWidth: 1)
+        )
+    }
+
+    @ViewBuilder
+    private func learningMetricCard(
+        title: String,
+        count: Int,
+        tone: SpeakDockBadgeTone
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("\(count)")
+                .font(.system(size: 24, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(tone.textColor)
+
+            Text(title)
+                .font(.system(size: 11.5, weight: .semibold))
+                .foregroundStyle(Color.primary.opacity(0.82))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 88, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(tone.fillColor)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(tone.strokeColor, lineWidth: 1)
+        )
+    }
+
+    @ViewBuilder
+    private func learningEventRow(_ event: TermDictionaryLearningEvent) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 8) {
+                SpeakDockStatusBadge(
+                    title: learningStatusLabel(for: event.outcome),
+                    tone: learningStatusTone(for: event.outcome)
+                )
+
+                Spacer(minLength: 0)
+
+                if event.evidenceCount > 0 {
+                    Text(localizedFormat(.settingsTermDictionaryLearningEvidenceCount, event.evidenceCount))
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(SpeakDockVisualStyle.tertiaryText)
+                }
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(event.alias)
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(Color.primary.opacity(0.9))
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(SpeakDockVisualStyle.tertiaryText)
+
+                Text(event.canonicalTerm)
+                    .font(.system(size: 12.5, weight: .medium))
+                    .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .textSelection(.enabled)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(SpeakDockVisualStyle.panelInset)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(SpeakDockVisualStyle.line, lineWidth: 1)
+        )
     }
 
     private func candidateSourceLabel(_ source: TermDictionaryCandidateSource) -> String {
         switch source {
         case .manualCorrection:
             localized(.settingsManualCorrection)
+        }
+    }
+
+    private func learningStatusLabel(for outcome: TermDictionaryLearningEvent.Outcome) -> String {
+        switch outcome {
+        case .observed:
+            localized(.settingsTermDictionaryLearningObservedStatus)
+        case .promoted:
+            localized(.settingsTermDictionaryLearningPromotedStatus)
+        case .conflicted:
+            localized(.settingsTermDictionaryLearningConflictedStatus)
+        case .skippedConfirmed:
+            localized(.settingsTermDictionaryLearningSkippedConfirmedStatus)
+        }
+    }
+
+    private func learningStatusTone(for outcome: TermDictionaryLearningEvent.Outcome) -> SpeakDockBadgeTone {
+        switch outcome {
+        case .observed:
+            .neutral
+        case .promoted:
+            .success
+        case .conflicted:
+            .warning
+        case .skippedConfirmed:
+            .accent
         }
     }
 

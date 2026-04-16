@@ -194,6 +194,22 @@ final class TermDictionaryStore {
         try save()
     }
 
+    func learningEventCount(for outcome: TermDictionaryLearningEvent.Outcome) -> Int {
+        learningEvents.reduce(into: 0) { count, event in
+            if event.outcome == outcome {
+                count += 1
+            }
+        }
+    }
+
+    func recentLearningEvents(limit: Int) -> [TermDictionaryLearningEvent] {
+        guard limit > 0 else {
+            return []
+        }
+
+        return Array(learningEvents.suffix(limit).reversed())
+    }
+
     private func persistIfReady() {
         guard isReady else {
             return

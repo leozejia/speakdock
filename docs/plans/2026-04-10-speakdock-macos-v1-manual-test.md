@@ -126,6 +126,9 @@
 8. 句子级改写不会进入词典学习。
 9. 对 paste-only fallback 或无法可靠读回文本的目标，不要求一定生成词级证据；系统应保守跳过，而不是静默入库。
 10. 如果用户本地还残留旧版本的 `pending candidate`，Settings 可以继续显式 `Confirm / Dismiss` 这批遗留项，但新链路不会再新增它们。
+11. `Settings -> Dictionary -> Passive Learning` 能看到“观察中 / 已晋升 / 有冲突 / 已确认”四类状态计数。
+12. `Recent Learning` 只显示 `alias / canonical / evidence / outcome` 这些词级最小字段，不显示完整正文。
+13. `Recent Learning` 为空时，会明确显示空状态，而不是只剩一块静态说明。
 
 ## 13. 基线性能
 
