@@ -12,6 +12,10 @@ struct WordCorrectionObservationRecorder {
             return
         }
 
+        guard workspace.hasSpoken else {
+            return
+        }
+
         let generatedText = workspace.visibleText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !generatedText.isEmpty else {
             return

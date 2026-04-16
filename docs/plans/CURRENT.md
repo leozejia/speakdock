@@ -69,6 +69,7 @@
 
 ## 9. 最近完成
 
+- 当前轮已完成：词级学习现在只会基于 SpeakDock 实际说过并写出的内容；纯用户自写文本不会进入学习
 - 当前轮已完成：`Capture` 工作区现在也能读取当前文件内容做词级观察；缺文件时保守跳过
 - 当前轮已完成：`WordCorrectionObservationRecorderTests` 已覆盖 `Compose / Capture / 文件缺失跳过` 三类基础边界
 - 上一轮已完成：Settings 的 `Passive Learning` 面板现在能展示 `observed / promoted / conflicted / skippedConfirmed` 状态计数

@@ -101,6 +101,30 @@ final class WordCorrectionObservationRecorderTests: XCTestCase {
         XCTAssertEqual(store.observedCorrections, [])
     }
 
+    func testWorkspaceWithoutSpokenTextDoesNotRecordCorrectionEvidence() throws {
+        let store = TermDictionaryStore(
+            storageURL: try makeStorageURL(),
+            fileManager: fileManager
+        )
+        let recorder = WordCorrectionObservationRecorder(
+            termDictionaryStore: store,
+            observeComposeText: { _ in
+                "Project Atlas 已经完成"
+            }
+        )
+        let workspace = Workspace(
+            mode: .compose,
+            targetID: "compose-target",
+            startLocation: 0,
+            visibleText: "project adults 已经完成",
+            hasSpoken: false
+        )
+
+        try recorder.recordIfNeeded(for: workspace)
+
+        XCTAssertEqual(store.observedCorrections, [])
+    }
+
     private func makeStorageURL() throws -> URL {
         let rootDirectory = fileManager.temporaryDirectory
             .appendingPathComponent("manual-correction-recorder-\(UUID().uuidString)", isDirectory: true)
