@@ -414,6 +414,14 @@ final class HotPathCoordinator {
     }
 
     private func activateWorkspace(mode: Mode, targetID: String) -> Workspace {
+        if let endedWorkspace = WorkspaceTransitionObservationPolicy.endedWorkspaceBeforeTransition(
+            current: workspaceState.activeWorkspace,
+            nextMode: mode,
+            nextTargetID: targetID
+        ) {
+            recordWordCorrectionEvidenceIfPossible(for: endedWorkspace)
+        }
+
         if workspaceState.activeWorkspace?.mode != mode || workspaceState.activeWorkspace?.targetID != targetID {
             WorkspaceReducer.reduce(
                 state: &workspaceState,
@@ -746,9 +754,9 @@ final class HotPathCoordinator {
         onFinished?()
     }
 
-    private func recordWordCorrectionEvidenceIfPossible() {
+    private func recordWordCorrectionEvidenceIfPossible(for workspace: Workspace? = nil) {
         do {
-            try wordCorrectionObservationRecorder.recordIfNeeded(for: workspaceState.activeWorkspace)
+            try wordCorrectionObservationRecorder.recordIfNeeded(for: workspace ?? workspaceState.activeWorkspace)
         } catch {
             SpeakDockLog.compose.error(
                 "word correction evidence recording failed: \(error.localizedDescription, privacy: .private)"

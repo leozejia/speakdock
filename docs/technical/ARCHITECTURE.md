@@ -274,7 +274,7 @@ macOS v1 的主入口写死为：
 推荐流程：
 
 1. SpeakDock 在 active workspace 内无感观察词级修改，不打断用户
-2. 用户发送或工作区结束时，系统只批量分析词或短语级别的替换
+2. 用户发送，或 SpeakDock 触发的新工作区接管当前 workspace 时，系统只批量分析词或短语级别的替换
 3. 单次修改先进入本地观察层，只记证据，不直接进入 active dictionary
 4. 同一 `alias -> canonical` 只有在重复且一致达到阈值后，才晋升进 `TermDictionary`
 5. `TermDictionary` 再用于 `Clean`、ASR 后处理和 `RefineRequest` 上下文
@@ -292,6 +292,7 @@ macOS v1 的主入口写死为：
 - 如果工作区还没经过 `Refine`，词级观察通常基于当前 `raw_context` 和用户最终保留文本的局部差异
 - 如果工作区已经过 `Refine`，词级观察必须以整理后的当前可见文本为基线，不能回退到更早的口语基线
 - v1 只在当前目标仍然可观测时尝试提取这份局部差异
+- 当前 v1 的“workspace 结束”只覆盖 `submit` 或 SpeakDock 自己触发的新 workspace 接管；不做全局外部焦点监听
 - `Capture` 文件路径属于 v1 可观测目标；提交时允许直接读取当前文件内容做词级观察
 - paste-only fallback 或不可读回文本的目标，不承诺生成词级证据；此时系统应该保守跳过，而不是猜测
 - Settings 里的 `pending candidate` 只作为旧本地数据的兼容显示保留，不再是新学习链路的主路径
