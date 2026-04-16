@@ -16,6 +16,7 @@ public struct TermDictionary: Equatable, Codable, Sendable {
     public var entries: [TermDictionaryEntry]
 
     private static let asciiTermBoundaryScalars = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-")
+    private static let matchingOptions: String.CompareOptions = [.caseInsensitive, .diacriticInsensitive]
 
     public init(entries: [TermDictionaryEntry]) {
         self.entries = entries
@@ -52,18 +53,21 @@ public struct TermDictionary: Equatable, Codable, Sendable {
         with canonicalTerm: String,
         in text: String
     ) -> String {
-        guard alias.rangeOfCharacter(from: Self.asciiTermBoundaryScalars) != nil else {
-            return text.replacingOccurrences(of: alias, with: canonicalTerm)
-        }
+        let requiresStandaloneBoundary = alias.rangeOfCharacter(from: Self.asciiTermBoundaryScalars) != nil
 
         var result = String()
         var searchStart = text.startIndex
 
         while searchStart < text.endIndex,
-              let range = text.range(of: alias, range: searchStart..<text.endIndex) {
+              let range = text.range(
+                of: alias,
+                options: Self.matchingOptions,
+                range: searchStart..<text.endIndex,
+                locale: .current
+              ) {
             result.append(contentsOf: text[searchStart..<range.lowerBound])
 
-            if isStandaloneMatch(range, in: text) {
+            if !requiresStandaloneBoundary || isStandaloneMatch(range, in: text) {
                 result.append(canonicalTerm)
             } else {
                 result.append(contentsOf: text[range])

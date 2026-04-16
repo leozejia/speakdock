@@ -86,4 +86,15 @@ final class TermDictionaryTests: XCTestCase {
             "atlassian Project Atlas atlas2"
         )
     }
+
+    func testConfirmedAliasesMatchCaseInsensitively() {
+        let dictionary = TermDictionary(entries: [
+            TermDictionaryEntry(canonicalTerm: "Project Atlas", aliases: ["project atlas"]),
+        ])
+
+        XCTAssertEqual(
+            dictionary.applying(to: "PROJECT ATLAS project atlas"),
+            "Project Atlas Project Atlas"
+        )
+    }
 }
