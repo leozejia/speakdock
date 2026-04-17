@@ -33,6 +33,8 @@ final class AppleSpeechEngine: SpeechEngine, @unchecked Sendable {
     private var recognitionTask: SFSpeechRecognitionTask?
     private var wantsRecognition = false
     private var currentLanguage = InputLanguageOption.defaultOption
+    private var latestRecognitionTranscript = ""
+    private var didRequestFinish = false
 
     func start(language: InputLanguageOption) {
         SpeakDockLog.speech.notice("speech recognition start requested: language=\(language.rawValue, privacy: .public)")
@@ -78,6 +80,7 @@ final class AppleSpeechEngine: SpeechEngine, @unchecked Sendable {
             }
 
             self.wantsRecognition = false
+            self.didRequestFinish = true
             self.recognitionRequest?.endAudio()
         }
     }
@@ -137,9 +140,12 @@ final class AppleSpeechEngine: SpeechEngine, @unchecked Sendable {
 
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
+        request.taskHint = .dictation
 
         self.recognizer = recognizer
         self.recognitionRequest = request
+        self.latestRecognitionTranscript = ""
+        self.didRequestFinish = false
         SpeakDockLog.speech.notice("speech recognition started: language=\(language.rawValue, privacy: .public)")
         notifyAvailability(.available)
 
@@ -149,9 +155,14 @@ final class AppleSpeechEngine: SpeechEngine, @unchecked Sendable {
             }
 
             if let result {
+                let transcript = result.bestTranscription.formattedString
+                let trimmedTranscript = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmedTranscript.isEmpty {
+                    self.latestRecognitionTranscript = trimmedTranscript
+                }
                 self.notifyResult(
                     RecognitionResult(
-                        text: result.bestTranscription.formattedString,
+                        text: transcript,
                         isFinal: result.isFinal
                     )
                 )
@@ -169,6 +180,19 @@ final class AppleSpeechEngine: SpeechEngine, @unchecked Sendable {
                 SpeakDockLog.speech.error(
                     "speech recognition task reported error: domain=\(diagnostics.domain, privacy: .public), code=\(diagnostics.code, privacy: .public)"
                 )
+
+                if let fallbackResult = SpeechRecognitionFallbackPolicy.fallbackResult(
+                    latestTranscript: self.latestRecognitionTranscript,
+                    diagnostics: diagnostics,
+                    didRequestFinish: self.didRequestFinish,
+                    wantsRecognition: self.wantsRecognition
+                ) {
+                    SpeakDockLog.speech.notice(
+                        "speech recognition using final transcript fallback: domain=\(diagnostics.domain, privacy: .public), code=\(diagnostics.code, privacy: .public), transcriptLength=\(fallbackResult.text.count, privacy: .public)"
+                    )
+                    self.notifyResult(fallbackResult)
+                }
+
                 self.queue.async {
                     let shouldReport = self.wantsRecognition
                     self.resetRecognition(cancelTask: false)
@@ -194,6 +218,8 @@ final class AppleSpeechEngine: SpeechEngine, @unchecked Sendable {
         recognitionTask = nil
         recognitionRequest = nil
         recognizer = nil
+        latestRecognitionTranscript = ""
+        didRequestFinish = false
     }
 
     private func notifyResult(_ result: RecognitionResult) {

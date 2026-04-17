@@ -484,6 +484,39 @@
 - `make test TEST_FILTER=SpeechErrorReportScriptTests`
 - `make test TEST_FILTER=BuildScriptTests`
 
+### 3.16 `finish` 后掉到 `1110` 不能直接把整次会话判死
+
+现象：
+
+- 用户已经结束录音
+- Apple Speech 没给 final result，却返回 `kAFAssistantErrorDomain#1110`
+- 如果当前会话前面其实已经给过 partial transcript，这次输入会被白白丢掉
+
+错误做法：
+
+- 一看到 `1110` 就直接把它当成彻底无语音
+- 立刻上重型 warm-up、自动重录或多次重试
+
+正确做法：
+
+- 先用真实样本确认这类错误发生在 `finish requested` 之后
+- 只对 `didRequestFinish=true && wantsRecognition=false` 的窄场景做 fallback
+- 如果已有 non-empty partial transcript，就把它保守地收口成 final result
+- 如果没有 partial transcript，仍然保留空结果，不做猜测性补字
+
+当前落实位置：
+
+- `Sources/SpeakDockMac/Speech/AppleSpeechEngine.swift`
+- `Sources/SpeakDockMac/Speech/SpeechRecognitionFallbackPolicy.swift`
+- `Tests/SpeakDockMacTests/SpeechRecognitionFallbackPolicyTests.swift`
+
+验收方式：
+
+- `make test TEST_FILTER=SpeechRecognitionFallbackPolicyTests`
+- `make test TEST_FILTER=SpeechControllerTests`
+- `make test TEST_FILTER=SpeechRecognitionErrorDiagnosticsTests`
+- `make test`
+
 验收方式：
 
 - 切 `App Language` 只影响界面

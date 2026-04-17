@@ -11,7 +11,7 @@
 ## 2. 当前阶段
 
 - 阶段：P1 `AI 语音输入法`
-- 当前 focus：建立 `ASR` 首句失败的本地诊断报告入口，先把失败样本聚合清楚，再决定是否改运行时
+- 当前 focus：用真实失败样本收稳 `ASR` 首句失败，当前先验证 `1110 after finish` 的窄修正
 - 状态：`In Progress`
 
 ## 3. 为什么现在做
@@ -22,21 +22,26 @@
 - `capture` 在继续口述 / 撤回 / 整理成功 / 整理失败 / 整理后手改撤回这几条高风险边界上，已经有真实自驱闭环
 - 继续在这半边补更多近似 smoke，收益会迅速下降
 
-下一条更值钱的主线是 `ASR` 失败诊断：
+下一条更值钱的主线是 `ASR` 首句失败收敛：
 
 - 用户真实反馈里仍然存在“第一次说话没出字”这类强感知问题
-- 现在虽然已经记录了 `NSError.domain / code`，但还没有一个低成本的聚合入口来判断失败分布
-- 直接改 `Apple Speech` 运行时很容易变成拍脑袋，需要先把样本看清楚
+- 我们现在已经拿到了第一份真实失败样本：`zh-CN + kAFAssistantErrorDomain#1110`
+- Apple 官方定义里，`1110` 对应的是 `Failed to recognize any speech`
+- 这类问题如果直接做重型 warm-up 或重试，很容易引入新复杂度；更合理的是先做窄修正
 
-所以下一轮不先碰 `ASR` 运行时，不引入新模型，只先把失败样本报告做成脚本化入口。
+所以这轮不做大改，不引入新模型，只先补：
+
+- `speech` 原始日志 + 聚合报告
+- `finish` 后掉到 `1110` 时的 partial transcript final fallback
+- `dictation` task hint
 
 ## 4. 本轮范围
 
-1. 给 `speech` 错误增加一个本地聚合报告入口
-2. 把 `language / outcome / error domain / error code` 汇总成可读输出
-3. 优先复用 Unified Logging，不新增持久化层
-4. 先把解析逻辑做成可喂 stdin 的脚本测试，再接 live log
-5. 同步文档，明确这条入口是为了后续 `ASR` 稳定性判断服务
+1. 保留 `speech` 原始日志与聚合报告入口
+2. 基于真实样本只修 `kAFAssistantErrorDomain#1110`
+3. 仅在 `finish requested + wantsRecognition=false` 时考虑 fallback
+4. 优先复用已有 partial transcript，不发明新缓存层
+5. 同步文档，明确这是一条窄修正，不是完整 warm-up 方案
 
 ## 5. 明确不做
 
@@ -46,25 +51,25 @@
 - 不做正式打包发布
 - 不改 Wiki 长线方向
 - 不做新 UI 入口
-- 不先拍脑袋修改 `AppleSpeechEngine` 的启动和 warm-up 逻辑
+- 不做激进的自动重录、后台预热录音或多次重试
 - 不为了这轮诊断新建数据库或本地埋点文件
 
 ## 6. 执行顺序
 
-1. 审视现有 `speech` 日志字段与错误诊断能力
-2. 先补最小 failing test，锁定报告脚本输出
-3. 再补最小脚本与 Makefile 入口
-4. 跑定向脚本测试
-5. 同步文档并记录新的调试入口
+1. 先保留 `speech-logs / speech-error-report` 作为诊断入口
+2. 再用真实错误样本锁最小 failing test
+3. 补最小运行时修正
+4. 跑语音相关定向测试与全量测试
+5. 继续等待下一批真实失败样本判断是否要进入更重的 `ASR` 收敛
 
 ## 7. 完成定义
 
 满足以下条件才算完成：
 
-- 本地存在一个稳定的 `speech` 失败聚合入口
-- 该入口至少能看清 `language / outcome / error domain / error code`
-- 报告逻辑有可回放测试，不依赖手工读原始日志
-- 文档能准确说明这条入口的用途和边界
+- 本地存在稳定的 `speech-logs / speech-error-report` 入口
+- `1110 after finish` 这类会话已有最小修正
+- 相关行为有回归测试，不靠手工判断
+- 文档能准确说明这条修正的边界与非目标
 
 ## 8. 阻塞项
 
@@ -86,6 +91,8 @@
 - 本轮已完成：`capture` 路径现在有 `make smoke-capture-refine-fallback` 自驱入口，能真实验证“手动整理失败时，当前 capture 文件保持原文不被污染”
 - 本轮已完成：现在有 `make speech-error-report` 本地入口，能把最近 `speech` 会话聚合成 `language / outcome / error domain / error code` 摘要
 - 本轮已完成：现在有 `make speech-logs` 本地入口，能直接只看 `speech` category 的原始明细
+- 本轮已完成：基于真实 `zh-CN + kAFAssistantErrorDomain#1110` 样本，`AppleSpeechEngine` 现在会在 `finish` 后优先用已有 partial transcript 做 final fallback
+- 本轮已完成：`AppleSpeechEngine` 现在显式声明 `request.taskHint = .dictation`
 - 本轮已完成：workspace 的 `endLocation` 现在会跟随整理改写、手动改写和撤回后的当前可见文本边界
 - 本轮已完成：手动整理现在有独立的 `make smoke-refine-manual` 自驱入口
 - 本轮已完成：整理后的外部手改现在会在二级动作前先同步回 workspace，再决定是直接撤回还是先确认

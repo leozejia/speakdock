@@ -871,6 +871,7 @@ macOS v1 的工程收口写死为：
   - 日志只记录状态、边界事件、权限结果、错误类型和非敏感枚举
   - 不记录音频内容、转写正文、剪贴板内容、API Key、完整 refine 请求正文
   - Apple Speech 任务错误必须记录脱敏的 `NSError.domain` 与 `NSError.code`，用于区分系统 ASR、权限、会话和短音频类失败
+  - 对 `finish requested` 之后出现的 `kAFAssistantErrorDomain#1110`，如果当前会话已经拿到非空 partial transcript，可以保守地把这段 partial 当 final result；这是一条窄修正，不代表未来要引入完整 warm-up / retry 机制
   - CoreAudio realtime tap 回调内不直接写日志；只在录音启动、停止、失败等边界记录
   - 本地调试入口优先通过 `make logs` 或等价的 `log show --predicate 'subsystem == "com.leozejia.speakdock"'`
   - 本地 `speech` 原始明细入口优先通过 `make speech-logs`
