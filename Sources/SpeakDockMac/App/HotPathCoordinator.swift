@@ -135,6 +135,66 @@ final class HotPathCoordinator {
         commitRecognizedText(cleanedText)
     }
 
+    func runSmokeASRCorrectionCommit(
+        text: String,
+        onFinished: @escaping @MainActor () -> Void
+    ) {
+        startInteractionTrace(kind: .recording, origin: .smoke)
+        let composeAvailabilityAtStart = composeTarget.captureCurrentTarget()
+        composeTargetSession.begin(availability: composeAvailabilityAtStart)
+        logInteractionStage(
+            "smokeStarted",
+            extras: ["capturedTarget=\(composeTargetSession.hasCapturedTarget)", "asrCorrection=true"]
+        )
+
+        let preparation = recognitionCommitPreparer.prepare(
+            transcript: text,
+            configuration: currentASRCorrectionConfiguration
+        )
+
+        guard !preparation.committedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            finishInteractionTrace(result: .emptyTranscript)
+            onFinished()
+            return
+        }
+
+        mutateInteractionTrace {
+            $0.markRecognitionFinal(at: clock())
+        }
+        logInteractionStage("recognitionFinal", extras: ["synthetic=true", "asrCorrection=true"])
+        overlayPanelController.updateTranscript(preparation.committedText)
+
+        guard preparation.shouldCallASRCorrection else {
+            SpeakDockLog.speech.debug("smoke recognition commit prepared without asr correction; committing clean text")
+            commitRecognizedText(preparation.committedText)
+            onFinished()
+            return
+        }
+
+        cancelRecognitionCommitTask()
+        activeRecognitionCommitTask = Task { [weak self] in
+            guard let self else {
+                return
+            }
+
+            let committedText = await self.recognitionCommitProcessor.process(
+                preparation,
+                configuration: self.currentASRCorrectionConfiguration
+            )
+
+            guard !Task.isCancelled else {
+                return
+            }
+
+            await MainActor.run {
+                self.overlayPanelController.updateTranscript(committedText)
+                self.commitRecognizedText(committedText)
+                self.activeRecognitionCommitTask = nil
+                onFinished()
+            }
+        }
+    }
+
     func runSmokeRefineSubmit(
         text: String,
         submitDelay: TimeInterval = 0.8,

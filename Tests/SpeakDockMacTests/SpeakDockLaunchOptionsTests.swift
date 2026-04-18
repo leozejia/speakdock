@@ -223,4 +223,17 @@ final class SpeakDockLaunchOptionsTests: XCTestCase {
 
         XCTAssertNil(options.runtimeASRCorrectionConfigurationOverride)
     }
+
+    func testSmokeASRCorrectionModeParsesAsDedicatedMode() {
+        let options = SpeakDockLaunchOptions(
+            arguments: [
+                "SpeakDock",
+                "--smoke-asr-correction",
+                "--smoke-text", "project adults 已经完成",
+            ]
+        )
+
+        XCTAssertEqual(options.mode, .smokeASRCorrection)
+        XCTAssertEqual(options.smokeText, "project adults 已经完成")
+    }
 }

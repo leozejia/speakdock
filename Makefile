@@ -10,7 +10,7 @@ CLANG_MODULE_CACHE := $(SWIFT_CACHE)/clang/ModuleCache
 SWIFT_ENV := HOME=$(SWIFT_HOME) XDG_CACHE_HOME=$(SWIFT_CACHE) CLANG_MODULE_CACHE_PATH=$(CLANG_MODULE_CACHE) SWIFTPM_MODULECACHE_OVERRIDE=$(CLANG_MODULE_CACHE)
 TEST_FILTER ?=
 
-.PHONY: build run clean test logs speech-logs traces trace-report speech-error-report term-learning-report probe-compose smoke-compose smoke-compose-continue smoke-capture-continue smoke-capture-undo smoke-refine smoke-refine-manual smoke-capture-refine-manual smoke-refine-dirty-undo smoke-capture-refine-dirty-undo smoke-refine-fallback smoke-capture-refine-fallback smoke-refine-submit-sync smoke-term-learning smoke-term-learning-conflict
+.PHONY: build run clean test logs speech-logs traces trace-report speech-error-report term-learning-report probe-compose smoke-compose smoke-compose-continue smoke-capture-continue smoke-capture-undo smoke-asr-correction smoke-refine smoke-refine-manual smoke-capture-refine-manual smoke-refine-dirty-undo smoke-capture-refine-dirty-undo smoke-refine-fallback smoke-capture-refine-fallback smoke-refine-submit-sync smoke-term-learning smoke-term-learning-conflict
 
 build:
 	./scripts/build-app.sh $(CONFIGURATION)
@@ -50,6 +50,9 @@ smoke-capture-continue:
 
 smoke-capture-undo:
 	SMOKE_CAPTURE_SCENARIO=undo ./scripts/run-smoke-capture.sh $(CONFIGURATION)
+
+smoke-asr-correction:
+	./scripts/run-smoke-asr-correction.sh $(CONFIGURATION)
 
 smoke-refine:
 	./scripts/run-smoke-refine.sh $(CONFIGURATION)

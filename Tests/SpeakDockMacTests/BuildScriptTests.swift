@@ -373,6 +373,15 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(makefile.contains("SMOKE_REFINE_SCENARIO=submit-observed-edit"))
     }
 
+    func testMakefileExposesASRCorrectionSmokeTarget() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+
+        XCTAssertTrue(makefile.contains("smoke-asr-correction:"))
+        XCTAssertTrue(makefile.contains("run-smoke-asr-correction.sh"))
+    }
+
     func testSmokeRefineScriptSupportsSubmitObservedEditScenario() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/run-smoke-refine.sh")
@@ -381,6 +390,18 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("submit-observed-edit"))
         XCTAssertTrue(script.contains("--record-user-message"))
         XCTAssertTrue(script.contains("request.txt"))
+    }
+
+    func testSmokeASRCorrectionScriptLaunchesLocalStubAndDedicatedSmokeMode() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-smoke-asr-correction.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("run-refine-stub-server.py"))
+        XCTAssertTrue(script.contains("tell application id \"com.leozejia.speakdock.testhost\" to activate"))
+        XCTAssertTrue(script.contains("--smoke-asr-correction"))
+        XCTAssertTrue(script.contains("--asr-correction-base-url"))
+        XCTAssertTrue(script.contains("SpeakDockTestHost"))
     }
 
     func testSmokeTermLearningScriptLaunchesSmokeModeAgainstIsolatedTermDictionaryStore() throws {

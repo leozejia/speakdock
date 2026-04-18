@@ -79,6 +79,7 @@
 - 已完成：识别提交链路现在已经插入默认 no-op 的 `ASR Correction` seam；启用前不改变现有热路径，失败时也会回退到 `Clean`
 - 已完成：`ASR Correction` 已有内部可控的 OpenAI-compatible adapter 与回归测试，但默认配置仍然关闭
 - 已完成：`ASR Correction` 已补上隐藏运行参数入口，只有在内部完整提供 `baseURL + apiKey + model` 时才会生效；普通运行继续保持关闭
+- 已完成：`ASR Correction` 已补上独立 smoke 自驱入口，`make smoke-asr-correction` 会起本地 stub、测试宿主和 SpeakDock，直接验证 transcript 后校正能注入到 live workspace
 - 已完成：`speech-logs / speech-error-report` 诊断入口已落地
 - 已完成：基于真实 `zh-CN + kAFAssistantErrorDomain#1110` 样本，`ASR` 首句失败已有最小窄修正
 - 已完成：`TermDictionary` 的词级学习热路径、Settings 可读层和报告入口都已稳定

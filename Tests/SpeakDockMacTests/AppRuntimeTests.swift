@@ -128,6 +128,7 @@ final class AppRuntimeTests: XCTestCase {
 
         XCTAssertTrue(AppRuntime.ensureSingleInstance(mode: .composeProbe))
         XCTAssertTrue(AppRuntime.ensureSingleInstance(mode: .smokeHotPath))
+        XCTAssertTrue(AppRuntime.ensureSingleInstance(mode: .smokeASRCorrection))
         XCTAssertTrue(AppRuntime.ensureSingleInstance(mode: .smokeRefine))
         XCTAssertTrue(AppRuntime.ensureSingleInstance(mode: .smokeTermLearning))
         XCTAssertFalse(existingInstance.activated)

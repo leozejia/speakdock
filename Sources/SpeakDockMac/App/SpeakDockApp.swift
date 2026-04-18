@@ -120,6 +120,17 @@ struct SpeakDockApp: App {
                 AppRuntime.updateActivationPolicy(activateApp: false)
                 smokeHotPathRunner.start()
             }
+        case .smokeASRCorrection:
+            let smokeHotPathRunner = SmokeHotPathRunner(
+                hotPathCoordinator: hotPathCoordinator,
+                mode: .asrCorrectionCommit,
+                text: launchOptions.smokeText,
+                delay: launchOptions.smokeDelay
+            )
+            AppRuntime.onDidFinishLaunching = {
+                AppRuntime.updateActivationPolicy(activateApp: false)
+                smokeHotPathRunner.start()
+            }
         case .smokeRefine:
             let smokeRefineMode: SmokeHotPathRunner.Mode = switch launchOptions.smokeRefinePhase {
             case .submit:

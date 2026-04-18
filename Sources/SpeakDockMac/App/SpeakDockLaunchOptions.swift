@@ -6,6 +6,7 @@ struct SpeakDockLaunchOptions: Equatable {
         case normal
         case composeProbe
         case smokeHotPath
+        case smokeASRCorrection
         case smokeRefine
         case smokeTermLearning
     }
@@ -60,6 +61,8 @@ struct SpeakDockLaunchOptions: Equatable {
     init(arguments: [String] = CommandLine.arguments) {
         if arguments.contains("--probe-compose") {
             mode = .composeProbe
+        } else if arguments.contains("--smoke-asr-correction") {
+            mode = .smokeASRCorrection
         } else if arguments.contains("--smoke-term-learning") {
             mode = .smokeTermLearning
         } else if arguments.contains("--smoke-refine") {
