@@ -2,7 +2,7 @@ import XCTest
 @testable import SpeakDockCore
 
 final class RefinePlanningTests: XCTestCase {
-    func testRecognitionCommitPreparationAlwaysStaysCleanOnly() {
+    func testRecognitionCommitPreparationAlwaysStaysCleanOnlyAndSkipsASRCorrectionByDefault() {
         let preparer = RecognitionCommitPreparer()
         let preparation = preparer.prepare(
             transcript: "嗯  Project Atlas，，",
@@ -10,7 +10,7 @@ final class RefinePlanningTests: XCTestCase {
         )
 
         XCTAssertEqual(preparation.committedText, "Project Atlas，")
-        XCTAssertFalse(preparation.shouldCallModel)
+        XCTAssertFalse(preparation.shouldCallASRCorrection)
     }
 
     func testWorkspaceRefinePreparationPrefersObservedCurrentTextAndEnablesModelWhenConfigured() {

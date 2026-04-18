@@ -2,11 +2,11 @@ import Foundation
 
 public struct RecognitionCommitPreparation: Equatable, Sendable {
     public let committedText: String
-    public let shouldCallModel: Bool
+    public let shouldCallASRCorrection: Bool
 
-    public init(committedText: String, shouldCallModel: Bool) {
+    public init(committedText: String, shouldCallASRCorrection: Bool) {
         self.committedText = committedText
-        self.shouldCallModel = shouldCallModel
+        self.shouldCallASRCorrection = shouldCallASRCorrection
     }
 }
 
@@ -23,7 +23,7 @@ public struct RecognitionCommitPreparer {
     ) -> RecognitionCommitPreparation {
         RecognitionCommitPreparation(
             committedText: cleanNormalizer.normalize(transcript),
-            shouldCallModel: false
+            shouldCallASRCorrection: false
         )
     }
 }
