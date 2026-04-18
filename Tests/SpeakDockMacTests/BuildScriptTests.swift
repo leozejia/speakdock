@@ -30,6 +30,19 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertFalse(script.contains("open -n -W"))
     }
 
+    func testRunDevScriptForwardsASRCorrectionEnvironmentOverrides() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-dev.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("SPEAKDOCK_ASR_CORRECTION_BASE_URL"))
+        XCTAssertTrue(script.contains("SPEAKDOCK_ASR_CORRECTION_API_KEY"))
+        XCTAssertTrue(script.contains("SPEAKDOCK_ASR_CORRECTION_MODEL"))
+        XCTAssertTrue(script.contains("--asr-correction-base-url"))
+        XCTAssertTrue(script.contains("--asr-correction-api-key"))
+        XCTAssertTrue(script.contains("--asr-correction-model"))
+    }
+
     func testBuildScriptCopiesSwiftPMResourceBundlesIntoAppResources() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/build-app.sh")
