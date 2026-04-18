@@ -7,6 +7,7 @@ final class SpeakDockLaunchOptionsTests: XCTestCase {
 
         XCTAssertEqual(options.mode, .normal)
         XCTAssertEqual(options.composeProbeDuration, SpeakDockLaunchOptions.defaultComposeProbeDuration)
+        XCTAssertNil(options.runtimeASRCorrectionConfigurationOverride)
     }
 
     func testProbeModeParsesDuration() {
@@ -189,5 +190,37 @@ final class SpeakDockLaunchOptionsTests: XCTestCase {
         XCTAssertEqual(options.smokeDelay, 0.8)
         XCTAssertEqual(options.smokeSubmitDelay, 1.7)
         XCTAssertEqual(options.smokeTermDictionaryStoragePath, "/tmp/speakdock-term-dictionary.json")
+    }
+
+    func testASRCorrectionOverrideParsesEndpointSettings() {
+        let options = SpeakDockLaunchOptions(
+            arguments: [
+                "SpeakDock",
+                "--asr-correction-base-url", "http://127.0.0.1:8080/v1",
+                "--asr-correction-api-key", "dev-token",
+                "--asr-correction-model", "gpt-4.1-mini",
+            ]
+        )
+
+        guard let configuration = options.runtimeASRCorrectionConfigurationOverride else {
+            return XCTFail("Expected runtime ASR correction override")
+        }
+
+        XCTAssertTrue(configuration.enabled)
+        XCTAssertEqual(configuration.baseURL, "http://127.0.0.1:8080/v1")
+        XCTAssertEqual(configuration.apiKey, "dev-token")
+        XCTAssertEqual(configuration.model, "gpt-4.1-mini")
+    }
+
+    func testASRCorrectionOverrideRequiresCompleteConfiguration() {
+        let options = SpeakDockLaunchOptions(
+            arguments: [
+                "SpeakDock",
+                "--asr-correction-base-url", "http://127.0.0.1:8080/v1",
+                "--asr-correction-model", "gpt-4.1-mini",
+            ]
+        )
+
+        XCTAssertNil(options.runtimeASRCorrectionConfigurationOverride)
     }
 }

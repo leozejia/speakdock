@@ -78,6 +78,7 @@ struct SpeakDockApp: App {
                     termDictionaryStore.confirmedDictionary
                 }
             ),
+            runtimeASRCorrectionConfigurationOverride: launchOptions.runtimeASRCorrectionConfigurationOverride,
             runtimeRefineConfigurationOverride: runtimeRefineConfigurationOverride,
             runtimeCaptureRootURLOverride: smokeCaptureRootURL
         )

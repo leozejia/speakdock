@@ -1,4 +1,5 @@
 import Foundation
+import SpeakDockCore
 
 struct SpeakDockLaunchOptions: Equatable {
     enum Mode: Equatable {
@@ -50,6 +51,9 @@ struct SpeakDockLaunchOptions: Equatable {
     let smokeRefineBaseURL: String
     let smokeRefineAPIKey: String
     let smokeRefineModel: String
+    let asrCorrectionBaseURL: String
+    let asrCorrectionAPIKey: String
+    let asrCorrectionModel: String
     let smokeTermDictionaryStoragePath: String
     let smokeCaptureRootPath: String
 
@@ -114,6 +118,18 @@ struct SpeakDockLaunchOptions: Equatable {
             after: "--smoke-refine-model",
             in: arguments
         ) ?? ""
+        asrCorrectionBaseURL = Self.stringValue(
+            after: "--asr-correction-base-url",
+            in: arguments
+        ) ?? ""
+        asrCorrectionAPIKey = Self.stringValue(
+            after: "--asr-correction-api-key",
+            in: arguments
+        ) ?? ""
+        asrCorrectionModel = Self.stringValue(
+            after: "--asr-correction-model",
+            in: arguments
+        ) ?? ""
         smokeTermDictionaryStoragePath = Self.stringValue(
             after: "--smoke-term-dictionary-storage",
             in: arguments
@@ -122,6 +138,21 @@ struct SpeakDockLaunchOptions: Equatable {
             after: "--smoke-capture-root",
             in: arguments
         ) ?? ""
+    }
+
+    var runtimeASRCorrectionConfigurationOverride: ASRCorrectionConfiguration? {
+        let configuration = ASRCorrectionConfiguration(
+            enabled: true,
+            baseURL: asrCorrectionBaseURL,
+            apiKey: asrCorrectionAPIKey,
+            model: asrCorrectionModel
+        )
+
+        guard configuration.executionMode == .modelCorrection else {
+            return nil
+        }
+
+        return configuration
     }
 
     private static func durationValue(after flag: String, in arguments: [String]) -> TimeInterval? {
