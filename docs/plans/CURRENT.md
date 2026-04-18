@@ -11,65 +11,60 @@
 ## 2. 当前阶段
 
 - 阶段：P1 `AI 语音输入法`
-- 当前 focus：用真实失败样本收稳 `ASR` 首句失败，当前先验证 `1110 after finish` 的窄修正
+- 当前 focus：把 `ActiveWorkspace + SecondaryAction` 锁成当前唯一主线，并据此继续推进工作区级 `Refine / Submit / Undo`
 - 状态：`In Progress`
 
 ## 3. 为什么现在做
 
-刚完成的上一轮，`capture` 侧的 live workspace 自驱基线已经基本收稳：
+上一轮已经完成了两块重要收口：
 
-- `make smoke-capture-continue / make smoke-capture-undo / make smoke-capture-refine-manual / make smoke-capture-refine-dirty-undo / make smoke-capture-refine-fallback` 已经到位
-- `capture` 在继续口述 / 撤回 / 整理成功 / 整理失败 / 整理后手改撤回这几条高风险边界上，已经有真实自驱闭环
-- 继续在这半边补更多近似 smoke，收益会迅速下降
+- `Compose / Capture / Refine / Undo` 的工作区热路径已经有一批自驱基线
+- `ASR` 首句失败的第一份真实样本也已经做了窄修正并完成归档
 
-下一条更值钱的主线是 `ASR` 首句失败收敛：
+但最近也暴露出一个更危险的问题：主线认知开始漂。
 
-- 用户真实反馈里仍然存在“第一次说话没出字”这类强感知问题
-- 我们现在已经拿到了第一份真实失败样本：`zh-CN + kAFAssistantErrorDomain#1110`
-- Apple 官方定义里，`1110` 对应的是 `Failed to recognize any speech`
-- 这类问题如果直接做重型 warm-up 或重试，很容易引入新复杂度；更合理的是先做窄修正
+- 外部竞品和入口形态很容易把认知带偏成“选中一段文字，直接改写”
+- 这类入口可以有价值，但它不是 SpeakDock 的总模型
+- SpeakDock 真正要守住的是 `ActiveWorkspace`
+- `SecondaryAction` 也必须始终绑定当前工作区，而不是绑定“当前选中片段”
 
-所以这轮不做大改，不引入新模型，只先补：
+如果这件事不先写死，后续无论做 `Compose / Capture / Wiki / hardware trigger`，都会慢慢漂成局部功能拼盘。
 
-- `speech` 原始日志 + 聚合报告
-- `finish` 后掉到 `1110` 时的 partial transcript final fallback
-- `dictation` task hint
+所以这一轮先不追新入口，也不追新能力，先把主线重新收口成唯一正确版本。
 
 ## 4. 本轮范围
 
-1. 保留 `speech` 原始日志与聚合报告入口
-2. 基于真实样本只修 `kAFAssistantErrorDomain#1110`
-3. 仅在 `finish requested + wantsRecognition=false` 时考虑 fallback
-4. 优先复用已有 partial transcript，不发明新缓存层
-5. 同步文档，明确这是一条窄修正，不是完整 warm-up 方案
+1. 归档已完成的 `ASR` 首句失败收敛阶段，不再让旧 focus 停留在 `CURRENT.md`
+2. 明确 SpeakDock 当前唯一底层模型是 `ActiveWorkspace + SecondaryAction`
+3. 明确 `selection refine` 只能是未来 `Compose` 下的候选显式入口，不是当前主线
+4. 同步 `CURRENT / ARCHITECTURE / docs index`，让文档重新只指向同一条主线
+5. 后续实现只继续围绕工作区级 `Clean / Refine / Submit / Undo`，不再引入新的顶层模式
 
 ## 5. 明确不做
 
-- 不扩词级学习语义
-- 不引入新的模型运行时
-- 不做端侧小模型接入
-- 不做正式打包发布
-- 不改 Wiki 长线方向
-- 不做新 UI 入口
-- 不做激进的自动重录、后台预热录音或多次重试
-- 不为了这轮诊断新建数据库或本地埋点文件
+- 不把 `selection refine` 升级成 SpeakDock 的默认产品模型
+- 不新增独立“选中文本模式”
+- 不让竞品入口反向定义 SpeakDock 的底层架构
+- 不为了这轮主线纠偏去扩新的模型运行时
+- 不把句子级整理重新混进词级纠错或词典学习
+- 不把 `Wiki`、硬件触发器、未来多端能力从总模型里删掉
 
 ## 6. 执行顺序
 
-1. 先保留 `speech-logs / speech-error-report` 作为诊断入口
-2. 再用真实错误样本锁最小 failing test
-3. 补最小运行时修正
-4. 跑语音相关定向测试与全量测试
-5. 继续等待下一批真实失败样本判断是否要进入更重的 `ASR` 收敛
+1. 先把上一轮 `ASR` 收敛结果归档
+2. 再把 `CURRENT / ARCHITECTURE / docs index` 统一到同一条主线
+3. 然后只从 `ActiveWorkspace` 视角挑下一条最小行为任务推进
+4. 新实现必须优先补自驱验证，不靠新的人工口径
+5. 每完成一轮，再归档当前 plan，继续保持 `CURRENT` 只承载单一 focus
 
 ## 7. 完成定义
 
 满足以下条件才算完成：
 
-- 本地存在稳定的 `speech-logs / speech-error-report` 入口
-- `1110 after finish` 这类会话已有最小修正
-- 相关行为有回归测试，不靠手工判断
-- 文档能准确说明这条修正的边界与非目标
+- `CURRENT / ARCHITECTURE / docs index` 对当前主线的表述一致
+- 文档已经明确 `ActiveWorkspace + SecondaryAction` 是唯一主模型
+- 文档已经明确 `selection refine` 只是候选入口，不是总模型
+- 下一条实现任务仍然自然落在工作区级 `Refine / Submit / Undo` 上，而不是分裂出新模式
 
 ## 8. 阻塞项
 
@@ -77,29 +72,8 @@
 
 ## 9. 最近完成
 
-- 上一轮已完成：term-learning 热路径已稳定，相关单测与 smoke 已收口
-- 上一轮已完成：`TermDictionary` 的大小写不敏感、独立词边界、最长 alias 优先都已落地
-- 上一轮已完成：workspace handoff 前会先做词级修正结算
-- 本轮已完成：整理后继续口述会把当前可见文本吸收成新的 `raw_context` 基线，不再保留过期的撤回态
-- 本轮已完成：未整理工作区如果被外部手改，同一 live workspace 的下一段口述前会先同步当前文本；这条规则现在同时覆盖 `compose + capture`
-- 本轮已完成：`capture` 多段口述现在在 workspace 内存文本和真实文件里都以换行分段；撤回最近一段时也会把这层分隔一起移除
-- 本轮已完成：`compose` 路径现在有 `make smoke-compose-continue` 自驱入口，能真实验证“外部手改后继续口述”
-- 本轮已完成：`capture` 路径现在有 `make smoke-capture-continue` 自驱入口，能真实验证“文件被外部手改后继续口述，会先同步再按换行追加”
-- 本轮已完成：`capture` 路径现在有 `make smoke-capture-undo` 自驱入口，能真实验证“最近一次文件追加可以直接按共享撤回语义回退”
-- 本轮已完成：`capture` 路径现在有 `make smoke-capture-refine-manual` 自驱入口，能真实验证“当前 capture workspace 手动整理后，整理结果会直接写回隔离文件目标”
-- 本轮已完成：`capture` 路径现在有 `make smoke-capture-refine-dirty-undo` 自驱入口，能真实验证“整理后的 capture 文件如果被外部手改，二级动作会先进入 dirty，再经确认撤回到原文”
-- 本轮已完成：`capture` 路径现在有 `make smoke-capture-refine-fallback` 自驱入口，能真实验证“手动整理失败时，当前 capture 文件保持原文不被污染”
-- 本轮已完成：现在有 `make speech-error-report` 本地入口，能把最近 `speech` 会话聚合成 `language / outcome / error domain / error code` 摘要
-- 本轮已完成：现在有 `make speech-logs` 本地入口，能直接只看 `speech` category 的原始明细
-- 本轮已完成：基于真实 `zh-CN + kAFAssistantErrorDomain#1110` 样本，`AppleSpeechEngine` 现在会在 `finish` 后优先用已有 partial transcript 做 final fallback
-- 本轮已完成：`AppleSpeechEngine` 现在显式声明 `request.taskHint = .dictation`
-- 本轮已完成：workspace 的 `endLocation` 现在会跟随整理改写、手动改写和撤回后的当前可见文本边界
-- 本轮已完成：手动整理现在有独立的 `make smoke-refine-manual` 自驱入口
-- 本轮已完成：整理后的外部手改现在会在二级动作前先同步回 workspace，再决定是直接撤回还是先确认
-- 本轮已完成：`dirty -> confirm undo -> undo refine` 现在有独立的 `make smoke-refine-dirty-undo` 自驱入口
-- 本轮已完成：`Refine fallback` 现在有独立的 `make smoke-refine-fallback` 自驱入口
-- 本轮已完成：`submit` 前如果用户手改了当前 workspace，`make smoke-refine-submit-sync` 现在会真实校验整理请求读取的是手改后的当前文本
-- 本轮已完成：`submit` 语义已经明确锁定，词级观察保留 pre-sync 差异，发送前 `refine` 仍读取当前可观测文本
-- 更早已完成：Settings 的 `Passive Learning` 面板现在能展示 `observed / promoted / conflicted / skippedConfirmed` 状态计数
-- 更早已完成：Settings 现在能展示最近学习事件，且只暴露 `alias / canonical / evidence / outcome`
-- 更早已完成：项目已经收敛到 `OSLog.Logger + make logs + make speech-logs + make traces + make trace-report + make speech-error-report + make term-learning-report + make smoke-term-learning + make smoke-refine` 的统一调试入口
+- 已完成：`Compose / Capture` 继续口述、自驱撤回、手动整理、整理失败回退这几条工作区基线已经有 smoke 覆盖
+- 已完成：`submit`、整理后手改、`dirty -> confirm undo -> undo refine` 这些工作区边界已经有真实行为定义
+- 已完成：`speech-logs / speech-error-report` 诊断入口已落地
+- 已完成：基于真实 `zh-CN + kAFAssistantErrorDomain#1110` 样本，`ASR` 首句失败已有最小窄修正
+- 已完成：`TermDictionary` 的词级学习热路径、Settings 可读层和报告入口都已稳定

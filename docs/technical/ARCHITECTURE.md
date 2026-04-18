@@ -19,6 +19,30 @@ SpeakDock 只做三件事：
 - `说话按钮`
 - `整理按钮`
 
+SpeakDock 当前稳定的底层模型写死为：
+
+- `ActiveWorkspace`
+- `SecondaryAction`
+
+这两个概念比任何单个入口都更重要：
+
+- `ActiveWorkspace`
+  - 表示 SpeakDock 当前正在接管的 live 工作区
+  - 统一覆盖 `Compose / Capture`
+
+- `SecondaryAction`
+  - 永远只作用于当前 `ActiveWorkspace`
+  - 默认语义是整理
+  - 在短暂撤回窗口内，可以临时承接撤回最近一次提交
+
+边界也要写死：
+
+- `selection refine` 未来可以作为 `Compose` 下的显式入口
+- 但它只能是入口，不是新的顶层状态
+- 它不能替代 `ActiveWorkspace`
+- 它也不能改写 `Compose / Capture / Wiki / hardware trigger` 的总模型
+- 外部 research 只能启发入口形式，不能反向覆盖这套底层模型
+
 一句话公式：
 
 `语义路由 -> 整理判断 -> 持久化判断 -> 提交 -> 撤回窗口`
@@ -179,6 +203,30 @@ macOS v1 的主入口写死为：
 - 它是当前这块由 SpeakDock 接管的编辑范围
 - `Capture` 首次落盘后自动打开编辑器，这次系统触发的焦点变化仍算同一工作区延续
 
+### 4.5 底层模型与入口的关系
+
+SpeakDock 必须区分“底层模型”和“显式入口”。
+
+底层模型已经固定：
+
+- 说话按钮持续写入当前 `ActiveWorkspace`
+- `SecondaryAction` 只处理当前 `ActiveWorkspace`
+
+以后如果在 `Compose` 下补更多显式入口，例如：
+
+- 选中文本后点一次整理
+- 右键菜单整理
+- 单独快捷键整理当前选区
+
+这些都只能算 `SecondaryAction` 的局部入口。
+
+硬规则：
+
+- 选中文本不是新的顶层状态
+- 选区只是 `Compose Workspace` 里的一个局部观测条件
+- 不能因为入口更直观，就把 SpeakDock 的总模型改写成“选中一段文字直接改”
+- 如果某个入口无法自然映射回当前 `ActiveWorkspace`，那它就不应该进入当前主线
+
 ## 5. 整理模型
 
 这里的“整理”只讨论整个 `Workspace` 的表达处理，不讨论词级事实修正。
@@ -186,6 +234,12 @@ macOS v1 的主入口写死为：
 词级事实修正属于 `TermDictionary` 和它下面的被动学习机制，不属于 `Refine`。
 
 整理不是单独模式，而是跨 `Compose / Capture` 的 workspace 级处理能力。
+
+当前必须坚持：
+
+- 主模型是 `ActiveWorkspace + SecondaryAction`
+- `selection refine` 只能是 `Compose` 下未来可选入口
+- 当前主线仍然是工作区级 `Clean / Refine / Submit / Undo`
 
 整理触发有两种：
 
