@@ -18,6 +18,7 @@ final class HotPathCoordinator {
     private let overlayPanelController: OverlayPanelController
     private let cleanNormalizer: CleanNormalizer
     private let recognitionCommitPreparer: RecognitionCommitPreparer
+    private let recognitionCommitProcessor: RecognitionCommitProcessor
     private let workspaceRefinePreparer: WorkspaceRefinePreparer
     private let refineEngine: any RefineEngine
     private let runtimeRefineConfigurationOverride: RefineConfiguration?
@@ -30,6 +31,7 @@ final class HotPathCoordinator {
     private var composeTargetSession = ComposeTargetSession()
     private var activeInteractionTrace: HotPathInteractionTrace?
     private var activeRefineTask: Task<Void, Never>?
+    private var activeRecognitionCommitTask: Task<Void, Never>?
     private var pendingRecognitionTimeoutTask: Task<Void, Never>?
     private var renderedSegmentsByWorkspaceID: [UUID: [String]] = [:]
 
@@ -43,6 +45,7 @@ final class HotPathCoordinator {
         overlayPanelController: OverlayPanelController,
         termDictionaryStore: TermDictionaryStore,
         cleanNormalizer: CleanNormalizer = CleanNormalizer(),
+        recognitionCommitProcessor: RecognitionCommitProcessor = RecognitionCommitProcessor(),
         refineEngine: any RefineEngine = OpenAICompatibleRefineEngine(),
         runtimeRefineConfigurationOverride: RefineConfiguration? = nil,
         runtimeCaptureRootURLOverride: URL? = nil,
@@ -57,6 +60,7 @@ final class HotPathCoordinator {
         self.overlayPanelController = overlayPanelController
         self.cleanNormalizer = cleanNormalizer
         self.recognitionCommitPreparer = RecognitionCommitPreparer(cleanNormalizer: cleanNormalizer)
+        self.recognitionCommitProcessor = recognitionCommitProcessor
         self.workspaceRefinePreparer = WorkspaceRefinePreparer(cleanNormalizer: cleanNormalizer)
         self.refineEngine = refineEngine
         self.runtimeRefineConfigurationOverride = runtimeRefineConfigurationOverride
@@ -430,6 +434,7 @@ final class HotPathCoordinator {
             SpeakDockLog.trigger.notice("press started")
             startInteractionTrace(kind: .recording)
             cancelRefineTask()
+            cancelRecognitionCommitTask()
             cancelRecognitionTimeout()
             let composeAvailabilityAtPressStart = composeTarget.captureCurrentTarget()
             composeTargetSession.begin(availability: composeAvailabilityAtPressStart)
@@ -494,10 +499,36 @@ final class HotPathCoordinator {
         logInteractionStage("recognitionFinal")
         let preparation = recognitionCommitPreparer.prepare(
             transcript: trimmedText,
-            configuration: currentRefineConfiguration
+            configuration: currentASRCorrectionConfiguration
         )
-        SpeakDockLog.refine.debug("recording phase stays clean-only; committing prepared text")
-        commitRecognizedText(preparation.committedText)
+
+        guard preparation.shouldCallASRCorrection else {
+            SpeakDockLog.speech.debug("recognition commit prepared without asr correction; committing clean text")
+            commitRecognizedText(preparation.committedText)
+            return
+        }
+
+        cancelRecognitionCommitTask()
+        activeRecognitionCommitTask = Task { [weak self] in
+            guard let self else {
+                return
+            }
+
+            let committedText = await self.recognitionCommitProcessor.process(
+                preparation,
+                configuration: self.currentASRCorrectionConfiguration
+            )
+
+            guard !Task.isCancelled else {
+                return
+            }
+
+            await MainActor.run {
+                self.overlayPanelController.updateTranscript(committedText)
+                self.commitRecognizedText(committedText)
+                self.activeRecognitionCommitTask = nil
+            }
+        }
     }
 
     private func commitRecognizedText(_ text: String) {
@@ -902,6 +933,7 @@ final class HotPathCoordinator {
         startInteractionTrace(kind: .submit, origin: origin)
         logInteractionStage("submitStarted")
         cancelRefineTask()
+        cancelRecognitionCommitTask()
         cancelRecognitionTimeout()
         speechController.cancelSession()
 
@@ -1021,6 +1053,10 @@ final class HotPathCoordinator {
         )
     }
 
+    private var currentASRCorrectionConfiguration: ASRCorrectionConfiguration {
+        .disabled
+    }
+
     private func currentWorkspaceRefinePreparation(
         for workspace: Workspace,
         configuration: RefineConfiguration
@@ -1120,6 +1156,11 @@ final class HotPathCoordinator {
     private func cancelRefineTask() {
         activeRefineTask?.cancel()
         activeRefineTask = nil
+    }
+
+    private func cancelRecognitionCommitTask() {
+        activeRecognitionCommitTask?.cancel()
+        activeRecognitionCommitTask = nil
     }
 
     private func scheduleRecognitionTimeout() {

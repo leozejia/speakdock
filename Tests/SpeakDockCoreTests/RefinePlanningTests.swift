@@ -6,7 +6,7 @@ final class RefinePlanningTests: XCTestCase {
         let preparer = RecognitionCommitPreparer()
         let preparation = preparer.prepare(
             transcript: "嗯  Project Atlas，，",
-            configuration: configuredRefineConfiguration()
+            configuration: .disabled
         )
 
         XCTAssertEqual(preparation.committedText, "Project Atlas，")

@@ -19,11 +19,13 @@ public struct RecognitionCommitPreparer {
 
     public func prepare(
         transcript: String,
-        configuration _: RefineConfiguration
+        configuration: ASRCorrectionConfiguration
     ) -> RecognitionCommitPreparation {
-        RecognitionCommitPreparation(
-            committedText: cleanNormalizer.normalize(transcript),
-            shouldCallASRCorrection: false
+        let committedText = cleanNormalizer.normalize(transcript)
+
+        return RecognitionCommitPreparation(
+            committedText: committedText,
+            shouldCallASRCorrection: configuration.executionMode == .modelCorrection && !committedText.isEmpty
         )
     }
 }

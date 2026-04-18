@@ -76,6 +76,7 @@
 - 已完成：`submit`、整理后手改、`dirty -> confirm undo -> undo refine` 这些工作区边界已经有真实行为定义
 - 已完成：`SecondaryAction` 执行层现在和展示层保持同一条规则，没有 spoken content 的 workspace 不会偷偷进入 `Refine`
 - 已完成：`ASR Correction` 已被明确成独立于 `Refine` 的 transcript 级后校正层，当前仍不进入默认热路径
+- 已完成：识别提交链路现在已经插入默认 no-op 的 `ASR Correction` seam；启用前不改变现有热路径，失败时也会回退到 `Clean`
 - 已完成：`speech-logs / speech-error-report` 诊断入口已落地
 - 已完成：基于真实 `zh-CN + kAFAssistantErrorDomain#1110` 样本，`ASR` 首句失败已有最小窄修正
 - 已完成：`TermDictionary` 的词级学习热路径、Settings 可读层和报告入口都已稳定
