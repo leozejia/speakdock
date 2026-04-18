@@ -21,6 +21,7 @@ final class HotPathCoordinator {
     private let recognitionCommitProcessor: RecognitionCommitProcessor
     private let workspaceRefinePreparer: WorkspaceRefinePreparer
     private let refineEngine: any RefineEngine
+    private let runtimeASRCorrectionConfigurationOverride: ASRCorrectionConfiguration?
     private let runtimeRefineConfigurationOverride: RefineConfiguration?
     private let runtimeCaptureRootURLOverride: URL?
     private let wordCorrectionObservationRecorder: WordCorrectionObservationRecorder
@@ -45,8 +46,11 @@ final class HotPathCoordinator {
         overlayPanelController: OverlayPanelController,
         termDictionaryStore: TermDictionaryStore,
         cleanNormalizer: CleanNormalizer = CleanNormalizer(),
-        recognitionCommitProcessor: RecognitionCommitProcessor = RecognitionCommitProcessor(),
+        recognitionCommitProcessor: RecognitionCommitProcessor = RecognitionCommitProcessor(
+            engine: OpenAICompatibleASRCorrectionEngine()
+        ),
         refineEngine: any RefineEngine = OpenAICompatibleRefineEngine(),
+        runtimeASRCorrectionConfigurationOverride: ASRCorrectionConfiguration? = nil,
         runtimeRefineConfigurationOverride: RefineConfiguration? = nil,
         runtimeCaptureRootURLOverride: URL? = nil,
         clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
@@ -63,6 +67,7 @@ final class HotPathCoordinator {
         self.recognitionCommitProcessor = recognitionCommitProcessor
         self.workspaceRefinePreparer = WorkspaceRefinePreparer(cleanNormalizer: cleanNormalizer)
         self.refineEngine = refineEngine
+        self.runtimeASRCorrectionConfigurationOverride = runtimeASRCorrectionConfigurationOverride
         self.runtimeRefineConfigurationOverride = runtimeRefineConfigurationOverride
         self.runtimeCaptureRootURLOverride = runtimeCaptureRootURLOverride
         self.wordCorrectionObservationRecorder = WordCorrectionObservationRecorder(
@@ -1054,7 +1059,7 @@ final class HotPathCoordinator {
     }
 
     private var currentASRCorrectionConfiguration: ASRCorrectionConfiguration {
-        .disabled
+        runtimeASRCorrectionConfigurationOverride ?? .disabled
     }
 
     private func currentWorkspaceRefinePreparation(
