@@ -2,7 +2,7 @@
 
 SpeakDock is an AI voice input method for macOS that does not stop at typing.
 
-Speak, and it writes where you are. Deterministic cleanup keeps the hot path stable, and optional model-based `Refine` can reorganize an entire workspace when the user wants clearer expression. Capture a thought instead, and it becomes the entry point to a local Markdown knowledge base that can later be compiled into an LLM-maintained wiki.
+Speak, and it writes where you are. Deterministic cleanup keeps the hot path stable, an optional future ASR post-correction layer can improve transcript accuracy, and workspace-level `Refine` can reorganize a whole working draft when the user wants clearer expression. Capture a thought instead, and it becomes the entry point to a local Markdown knowledge base that can later be compiled into an LLM-maintained wiki.
 
 The long-term goal is a voice layer that can write, learn the right terms, organize expression, and remember, while keeping the source of truth on your machine.
 
@@ -73,6 +73,7 @@ Not shipped yet:
 
 - A packaged and signed public release.
 - A local ASR model path.
+- An optional model-backed ASR post-correction layer for transcript accuracy.
 - A local small-model cleanup or extraction engine.
 - Background Wiki compiler and schema workflow.
 - DJI or other hardware trigger adapters.
