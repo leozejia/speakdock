@@ -65,6 +65,25 @@ final class UndoFlowTests: XCTestCase {
         XCTAssertEqual(expiredWindow.title, "整理")
     }
 
+    func testHandleSecondaryActionReturnsNoneWhenWorkspaceHasNoSpokenContent() {
+        let workspace = Workspace(
+            mode: .compose,
+            targetID: "chat-box",
+            startLocation: 0,
+            rawContext: "",
+            visibleText: "这是用户自己先打的字",
+            hasSpoken: false
+        )
+        var flow = UndoFlowState()
+
+        let presentation = flow.secondaryAction(for: workspace, now: 0)
+        let action = flow.handleSecondaryAction(for: workspace, now: 0)
+
+        XCTAssertEqual(presentation.kind, .refine)
+        XCTAssertFalse(presentation.isEnabled)
+        XCTAssertEqual(action, .none)
+    }
+
     func testCaptureRollbackOnlyRemovesMostRecentAppendedTail() {
         var state = WorkspaceState(
             activeWorkspace: Workspace(

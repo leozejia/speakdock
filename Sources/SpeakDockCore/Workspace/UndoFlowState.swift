@@ -110,7 +110,7 @@ public struct UndoFlowState: Sendable {
             )
         }
 
-        let isEnabled = !workspace.rawContext.isEmpty
+        let isEnabled = canRefine(workspace)
         return SecondaryActionPresentation(
             kind: .refine,
             title: "整理",
@@ -144,7 +144,7 @@ public struct UndoFlowState: Sendable {
         }
 
         pendingUndoRefineConfirmationWorkspaceID = nil
-        return .refine
+        return canRefine(workspace) ? .refine : .none
     }
 
     private func activeRecentSubmission(now: TimeInterval) -> RecentSubmission? {
@@ -167,5 +167,9 @@ public struct UndoFlowState: Sendable {
         if now - recentSubmission.timestamp > undoWindowDuration {
             self.recentSubmission = nil
         }
+    }
+
+    private func canRefine(_ workspace: Workspace) -> Bool {
+        !workspace.rawContext.isEmpty
     }
 }
