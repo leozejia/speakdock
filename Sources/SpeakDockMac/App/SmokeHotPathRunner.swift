@@ -5,6 +5,7 @@ import Foundation
 final class SmokeHotPathRunner {
     enum Mode: String {
         case commit
+        case undoRecentSubmission
         case asrCorrectionCommit
         case continueAfterObservedEdit
         case captureContinueAfterObservedEdit
@@ -71,6 +72,22 @@ final class SmokeHotPathRunner {
 
                 SpeakDockLog.lifecycle.notice("smoke hot path finished")
                 NSApp.terminate(nil)
+
+            case .undoRecentSubmission:
+                self.hotPathCoordinator.runSmokeUndoRecentSubmission(text: self.text) {
+                    Task { @MainActor [weak self] in
+                        guard let self else {
+                            return
+                        }
+
+                        if self.completionDelay > 0 {
+                            try? await Task.sleep(for: .seconds(self.completionDelay))
+                        }
+
+                        SpeakDockLog.lifecycle.notice("smoke hot path finished")
+                        NSApp.terminate(nil)
+                    }
+                }
 
             case .asrCorrectionCommit:
                 self.hotPathCoordinator.runSmokeASRCorrectionCommit(text: self.text) {

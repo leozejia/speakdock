@@ -199,6 +199,15 @@ final class HotPathCoordinator {
         }
     }
 
+    func runSmokeUndoRecentSubmission(
+        text: String,
+        onFinished: @escaping @MainActor () -> Void
+    ) {
+        runSmokeCommit(text: text)
+        performSecondaryAction()
+        onFinished()
+    }
+
     func runSmokeRefineSubmit(
         text: String,
         submitDelay: TimeInterval = 0.8,

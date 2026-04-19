@@ -212,6 +212,15 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(makefile.contains("SMOKE_COMPOSE_SCENARIO=continue"))
     }
 
+    func testMakefileExposesComposeUndoSmokeTarget() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+
+        XCTAssertTrue(makefile.contains("smoke-compose-undo:"))
+        XCTAssertTrue(makefile.contains("SMOKE_COMPOSE_SCENARIO=undo"))
+    }
+
     func testSmokeComposeScriptSupportsContinuationScenario() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/run-smoke-compose.sh")
@@ -222,6 +231,16 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("--command-file"))
         XCTAssertTrue(script.contains("--smoke-hot-path-phase"))
         XCTAssertTrue(script.contains("--smoke-text-2"))
+    }
+
+    func testSmokeComposeScriptSupportsUndoScenario() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-smoke-compose.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("undo"))
+        XCTAssertTrue(script.contains("undo-recent-submission"))
+        XCTAssertTrue(script.contains("Smoke compose undo passed."))
     }
 
     func testMakefileExposesCaptureContinuationSmokeTarget() throws {

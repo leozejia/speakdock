@@ -58,6 +58,21 @@ final class SpeakDockLaunchOptionsTests: XCTestCase {
         XCTAssertEqual(options.smokeSecondText, " again")
     }
 
+    func testSmokeModeParsesUndoRecentSubmissionPhase() {
+        let options = SpeakDockLaunchOptions(
+            arguments: [
+                "SpeakDock",
+                "--smoke-hot-path",
+                "--smoke-hot-path-phase", "undo-recent-submission",
+                "--smoke-text", "hello",
+            ]
+        )
+
+        XCTAssertEqual(options.mode, .smokeHotPath)
+        XCTAssertEqual(options.smokeHotPathPhase, .undoRecentSubmission)
+        XCTAssertEqual(options.smokeText, "hello")
+    }
+
     func testSmokeModeParsesCaptureContinuationPhaseAndCaptureRootOverride() {
         let options = SpeakDockLaunchOptions(
             arguments: [

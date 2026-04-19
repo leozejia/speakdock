@@ -101,6 +101,8 @@ struct SpeakDockApp: App {
             let smokeHotPathMode: SmokeHotPathRunner.Mode = switch launchOptions.smokeHotPathPhase {
             case .commit:
                 .commit
+            case .undoRecentSubmission:
+                .undoRecentSubmission
             case .continueAfterObservedEdit:
                 .continueAfterObservedEdit
             case .captureContinueAfterObservedEdit:
