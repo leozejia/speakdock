@@ -67,6 +67,30 @@ public struct PassthroughASRCorrectionEngine: ASRCorrectionEngine {
     }
 }
 
+public enum RecognitionCommitCorrectionOutcome: String, Equatable, Sendable {
+    case notRequested
+    case corrected
+    case unchanged
+    case fallback
+}
+
+public struct RecognitionCommitProcessingResult: Equatable, Sendable {
+    public let committedText: String
+    public let correctionOutcome: RecognitionCommitCorrectionOutcome
+
+    public init(
+        committedText: String,
+        correctionOutcome: RecognitionCommitCorrectionOutcome
+    ) {
+        self.committedText = committedText
+        self.correctionOutcome = correctionOutcome
+    }
+
+    public var didChangeText: Bool {
+        correctionOutcome == .corrected
+    }
+}
+
 public struct RecognitionCommitProcessor: Sendable {
     private let engine: any ASRCorrectionEngine
 
@@ -78,15 +102,31 @@ public struct RecognitionCommitProcessor: Sendable {
         _ preparation: RecognitionCommitPreparation,
         configuration: ASRCorrectionConfiguration
     ) async -> String {
+        await processResult(
+            preparation,
+            configuration: configuration
+        ).committedText
+    }
+
+    public func processResult(
+        _ preparation: RecognitionCommitPreparation,
+        configuration: ASRCorrectionConfiguration
+    ) async -> RecognitionCommitProcessingResult {
         let cleanText = preparation.committedText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanText.isEmpty else {
-            return ""
+            return RecognitionCommitProcessingResult(
+                committedText: "",
+                correctionOutcome: .notRequested
+            )
         }
 
         guard preparation.shouldCallASRCorrection,
               configuration.executionMode == .modelCorrection
         else {
-            return cleanText
+            return RecognitionCommitProcessingResult(
+                committedText: cleanText,
+                correctionOutcome: .notRequested
+            )
         }
 
         do {
@@ -95,9 +135,22 @@ public struct RecognitionCommitProcessor: Sendable {
                 configuration: configuration
             ).trimmingCharacters(in: .whitespacesAndNewlines)
 
-            return correctedText.isEmpty ? cleanText : correctedText
+            guard !correctedText.isEmpty else {
+                return RecognitionCommitProcessingResult(
+                    committedText: cleanText,
+                    correctionOutcome: .fallback
+                )
+            }
+
+            return RecognitionCommitProcessingResult(
+                committedText: correctedText,
+                correctionOutcome: correctedText == cleanText ? .unchanged : .corrected
+            )
         } catch {
-            return cleanText
+            return RecognitionCommitProcessingResult(
+                committedText: cleanText,
+                correctionOutcome: .fallback
+            )
         }
     }
 }

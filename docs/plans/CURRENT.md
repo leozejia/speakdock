@@ -81,6 +81,7 @@
 - 已完成：`ASR Correction` 已补上隐藏运行参数入口，只有在内部完整提供 `baseURL + apiKey + model` 时才会生效；普通运行继续保持关闭
 - 已完成：`ASR Correction` 已补上独立 smoke 自驱入口，`make smoke-asr-correction` 会起本地 stub、测试宿主和 SpeakDock，直接验证 transcript 后校正能注入到 live workspace
 - 已完成：`make run` 现在也支持通过 `SPEAKDOCK_ASR_CORRECTION_BASE_URL / API_KEY / MODEL` 环境变量临时启用内部 `ASR Correction`，不需要手写 `open --args`
+- 已完成：`ASR Correction` 提交处理现在会留下结构化结果日志，`make asr-correction-report` 可以直接汇总 `corrected / unchanged / fallback` 与改写比率，开始支撑真实样本评估
 - 已完成：`speech-logs / speech-error-report` 诊断入口已落地
 - 已完成：基于真实 `zh-CN + kAFAssistantErrorDomain#1110` 样本，`ASR` 首句失败已有最小窄修正
 - 已完成：`TermDictionary` 的词级学习热路径、Settings 可读层和报告入口都已稳定

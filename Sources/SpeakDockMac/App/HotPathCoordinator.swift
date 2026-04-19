@@ -177,7 +177,7 @@ final class HotPathCoordinator {
                 return
             }
 
-            let committedText = await self.recognitionCommitProcessor.process(
+            let processingResult = await self.recognitionCommitProcessor.processResult(
                 preparation,
                 configuration: self.currentASRCorrectionConfiguration
             )
@@ -187,8 +187,12 @@ final class HotPathCoordinator {
             }
 
             await MainActor.run {
-                self.overlayPanelController.updateTranscript(committedText)
-                self.commitRecognizedText(committedText)
+                self.logASRCorrectionCommitResult(
+                    processingResult,
+                    inputText: preparation.committedText
+                )
+                self.overlayPanelController.updateTranscript(processingResult.committedText)
+                self.commitRecognizedText(processingResult.committedText)
                 self.activeRecognitionCommitTask = nil
                 onFinished()
             }
@@ -579,7 +583,7 @@ final class HotPathCoordinator {
                 return
             }
 
-            let committedText = await self.recognitionCommitProcessor.process(
+            let processingResult = await self.recognitionCommitProcessor.processResult(
                 preparation,
                 configuration: self.currentASRCorrectionConfiguration
             )
@@ -589,8 +593,12 @@ final class HotPathCoordinator {
             }
 
             await MainActor.run {
-                self.overlayPanelController.updateTranscript(committedText)
-                self.commitRecognizedText(committedText)
+                self.logASRCorrectionCommitResult(
+                    processingResult,
+                    inputText: preparation.committedText
+                )
+                self.overlayPanelController.updateTranscript(processingResult.committedText)
+                self.commitRecognizedText(processingResult.committedText)
                 self.activeRecognitionCommitTask = nil
             }
         }
@@ -1120,6 +1128,19 @@ final class HotPathCoordinator {
 
     private var currentASRCorrectionConfiguration: ASRCorrectionConfiguration {
         runtimeASRCorrectionConfigurationOverride ?? .disabled
+    }
+
+    private func logASRCorrectionCommitResult(
+        _ processingResult: RecognitionCommitProcessingResult,
+        inputText: String
+    ) {
+        guard currentASRCorrectionConfiguration.executionMode == .modelCorrection else {
+            return
+        }
+
+        SpeakDockLog.speech.notice(
+            "asr correction commit finished: outcome=\(processingResult.correctionOutcome.rawValue, privacy: .public), changed=\(processingResult.didChangeText, privacy: .public), inputLength=\(inputText.count, privacy: .public), outputLength=\(processingResult.committedText.count, privacy: .public)"
+        )
     }
 
     private func currentWorkspaceRefinePreparation(

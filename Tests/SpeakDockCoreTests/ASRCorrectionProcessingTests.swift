@@ -53,6 +53,63 @@ final class ASRCorrectionProcessingTests: XCTestCase {
         XCTAssertEqual(committedText, "project adults")
     }
 
+    func testRecognitionCommitProcessorResultMarksCorrectedOutcomeWhenTextChanges() async {
+        let processor = RecognitionCommitProcessor(
+            engine: StubASRCorrectionEngine(result: .success("Project Atlas"))
+        )
+        let preparation = RecognitionCommitPreparation(
+            committedText: "project adults",
+            shouldCallASRCorrection: true
+        )
+
+        let result = await processor.processResult(
+            preparation,
+            configuration: configuredASRCorrectionConfiguration()
+        )
+
+        XCTAssertEqual(result.committedText, "Project Atlas")
+        XCTAssertEqual(result.correctionOutcome, .corrected)
+        XCTAssertTrue(result.didChangeText)
+    }
+
+    func testRecognitionCommitProcessorResultMarksUnchangedOutcomeWhenTextStaysSame() async {
+        let processor = RecognitionCommitProcessor(
+            engine: StubASRCorrectionEngine(result: .success("project adults"))
+        )
+        let preparation = RecognitionCommitPreparation(
+            committedText: "project adults",
+            shouldCallASRCorrection: true
+        )
+
+        let result = await processor.processResult(
+            preparation,
+            configuration: configuredASRCorrectionConfiguration()
+        )
+
+        XCTAssertEqual(result.committedText, "project adults")
+        XCTAssertEqual(result.correctionOutcome, .unchanged)
+        XCTAssertFalse(result.didChangeText)
+    }
+
+    func testRecognitionCommitProcessorResultMarksFallbackOutcomeWhenEngineFails() async {
+        let processor = RecognitionCommitProcessor(
+            engine: StubASRCorrectionEngine(result: .failure(StubASRCorrectionError.failed))
+        )
+        let preparation = RecognitionCommitPreparation(
+            committedText: "project adults",
+            shouldCallASRCorrection: true
+        )
+
+        let result = await processor.processResult(
+            preparation,
+            configuration: configuredASRCorrectionConfiguration()
+        )
+
+        XCTAssertEqual(result.committedText, "project adults")
+        XCTAssertEqual(result.correctionOutcome, .fallback)
+        XCTAssertFalse(result.didChangeText)
+    }
+
     private func configuredASRCorrectionConfiguration() -> ASRCorrectionConfiguration {
         ASRCorrectionConfiguration(
             enabled: true,
