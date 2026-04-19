@@ -103,6 +103,8 @@ struct SpeakDockApp: App {
                 .commit
             case .undoRecentSubmission:
                 .undoRecentSubmission
+            case .switchTargetUndoRecentSubmission:
+                .switchTargetUndoRecentSubmission
             case .continueAfterObservedEdit:
                 .continueAfterObservedEdit
             case .captureContinueAfterObservedEdit:

@@ -25,6 +25,7 @@ struct SpeakDockLaunchOptions: Equatable {
     enum SmokeHotPathPhase: Equatable {
         case commit
         case undoRecentSubmission
+        case switchTargetUndoRecentSubmission
         case continueAfterObservedEdit
         case captureContinueAfterObservedEdit
         case captureUndoRecentSubmission
@@ -209,6 +210,8 @@ struct SpeakDockLaunchOptions: Equatable {
         switch stringValue(after: "--smoke-hot-path-phase", in: arguments) {
         case "undo-recent-submission":
             .undoRecentSubmission
+        case "switch-target-undo-recent-submission":
+            .switchTargetUndoRecentSubmission
         case "continue-after-observed-edit":
             .continueAfterObservedEdit
         case "capture-continue-after-observed-edit":

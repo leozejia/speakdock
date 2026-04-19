@@ -24,6 +24,18 @@ enum ClipboardComposeTargetError: LocalizedError {
 
 @MainActor
 final class ClipboardComposeTarget {
+    nonisolated static func composeTargetIdentifier(
+        processIdentifier: pid_t,
+        role: String,
+        identifier: String,
+        description: String,
+        windowTitle: String,
+        title: String,
+        structuralPath: String
+    ) -> String {
+        "\(processIdentifier):\(role):\(identifier):\(description):\(windowTitle):\(title):\(structuralPath)"
+    }
+
     private struct FocusedEditableTarget {
         let element: AXUIElement
         let targetID: String
@@ -566,6 +578,11 @@ final class ClipboardComposeTarget {
     private func logFocusedElementSnapshot(_ element: AXUIElement, frontmostBundleIdentifier: String) {
         let role = stringAttribute(kAXRoleAttribute, on: element) ?? "nil"
         let subrole = stringAttribute(kAXSubroleAttribute, on: element) ?? "nil"
+        let identifier = stringAttribute("AXIdentifier", on: element) ?? "nil"
+        let description = stringAttribute(kAXDescriptionAttribute, on: element) ?? "nil"
+        let resolvedWindowTitle = windowTitle(for: element)
+        let windowTitle = resolvedWindowTitle.isEmpty ? "nil" : resolvedWindowTitle
+        let structuralPath = structuralIdentifierPath(for: element)
         let axEditable = logValue(boolAttribute("AXEditable", on: element))
         let valueSettable = logValue(isAttributeSettable(kAXValueAttribute as CFString, on: element))
         let selectedTextRangeSettable = logValue(
@@ -573,7 +590,7 @@ final class ClipboardComposeTarget {
         )
 
         SpeakDockLog.compose.notice(
-            "compose target capture focused element: frontmost=\(frontmostBundleIdentifier, privacy: .public), role=\(role, privacy: .public), subrole=\(subrole, privacy: .public), axEditable=\(axEditable, privacy: .public), valueSettable=\(valueSettable, privacy: .public), selectedTextRangeSettable=\(selectedTextRangeSettable, privacy: .public)"
+            "compose target capture focused element: frontmost=\(frontmostBundleIdentifier, privacy: .public), role=\(role, privacy: .public), subrole=\(subrole, privacy: .public), identifier=\(identifier, privacy: .public), description=\(description, privacy: .public), windowTitle=\(windowTitle, privacy: .public), path=\(structuralPath, privacy: .public), axEditable=\(axEditable, privacy: .public), valueSettable=\(valueSettable, privacy: .public), selectedTextRangeSettable=\(selectedTextRangeSettable, privacy: .public)"
         )
     }
 
@@ -602,7 +619,79 @@ final class ClipboardComposeTarget {
         AXUIElementGetPid(element, &pid)
         let role = stringAttribute(kAXRoleAttribute, on: element) ?? "unknown"
         let title = stringAttribute(kAXTitleAttribute, on: element) ?? ""
-        return "\(pid):\(role):\(title)"
+        let identifier = stringAttribute("AXIdentifier", on: element) ?? ""
+        let description = stringAttribute(kAXDescriptionAttribute, on: element) ?? ""
+        let windowTitle = windowTitle(for: element)
+        let structuralPath = structuralIdentifierPath(for: element)
+        return Self.composeTargetIdentifier(
+            processIdentifier: pid,
+            role: role,
+            identifier: identifier,
+            description: description,
+            windowTitle: windowTitle,
+            title: title,
+            structuralPath: structuralPath
+        )
+    }
+
+    private func windowTitle(for element: AXUIElement) -> String {
+        if let windowElement = axElementLookup(kAXWindowAttribute, on: element).element,
+           let title = stringAttribute(kAXTitleAttribute, on: windowElement),
+           !title.isEmpty
+        {
+            return title
+        }
+
+        var currentElement: AXUIElement? = element
+        for _ in 0..<12 {
+            guard let resolvedCurrentElement = currentElement else {
+                break
+            }
+
+            let role = stringAttribute(kAXRoleAttribute, on: resolvedCurrentElement)
+            if role == kAXWindowRole as String,
+               let title = stringAttribute(kAXTitleAttribute, on: resolvedCurrentElement),
+               !title.isEmpty
+            {
+                return title
+            }
+
+            currentElement = axElementLookup(kAXParentAttribute, on: resolvedCurrentElement).element
+        }
+
+        return ""
+    }
+
+    private func structuralIdentifierPath(for element: AXUIElement) -> String {
+        var pathSegments: [String] = []
+        var currentElement: AXUIElement? = element
+
+        for _ in 0..<12 {
+            guard let resolvedCurrentElement = currentElement else {
+                break
+            }
+
+            let parentLookup = axElementLookup(kAXParentAttribute, on: resolvedCurrentElement)
+            guard let parentElement = parentLookup.element else {
+                break
+            }
+
+            let siblings = axElementArrayAttribute(kAXChildrenAttribute, on: parentElement)
+            guard let index = siblings.firstIndex(where: { sibling in
+                CFEqual(sibling, resolvedCurrentElement)
+            }) else {
+                break
+            }
+
+            pathSegments.append(String(index))
+            currentElement = parentElement
+        }
+
+        guard !pathSegments.isEmpty else {
+            return "root"
+        }
+
+        return pathSegments.reversed().joined(separator: ".")
     }
 
     private func makeObservationContext(for element: AXUIElement) -> EditableTextObservationContext? {

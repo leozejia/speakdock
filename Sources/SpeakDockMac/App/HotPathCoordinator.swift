@@ -208,6 +208,40 @@ final class HotPathCoordinator {
         onFinished()
     }
 
+    func runSmokeSwitchTargetUndoRecentSubmission(
+        initialText: String,
+        switchedText: String,
+        onFinished: @escaping @MainActor () -> Void
+    ) {
+        runSmokeCommit(text: initialText)
+
+        Task { @MainActor [weak self] in
+            guard let self else {
+                return
+            }
+
+            for _ in 0..<100 {
+                let availability = self.composeTarget.captureCurrentTarget()
+                if case let .available(targetID) = availability,
+                   self.workspaceState.activeWorkspace?.targetID != targetID
+                {
+                    self.composeTargetSession.begin(availability: availability)
+                    self.runSmokeCommit(text: switchedText)
+                    self.performSecondaryAction()
+                    onFinished()
+                    return
+                }
+
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+
+            SpeakDockLog.lifecycle.error(
+                "smoke switch-target undo timed out waiting for a new compose target"
+            )
+            onFinished()
+        }
+    }
+
     func runSmokeRefineSubmit(
         text: String,
         submitDelay: TimeInterval = 0.8,

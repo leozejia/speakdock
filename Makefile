@@ -10,7 +10,7 @@ CLANG_MODULE_CACHE := $(SWIFT_CACHE)/clang/ModuleCache
 SWIFT_ENV := HOME=$(SWIFT_HOME) XDG_CACHE_HOME=$(SWIFT_CACHE) CLANG_MODULE_CACHE_PATH=$(CLANG_MODULE_CACHE) SWIFTPM_MODULECACHE_OVERRIDE=$(CLANG_MODULE_CACHE)
 TEST_FILTER ?=
 
-.PHONY: build run clean test logs speech-logs traces trace-report speech-error-report asr-correction-report term-learning-report probe-compose smoke-compose smoke-compose-continue smoke-compose-undo smoke-capture-continue smoke-capture-undo smoke-asr-correction smoke-refine smoke-refine-manual smoke-capture-refine-manual smoke-refine-dirty-undo smoke-capture-refine-dirty-undo smoke-refine-fallback smoke-capture-refine-fallback smoke-refine-submit-sync smoke-term-learning smoke-term-learning-conflict
+.PHONY: build run clean test logs speech-logs traces trace-report speech-error-report asr-correction-report term-learning-report probe-compose smoke-compose smoke-compose-continue smoke-compose-undo smoke-compose-switch-undo smoke-capture-continue smoke-capture-undo smoke-asr-correction smoke-refine smoke-refine-manual smoke-capture-refine-manual smoke-refine-dirty-undo smoke-capture-refine-dirty-undo smoke-refine-fallback smoke-capture-refine-fallback smoke-refine-submit-sync smoke-term-learning smoke-term-learning-conflict
 
 build:
 	./scripts/build-app.sh $(CONFIGURATION)
@@ -50,6 +50,9 @@ smoke-compose-continue:
 
 smoke-compose-undo:
 	SMOKE_COMPOSE_SCENARIO=undo ./scripts/run-smoke-compose.sh $(CONFIGURATION)
+
+smoke-compose-switch-undo:
+	SMOKE_COMPOSE_SCENARIO=switch-undo ./scripts/run-smoke-compose.sh $(CONFIGURATION)
 
 smoke-capture-continue:
 	SMOKE_CAPTURE_SCENARIO=continue ./scripts/run-smoke-capture.sh $(CONFIGURATION)

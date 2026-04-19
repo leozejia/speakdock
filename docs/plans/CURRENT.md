@@ -72,6 +72,7 @@
 
 ## 9. 最近完成
 
+- 已完成：`Compose workspace switch undo` 自驱 smoke 已落地，`make smoke-compose-switch-undo` 现在直接验证“先写入 workspace A，再切到 workspace B，再执行 secondary action 时，只撤回 B 的最近一次提交，A 保持不变”
 - 已完成：`Compose` 最近一次提交撤回已有自驱 smoke，`make smoke-compose-undo` 现在直接验证“提交后第二动作只回滚当前 compose workspace 的最近一段写入”
 - 已完成：`Compose / Capture` 继续口述、自驱撤回、手动整理、整理失败回退这几条工作区基线已经有 smoke 覆盖
 - 已完成：`submit`、整理后手改、`dirty -> confirm undo -> undo refine` 这些工作区边界已经有真实行为定义

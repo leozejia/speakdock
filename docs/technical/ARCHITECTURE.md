@@ -976,7 +976,9 @@ macOS v1 的工程收口写死为：
   - 正常用户态启动默认保持单实例；重复启动应复用现有 `SpeakDock`，而不是再起一个新的常驻实例
   - 第三方 App `Compose` 兼容性扫测优先通过 `make probe-compose` 执行；probe 只检查前台 App 的可编辑目标，不录音、不注入、不改剪贴板
   - 自驱 smoke 优先通过 `make smoke-compose` 执行；smoke 使用 SpeakDock 自带测试宿主验证最小 Compose 注入闭环
+  - `Compose undo` 自驱基线优先通过 `make smoke-compose-undo` 执行；该命令必须验证“提交后 secondary action 只回滚当前 compose workspace 最近一次注入”
   - `Compose continuation` 自驱基线优先通过 `make smoke-compose-continue` 执行；该命令必须验证“第一次注入后，外部手改被同步进同一 live workspace，第二次继续口述会接在当前文本后面”
+  - `Compose switch-target undo` 自驱基线优先通过 `make smoke-compose-switch-undo` 执行；该命令必须验证“先写入 workspace A，再切到 workspace B，再执行 secondary action 时，只撤回 B 的最近一次提交，A 保持不变”
   - `Capture continuation` 自驱基线优先通过 `make smoke-capture-continue` 执行；该命令必须验证“capture 文件被外部手改后，同一 live workspace 的第二次继续口述会先同步当前文件，再按换行追加”
   - `Capture undo` 自驱基线优先通过 `make smoke-capture-undo` 执行；该命令必须验证“capture 最近一次追加可以走共享 undo recent submission 语义，文件与 workspace 会一起回退”
   - `Capture manual refine` 自驱基线优先通过 `make smoke-capture-refine-manual` 执行；该命令必须验证“当前 capture workspace 手动整理后，整理结果会直接写回隔离 capture 文件目标”
