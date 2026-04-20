@@ -36,6 +36,7 @@
 "settings.term_dictionary.canonical_placeholder" = "规范词";
 "settings.term_dictionary.aliases_placeholder" = "别名，使用逗号或换行分隔";
 "settings.term_dictionary.add_button" = "添加术语";
+"settings.term_dictionary.export_button" = "导出词典";
 "settings.term_dictionary.saved_local_only" = "仅保存在当前这台 Mac 上。";
 "settings.term_dictionary.confirmed_terms" = "已确认术语";
 "settings.term_dictionary.saved_count" = "已保存 %d 条";
@@ -93,6 +94,7 @@
 "settings.open_panel.message" = "选择新的 capture 根目录，现有 capture 文件会一起迁移。";
 "settings.term_dictionary.entry_saved" = "术语已保存。";
 "settings.term_dictionary.entry_removed" = "已移除“%@”。";
+"settings.term_dictionary.exported" = "词典已导出。";
 "settings.term_dictionary.candidate_promoted" = "候选词已加入术语词典。";
 "settings.term_dictionary.candidate_dismissed" = "候选词已忽略。";
 "settings.test_passed" = "连接成功：%@";

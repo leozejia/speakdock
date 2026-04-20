@@ -29,6 +29,7 @@ final class TermDictionaryStore {
     static let defaultStorageURL = defaultDirectoryURL
         .appendingPathComponent("SpeakDock", isDirectory: true)
         .appendingPathComponent("term-dictionary.json")
+    static let defaultExportFileName = "SpeakDock-TermDictionary.json"
 
     var confirmedDictionary: TermDictionary {
         didSet {
@@ -90,14 +91,22 @@ final class TermDictionaryStore {
             withIntermediateDirectories: true
         )
 
-        let snapshot = Snapshot(
-            confirmedEntries: confirmedDictionary.entries,
-            pendingCandidates: pendingCandidates,
-            observedCorrections: observedCorrections,
-            learningEvents: learningEvents
-        )
+        let snapshot = currentSnapshot()
         let data = try encoder.encode(snapshot)
         try data.write(to: storageURL, options: .atomic)
+    }
+
+    func exportSnapshot(to exportURL: URL) throws {
+        try fileManager.createDirectory(
+            at: exportURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+
+        let exportEncoder = JSONEncoder()
+        exportEncoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+
+        let data = try exportEncoder.encode(currentSnapshot())
+        try data.write(to: exportURL, options: .atomic)
     }
 
     func reload() {
@@ -208,6 +217,15 @@ final class TermDictionaryStore {
         }
 
         return Array(learningEvents.suffix(limit).reversed())
+    }
+
+    private func currentSnapshot() -> Snapshot {
+        Snapshot(
+            confirmedEntries: confirmedDictionary.entries,
+            pendingCandidates: pendingCandidates,
+            observedCorrections: observedCorrections,
+            learningEvents: learningEvents
+        )
     }
 
     private func persistIfReady() {

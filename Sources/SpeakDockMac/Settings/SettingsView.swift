@@ -1,6 +1,7 @@
 import AppKit
 import SpeakDockCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     private enum Layout {
@@ -378,6 +379,12 @@ struct SettingsView: View {
                             .buttonStyle(SpeakDockActionButtonStyle(kind: .primary))
                             .disabled(!canAddTermEntry)
 
+                            Button(localized(.settingsTermDictionaryExportButton)) {
+                                exportTermDictionary()
+                            }
+                            .buttonStyle(SpeakDockActionButtonStyle(kind: .secondary))
+                            .disabled(!canExportTermDictionarySnapshot)
+
                             Text(localized(.settingsTermDictionarySavedLocalOnly))
                                 .font(.system(size: 11.5))
                                 .foregroundStyle(SpeakDockVisualStyle.secondaryText)
@@ -638,6 +645,13 @@ struct SettingsView: View {
         return !canonical.isEmpty && !parsedAliases(from: termAliasesText).isEmpty
     }
 
+    private var canExportTermDictionarySnapshot: Bool {
+        !termDictionaryStore.confirmedDictionary.entries.isEmpty
+            || !termDictionaryStore.pendingCandidates.isEmpty
+            || !termDictionaryStore.observedCorrections.isEmpty
+            || !termDictionaryStore.learningEvents.isEmpty
+    }
+
     private var recentLearningEvents: [TermDictionaryLearningEvent] {
         termDictionaryStore.recentLearningEvents(limit: 6)
     }
@@ -738,6 +752,26 @@ struct SettingsView: View {
             termCanonicalTerm = ""
             termAliasesText = ""
             setTermDictionaryMessage(localized(.settingsTermEntrySaved), tone: .success)
+        } catch {
+            setTermDictionaryMessage(userFacingMessage(for: error), tone: .critical)
+        }
+    }
+
+    private func exportTermDictionary() {
+        let panel = NSSavePanel()
+        panel.canCreateDirectories = true
+        panel.allowedContentTypes = [.json]
+        panel.nameFieldStringValue = TermDictionaryStore.defaultExportFileName
+        panel.prompt = localized(.settingsTermDictionaryExportButton)
+        panel.directoryURL = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first
+
+        guard panel.runModal() == .OK, let url = panel.url else {
+            return
+        }
+
+        do {
+            try termDictionaryStore.exportSnapshot(to: url)
+            setTermDictionaryMessage(localized(.settingsTermDictionaryExported), tone: .success)
         } catch {
             setTermDictionaryMessage(userFacingMessage(for: error), tone: .critical)
         }

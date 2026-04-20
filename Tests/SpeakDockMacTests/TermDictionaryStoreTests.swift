@@ -175,6 +175,59 @@ final class TermDictionaryStoreTests: XCTestCase {
         XCTAssertEqual(reloadedStore.pendingCandidates, [])
     }
 
+    func testExportSnapshotWritesReadableJSONWithoutMutatingStore() throws {
+        let rootDirectory = try makeTemporaryDirectory(named: "term-dictionary-store")
+        let storageURL = rootDirectory
+            .appendingPathComponent("Application Support", isDirectory: true)
+            .appendingPathComponent("SpeakDock", isDirectory: true)
+            .appendingPathComponent("term-dictionary.json")
+        let exportURL = rootDirectory
+            .appendingPathComponent("Exports", isDirectory: true)
+            .appendingPathComponent("dictionary.json")
+
+        let store = TermDictionaryStore(
+            storageURL: storageURL,
+            fileManager: fileManager
+        )
+        store.confirmedDictionary = TermDictionary(entries: [
+            TermDictionaryEntry(canonicalTerm: "Project Atlas", aliases: ["project adults"]),
+        ])
+        store.pendingCandidates = [
+            TermDictionaryCandidate(
+                canonicalTerm: "SpeakDock",
+                alias: "speak dock",
+                source: .manualCorrection
+            ),
+        ]
+        try store.recordManualCorrection(
+            generatedText: "atlas dock 已完成",
+            correctedText: "AtlasDock 已完成"
+        )
+
+        let learningEventCount = store.learningEvents.count
+        try store.exportSnapshot(to: exportURL)
+
+        XCTAssertTrue(fileManager.fileExists(atPath: exportURL.path))
+        XCTAssertEqual(store.learningEvents.count, learningEventCount)
+
+        let snapshot = try loadPersistedSnapshot(from: exportURL)
+        let confirmedEntries = try XCTUnwrap(snapshot["confirmedEntries"] as? [[String: Any]])
+        XCTAssertEqual(confirmedEntries.count, 1)
+        XCTAssertEqual(confirmedEntries.first?["canonicalTerm"] as? String, "Project Atlas")
+
+        let pendingCandidates = try XCTUnwrap(snapshot["pendingCandidates"] as? [[String: Any]])
+        XCTAssertEqual(pendingCandidates.count, 1)
+        XCTAssertEqual(pendingCandidates.first?["canonicalTerm"] as? String, "SpeakDock")
+
+        let observedCorrections = try XCTUnwrap(snapshot["observedCorrections"] as? [[String: Any]])
+        XCTAssertEqual(observedCorrections.count, 1)
+        XCTAssertEqual(observedCorrections.first?["canonicalTerm"] as? String, "AtlasDock")
+
+        let learningEvents = try XCTUnwrap(snapshot["learningEvents"] as? [[String: Any]])
+        XCTAssertEqual(learningEvents.count, 1)
+        XCTAssertEqual(learningEvents.first?["outcome"] as? String, "observed")
+    }
+
     func testAddEntryRejectsEmptyCanonicalOrAliasList() throws {
         let rootDirectory = try makeTemporaryDirectory(named: "term-dictionary-store")
         let storageURL = rootDirectory

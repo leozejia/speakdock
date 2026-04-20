@@ -36,6 +36,7 @@
 "settings.term_dictionary.canonical_placeholder" = "Canonical term";
 "settings.term_dictionary.aliases_placeholder" = "Aliases, separated by commas or new lines";
 "settings.term_dictionary.add_button" = "Add Entry";
+"settings.term_dictionary.export_button" = "Export Dictionary";
 "settings.term_dictionary.saved_local_only" = "Saved locally on this Mac only.";
 "settings.term_dictionary.confirmed_terms" = "Confirmed Terms";
 "settings.term_dictionary.saved_count" = "%d saved";
@@ -93,6 +94,7 @@
 "settings.open_panel.message" = "Choose a new capture root. Existing capture files will be moved.";
 "settings.term_dictionary.entry_saved" = "Term saved.";
 "settings.term_dictionary.entry_removed" = "Removed \"%@\".";
+"settings.term_dictionary.exported" = "Dictionary exported.";
 "settings.term_dictionary.candidate_promoted" = "Candidate saved to the term dictionary.";
 "settings.term_dictionary.candidate_dismissed" = "Candidate dismissed.";
 "settings.test_passed" = "Connection OK: %@";

@@ -11,55 +11,55 @@
 ## 2. 当前阶段
 
 - 阶段：P1 `AI 语音输入法`
-- 当前 focus：在继续引入新工作区行为前，先锁 `HotPathCoordinator` 边界，并补齐 `AX probe / ASR 样本观测` 这两条最小回归面
+- 当前 focus：补齐 `TermDictionary` 的导出闭环，让“可撤回 / 可删除 / 可导出”这条定义在实现上完整成立
 - 状态：`Completed`
 
 ## 3. 为什么现在做
 
-上一轮已经把 `ActiveWorkspace + SecondaryAction` 这条主线重新锁回来了，但新的复核也给了三个更现实的提醒：
+当前热路径、诊断入口和词级学习链路已经基本稳定，但还有一个更直接的文档缺口没有补齐：
 
-- `HotPathCoordinator.swift` 已经成为最容易继续膨胀的复杂度中心
-- `ClipboardComposeTarget.swift` 这条 Accessibility 路径还缺一条最小自动回归
-- `ASR` 真实样本已经开始出现，但现在还不够支撑默认推广 `ASR Correction`
+- 架构已经明确写了 `TermDictionary` 条目必须“可撤回、可删除、可导出”
+- 现在实现里已经有添加、删除、忽略和本地学习
+- 但还没有导出入口，定义和实现之间存在真实落差
 
-这三件事里，真正危险的不是“功能还没做完”，而是：
+这类问题比“再加一个新能力”更值得先做，因为：
 
-- 如果不先锁死 `Coordinator` 边界，新行为会继续向同一个大文件堆
-- 如果不补最小 probe，AX 路径会继续靠人工口径验活
-- 如果不补样本观测，`ASR Correction` 会停留在“能开”，但无法稳定判断“该不该开”
+- 方向没有歧义，架构已经给出结论
+- 用户本地积累的词典和被动学习结果确实需要迁移与备份出口
+- 这是低复杂度、高确定性的收口，不会把主线再带偏
 
-所以这一轮不追新入口，也不追新模式，只做最小但必要的三件事：锁边界、补 probe、补样本观测。
+所以这一轮不追新入口，只补一个窄而真实的闭环：本地词典导出。
 
 ## 4. 本轮范围
 
-1. 明确 `HotPathCoordinator` 当前只负责编排，不在这一轮直接做大拆分
-2. 给 `probe-compose` 增加最小可判断结果，让 AX 路径不再只靠人工读日志
-3. 给 `speech / asr correction` 报表补最小样本判读面，方便继续积累真实数据
-4. 同步 `CURRENT / review`，让下一轮实现继续落在同一条主线
+1. 归档上一轮已完成的 `probe / ASR` 诊断 focus
+2. 把新一轮 `CURRENT / review` 收敛到 `TermDictionary export` 这个唯一缺口
+3. 给 `TermDictionaryStore` 补导出能力，并加回归测试
+4. 在 `Settings -> Dictionary` 接入显式导出入口
+5. 同步人工验收文档，让“可导出”进入验证口径
 
 ## 5. 明确不做
 
-- 不在这一轮直接大拆 `HotPathCoordinator`
-- 不把 `ASR Correction` 改成默认开启
-- 不新增新的工作区模式、触发模式或整理入口
-- 不把句子级整理重新混进词级纠错或词典学习
-- 不为了 probe / 报表补重型基础设施
+- 不做词典导入、云同步、多端同步
+- 不把词典扩成知识库或 `StyleProfile`
+- 不为了导出补新的后台服务或数据库层
+- 不重新改写当前词级学习规则
 
 ## 6. 执行顺序
 
-1. 主线程先明确 `Coordinator` 边界，只做最小决定，不开大重构口子
-2. 并行补 `AX probe` 和 `ASR` 样本观测两条低耦合线
-3. 每条线都必须先补最小验证，再补实现
-4. 合并后统一回归，再把本轮决定写回 review
+1. 先归档上一轮 CURRENT，并写新的 live plan
+2. 先补 `TermDictionaryStore` 导出测试，再补实现
+3. 再把导出入口接到 `Settings -> Dictionary`
+4. 最后补人工验收文档并统一回归
 
 ## 7. 完成定义
 
 满足以下条件才算完成：
 
-- 已明确 `HotPathCoordinator` 这一轮是“锁边界，不大拆”
-- `probe-compose` 已能输出最小可判断结果，不再只是人工读日志
-- `speech / asr correction` 报表已能更直接支撑真实样本积累
-- `CURRENT` 与 `reviews/CURRENT.md` 对这三项的去留决定一致
+- `CURRENT / review / manual test` 对“词典可导出”口径一致
+- 本地词典可以通过显式入口导出成文件
+- 导出能力已有自动化测试，不只是手工点通
+- 导出不会改变现有词典学习和热路径行为
 
 ## 8. 阻塞项
 
@@ -67,9 +67,8 @@
 
 ## 9. 最近完成
 
-- 已完成：`HotPathCoordinator` 的边界已经写死到架构和源码结构里，这一轮明确采用“只做编排，不继续吸收纯规则”的收口策略，不直接做大拆分
-- 已完成：`probe-compose` 现在会输出最小 `AX` verdict，`make probe-compose` 结束时至少会给出 `available / no-target / unavailable` 三态判断，不再只靠人工读日志
-- 已完成：`ASR` 样本观测现在新增 `make asr-sample-report`；`speech-error-report` 会列出最近失败样本，`asr-correction-report` 会给出 `readiness / changed rate / fallback rate`
+- 已完成：`TermDictionary` 现在已经补齐本地导出能力；`Settings -> Dictionary` 可显式导出当前词典快照，`TermDictionaryStore` 也已有回归测试
+- 已完成：上一轮 `HotPathCoordinator` 边界、`probe-compose` verdict、`ASR` 样本观测三条诊断线已经收口并归档
 - 已完成：`Compose workspace switch undo` 自驱 smoke 已落地，`make smoke-compose-switch-undo` 现在直接验证“先写入 workspace A，再切到 workspace B，再执行 secondary action 时，只撤回 B 的最近一次提交，A 保持不变”
 - 已完成：`Compose` 最近一次提交撤回已有自驱 smoke，`make smoke-compose-undo` 现在直接验证“提交后第二动作只回滚当前 compose workspace 的最近一段写入”
 - 已完成：`Compose / Capture` 继续口述、自驱撤回、手动整理、整理失败回退这几条工作区基线已经有 smoke 覆盖
