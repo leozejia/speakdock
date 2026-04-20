@@ -5,6 +5,10 @@ import SpeakDockCore
 
 @MainActor
 @Observable
+/// The macOS hot-path coordinator is the single orchestration entrypoint for live interactions.
+/// It wires trigger, speech, target adapters, workspace state, undo flow and overlay updates
+/// into one deterministic path. Pure product rules should continue to live in reducers,
+/// policies and preparers instead of growing directly in this coordinator.
 final class HotPathCoordinator {
     var secondaryActionTitle = AppLocalizer.string(.hotPathSecondaryActionRefine)
     var secondaryActionEnabled = false
@@ -111,6 +115,8 @@ final class HotPathCoordinator {
             undoRecentSubmission(recentSubmission)
         }
     }
+
+    // MARK: - Smoke Entry Points
 
     func runSmokeCommit(text: String) {
         startInteractionTrace(kind: .recording, origin: .smoke)
@@ -501,6 +507,8 @@ final class HotPathCoordinator {
         }
     }
 
+    // MARK: - Dependency Wiring
+
     private func wireDependencies() {
         overlayPanelController.onSecondaryAction = { [weak self] in
             self?.performSecondaryAction()
@@ -540,6 +548,8 @@ final class HotPathCoordinator {
             self?.handleTriggerAction(action)
         }
     }
+
+    // MARK: - Live Trigger And Recognition
 
     private func handlePressStateChanged(_ isPressed: Bool) {
         if isPressed {
@@ -646,6 +656,8 @@ final class HotPathCoordinator {
             }
         }
     }
+
+    // MARK: - Commit Routing And Workspace Activation
 
     private func commitRecognizedText(_ text: String) {
         cancelRecognitionTimeout()
@@ -824,6 +836,8 @@ final class HotPathCoordinator {
 
         return workspaceState.activeWorkspace!
     }
+
+    // MARK: - Refine And Undo
 
     private func refineCurrentWorkspace() {
         guard let workspace = workspaceState.activeWorkspace else {
@@ -1024,6 +1038,8 @@ final class HotPathCoordinator {
         }
     }
 
+    // MARK: - Submit Flow
+
     private func submitCurrentWorkspaceIfPossible() {
         guard let workspace = workspaceState.activeWorkspace, workspace.mode == .compose else {
             finishInteractionTrace(result: .submitFailed)
@@ -1145,6 +1161,8 @@ final class HotPathCoordinator {
         overlayPanelController.dismiss(after: 0.1)
         onFinished?()
     }
+
+    // MARK: - Observation Sync And Presentation
 
     private func recordWordCorrectionEvidenceIfPossible(for workspace: Workspace? = nil) {
         do {
@@ -1281,6 +1299,8 @@ final class HotPathCoordinator {
         segments.append(text)
         renderedSegmentsByWorkspaceID[workspaceID] = segments
     }
+
+    // MARK: - Task Lifecycle And Trace
 
     private func cancelRefineTask() {
         activeRefineTask?.cancel()

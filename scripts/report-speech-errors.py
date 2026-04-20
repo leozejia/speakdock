@@ -11,10 +11,13 @@ import re
 SPEECH_PREDICATE = 'subsystem == "com.leozejia.speakdock" AND category == "speech"'
 START_REQUEST_PATTERN = re.compile(r"speech recognition start requested: language=([^\s]+)")
 ERROR_PATTERN = re.compile(r"speech recognition task reported error: domain=([^,]+), code=(-?\d+)")
+TIMESTAMP_PATTERN = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})")
+FAILED_SAMPLE_LIMIT = 5
 
 
 @dataclass
 class SpeechSession:
+    started_at: str
     language: str
     outcome: str
     error_key: str | None = None
@@ -53,13 +56,22 @@ def load_lines(window: str, read_stdin: bool) -> list[str]:
 
 def parse_sessions(lines: list[str]) -> list[SpeechSession]:
     sessions: list[SpeechSession] = []
+    pending_started_at: str | None = None
     pending_language: str | None = None
 
     for line in lines:
         start_match = START_REQUEST_PATTERN.search(line)
         if start_match:
             if pending_language is not None:
-                sessions.append(SpeechSession(language=pending_language, outcome="unfinished"))
+                sessions.append(
+                    SpeechSession(
+                        started_at=pending_started_at or "unknown-time",
+                        language=pending_language,
+                        outcome="unfinished",
+                    )
+                )
+            timestamp_match = TIMESTAMP_PATTERN.search(line)
+            pending_started_at = timestamp_match.group(1) if timestamp_match else "unknown-time"
             pending_language = start_match.group(1)
             continue
 
@@ -72,20 +84,35 @@ def parse_sessions(lines: list[str]) -> list[SpeechSession]:
             code = error_match.group(2).strip()
             sessions.append(
                 SpeechSession(
+                    started_at=pending_started_at or "unknown-time",
                     language=pending_language,
                     outcome="failed",
                     error_key=f"{domain}#{code}",
                 )
             )
+            pending_started_at = None
             pending_language = None
             continue
 
         if "speech recognition final result received" in line:
-            sessions.append(SpeechSession(language=pending_language, outcome="succeeded"))
+            sessions.append(
+                SpeechSession(
+                    started_at=pending_started_at or "unknown-time",
+                    language=pending_language,
+                    outcome="succeeded",
+                )
+            )
+            pending_started_at = None
             pending_language = None
 
     if pending_language is not None:
-        sessions.append(SpeechSession(language=pending_language, outcome="unfinished"))
+        sessions.append(
+            SpeechSession(
+                started_at=pending_started_at or "unknown-time",
+                language=pending_language,
+                outcome="unfinished",
+            )
+        )
 
     return sessions
 
@@ -97,6 +124,17 @@ def emit_counter_section(title: str, counter: Counter[str]) -> None:
     print(title)
     for key, value in sorted(counter.items()):
         print(f"- {key}: {value}")
+    print()
+
+
+def emit_recent_failed_samples(sessions: list[SpeechSession]) -> None:
+    failed_sessions = [session for session in sessions if session.outcome == "failed"]
+    if not failed_sessions:
+        return
+
+    print("recent failed samples")
+    for session in failed_sessions[-FAILED_SAMPLE_LIMIT:]:
+        print(f"- {session.started_at} {session.language} {session.error_key}")
     print()
 
 
@@ -126,6 +164,7 @@ def main() -> None:
     emit_counter_section("outcome", outcome_counter)
     emit_counter_section("language", language_counter)
     emit_counter_section("error", error_counter)
+    emit_recent_failed_samples(sessions)
 
 
 if __name__ == "__main__":

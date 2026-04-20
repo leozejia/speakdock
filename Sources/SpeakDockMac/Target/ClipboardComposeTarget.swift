@@ -7,6 +7,12 @@ enum ComposeTargetAvailability: Equatable {
     case unavailable(reason: String)
 }
 
+enum ComposeProbeVerdict: String, Equatable {
+    case available = "available"
+    case noTarget = "no-target"
+    case unavailable = "unavailable"
+}
+
 enum ClipboardComposeTargetError: LocalizedError {
     case unavailable(String)
 
@@ -34,6 +40,38 @@ final class ClipboardComposeTarget {
         structuralPath: String
     ) -> String {
         "\(processIdentifier):\(role):\(identifier):\(description):\(windowTitle):\(title):\(structuralPath)"
+    }
+
+    nonisolated static func composeProbeVerdict(for availability: ComposeTargetAvailability) -> ComposeProbeVerdict {
+        switch availability {
+        case .available:
+            .available
+        case .noTarget:
+            .noTarget
+        case .unavailable:
+            .unavailable
+        }
+    }
+
+    nonisolated static func accumulatedComposeProbeVerdict(
+        _ current: ComposeProbeVerdict?,
+        availability: ComposeTargetAvailability
+    ) -> ComposeProbeVerdict {
+        accumulatedComposeProbeVerdict(current, next: composeProbeVerdict(for: availability))
+    }
+
+    nonisolated static func accumulatedComposeProbeVerdict(
+        _ current: ComposeProbeVerdict?,
+        next: ComposeProbeVerdict
+    ) -> ComposeProbeVerdict {
+        switch (current ?? .unavailable, next) {
+        case (.available, _), (_, .available):
+            .available
+        case (.noTarget, _), (_, .noTarget):
+            .noTarget
+        default:
+            .unavailable
+        }
     }
 
     private struct FocusedEditableTarget {

@@ -26,6 +26,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--last", default="20m")
     parser.add_argument("--stdin", action="store_true")
+    parser.add_argument("--min-samples", type=int, default=20)
     return parser.parse_args()
 
 
@@ -109,6 +110,12 @@ def main() -> None:
 
     emit_counter_section("outcome", outcome_counter)
     emit_counter_section("changed", changed_counter)
+    changed_rate = (changed_counter.get("true", 0) / len(sessions)) * 100
+    fallback_rate = (outcome_counter.get("fallback", 0) / len(sessions)) * 100
+    readiness = "ready" if len(sessions) >= args.min_samples else "not ready"
+    print(f"changed rate: {changed_rate:.2f}%")
+    print(f"fallback rate: {fallback_rate:.2f}%")
+    print(f"evaluation readiness: {len(sessions)}/{args.min_samples} sessions ({readiness})")
     print(f"average input length: {input_lengths / len(sessions):.2f}")
     print(f"average output length: {output_lengths / len(sessions):.2f}")
 

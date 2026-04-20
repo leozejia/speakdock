@@ -135,6 +135,17 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
     }
 
+    func testMakefileExposesASRSampleReportCommandAcrossSpeechAndCorrectionReports() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+
+        XCTAssertTrue(makefile.contains("ASR_EVAL_THRESHOLD ?= 20"))
+        XCTAssertTrue(makefile.contains("asr-sample-report:"))
+        XCTAssertTrue(makefile.contains("report-speech-errors.py"))
+        XCTAssertTrue(makefile.contains("report-asr-correction.py --last $(LOG_WINDOW) --min-samples $(ASR_EVAL_THRESHOLD)"))
+    }
+
     func testMakefileExposesSpeechLogsCommandAndScript() throws {
         let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("Makefile")
@@ -179,6 +190,19 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(script.contains("scripts/build-app.sh"))
         XCTAssertTrue(script.contains("open -n -W"))
         XCTAssertTrue(script.contains("--args --probe-compose --probe-compose-duration"))
+        XCTAssertTrue(script.contains("--probe-compose-result-file"))
+    }
+
+    func testComposeProbeScriptReportsMinimalAXVerdict() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-compose-probe.sh")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("Compose probe verdict:"))
+        XCTAssertTrue(script.contains("available"))
+        XCTAssertTrue(script.contains("no-target"))
+        XCTAssertTrue(script.contains("unavailable"))
+        XCTAssertTrue(script.contains("exit 1"))
     }
 
     func testBuildTestHostScriptBuildsHostBundle() throws {

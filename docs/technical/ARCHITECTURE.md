@@ -749,6 +749,12 @@ v1 技术细节整体参考 [README_CN.md](/Users/zejiawu/Projects/Project-Atlas
 - `TargetAdapter`
   - 负责光标注入、文件写入、剪贴板恢复、输入源切换
 
+- `HotPathCoordinator`
+  - 只负责把 `Trigger / Speech / Target / Workspace / Undo / Refine / Overlay` 串成一条热路径
+  - 它可以编排，但不应该继续吸收纯规则判断
+  - 任何能被写成纯规则的新增行为，优先落到 `SpeakDockCore` 的 reducer / policy / preparer，再由它接线
+  - `smoke / probe` 可以复用它，但不能在里面再长出第二套业务语义
+
 - `WikiCompiler`
   - 负责冷路径整理、MD 产物、知识编译
 
@@ -970,11 +976,14 @@ macOS v1 的工程收口写死为：
   - 本地 trace 原始明细入口优先通过 `make traces`
   - 本地 trace 聚合摘要入口优先通过 `make trace-report`
   - 本地 `speech` 失败聚合入口优先通过 `make speech-error-report`；该命令至少要能看清 `language / outcome / error domain / error code`
+  - `speech-error-report` 还必须能直接列出最近失败样本，至少包含 `time / language / error`
   - 本地词典学习摘要入口优先通过 `make term-learning-report`；该命令只读取 `TermDictionaryStore` 快照里的最小必要字段，不暴露完整正文
+  - 本地 `ASR` 样本累计入口优先通过 `make asr-sample-report`；该命令必须把 `speech-error-report` 与 `asr-correction-report` 串成同一次判读，并输出最小 readiness 结论
   - `Settings -> Dictionary -> Passive Learning` 也只能展示同一层最小字段：`alias / canonical / evidence / outcome` 与状态计数；不展示完整正文
   - 匿名术语回归样本的唯一真源固定在 `Tests/SpeakDockMacTests/Fixtures/term-learning-anonymous-baseline.json`；`TermDictionaryStore` 回放测试和 `term-learning-report` 脚本测试都必须复用同一份夹具，不能各写一套内联样本
   - 正常用户态启动默认保持单实例；重复启动应复用现有 `SpeakDock`，而不是再起一个新的常驻实例
   - 第三方 App `Compose` 兼容性扫测优先通过 `make probe-compose` 执行；probe 只检查前台 App 的可编辑目标，不录音、不注入、不改剪贴板
+  - `probe-compose` 结束时必须给出最小 `AX` verdict：`available / no-target / unavailable`，不能只留下原始日志再让人工二次判断
   - 自驱 smoke 优先通过 `make smoke-compose` 执行；smoke 使用 SpeakDock 自带测试宿主验证最小 Compose 注入闭环
   - `Compose undo` 自驱基线优先通过 `make smoke-compose-undo` 执行；该命令必须验证“提交后 secondary action 只回滚当前 compose workspace 最近一次注入”
   - `Compose continuation` 自驱基线优先通过 `make smoke-compose-continue` 执行；该命令必须验证“第一次注入后，外部手改被同步进同一 live workspace，第二次继续口述会接在当前文本后面”

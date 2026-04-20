@@ -2,6 +2,7 @@ SHELL := /bin/zsh
 CONFIGURATION ?= debug
 LOG_WINDOW ?= 20m
 TRACE_WINDOW ?= 20m
+ASR_EVAL_THRESHOLD ?= 20
 PROBE_SECONDS ?= 30
 ROOT_DIR := $(CURDIR)
 SWIFT_HOME := $(ROOT_DIR)/.swift-home
@@ -10,7 +11,7 @@ CLANG_MODULE_CACHE := $(SWIFT_CACHE)/clang/ModuleCache
 SWIFT_ENV := HOME=$(SWIFT_HOME) XDG_CACHE_HOME=$(SWIFT_CACHE) CLANG_MODULE_CACHE_PATH=$(CLANG_MODULE_CACHE) SWIFTPM_MODULECACHE_OVERRIDE=$(CLANG_MODULE_CACHE)
 TEST_FILTER ?=
 
-.PHONY: build run clean test logs speech-logs traces trace-report speech-error-report asr-correction-report term-learning-report probe-compose smoke-compose smoke-compose-continue smoke-compose-undo smoke-compose-switch-undo smoke-capture-continue smoke-capture-undo smoke-asr-correction smoke-refine smoke-refine-manual smoke-capture-refine-manual smoke-refine-dirty-undo smoke-capture-refine-dirty-undo smoke-refine-fallback smoke-capture-refine-fallback smoke-refine-submit-sync smoke-term-learning smoke-term-learning-conflict
+.PHONY: build run clean test logs speech-logs traces trace-report speech-error-report asr-correction-report asr-sample-report term-learning-report probe-compose smoke-compose smoke-compose-continue smoke-compose-undo smoke-compose-switch-undo smoke-capture-continue smoke-capture-undo smoke-asr-correction smoke-refine smoke-refine-manual smoke-capture-refine-manual smoke-refine-dirty-undo smoke-capture-refine-dirty-undo smoke-refine-fallback smoke-capture-refine-fallback smoke-refine-submit-sync smoke-term-learning smoke-term-learning-conflict
 
 build:
 	./scripts/build-app.sh $(CONFIGURATION)
@@ -35,6 +36,10 @@ speech-error-report:
 
 asr-correction-report:
 	python3 ./scripts/report-asr-correction.py --last $(LOG_WINDOW)
+
+asr-sample-report:
+	python3 ./scripts/report-speech-errors.py --last $(LOG_WINDOW)
+	python3 ./scripts/report-asr-correction.py --last $(LOG_WINDOW) --min-samples $(ASR_EVAL_THRESHOLD)
 
 term-learning-report:
 	python3 ./scripts/report-term-learning.py $(if $(TERM_DICTIONARY_STORAGE),--storage $(TERM_DICTIONARY_STORAGE),)
