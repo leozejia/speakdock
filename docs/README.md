@@ -10,7 +10,8 @@
 - 当前唯一 live focus：`docs/plans/CURRENT.md`
 - 仓库启动与权限概览：`README.md`
 - 人工验收顺序：`docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md`
-- 最近一次阶段快照归档：`docs/plans/archive/2026-04-21-docs-truth-source-closure.md`
+- 最近一次阶段快照归档：`docs/plans/archive/2026-04-21-local-model-scope-closure.md`
+- 上一轮阶段快照归档：`docs/plans/archive/2026-04-21-docs-truth-source-closure.md`
 - 阶段实施执行归档：`docs/plans/archive/2026-04-11-speakdock-macos-v1-execution-log.md`
 
 ## 技术
@@ -34,6 +35,7 @@
 - `docs/plans/archive/2026-04-16-speakdock-local-trace-report.md`
 - `docs/plans/archive/2026-04-18-speakdock-asr-first-utterance-stabilization.md`
 - `docs/plans/archive/2026-04-20-speakdock-probe-and-asr-sample-diagnostics.md`
+- `docs/plans/archive/2026-04-21-local-model-scope-closure.md`
 - `docs/plans/archive/2026-04-21-docs-truth-source-closure.md`
 - `docs/plans/archive/2026-04-20-speakdock-term-dictionary-export.md`
 - `docs/plans/archive/2026-04-10-speakdock-macos-v1-implementation.md`
@@ -50,6 +52,7 @@
 - `docs/research/2026-04-15-brand-icon-research.md`
 - `docs/research/2026-04-20-next-phase-brainstorm.md`
 - `docs/research/2026-04-21-asr-official-source-shortlist.md`
+- `docs/research/2026-04-21-asr-post-correction-cloud-refine-research.md`
 - `docs/research/2026-04-21-on-device-model-research.md`
 
 原则：
