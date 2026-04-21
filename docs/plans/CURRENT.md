@@ -12,7 +12,7 @@
 ## 2. 当前阶段
 
 - 阶段：P1 `AI 语音输入法`
-- 当前 focus：`ASR Post-Correction 2B prompt 收敛`
+- 当前 focus：`ASR Post-Correction 双轨收敛（云端已固定，本地 2B 继续）`
 - 状态：`In Progress`
 
 ## 3. 当前复核结论
@@ -67,6 +67,17 @@
   - `control = 11/12`
   - `p50 latency ≈ 2445ms`
   - `p95 latency ≈ 5135ms`
+- 云端候选本轮已完成第一轮固定：
+  - `gpt-5.3-chat-latest`：`40/48`；重跑 `39/48`
+  - `gpt-5.3-codex-spark`：`39/48`
+  - `gpt-5.4`：`38/48`；重跑 `37/48`
+  - `gpt-5.4-mini`：`37/48`
+  - 当前默认推荐：`gpt-5.3-chat-latest`
+  - 不推荐默认使用 `gpt-5.3-codex-spark`
+  - 原因不是它不能用，而是：
+    - 它是 `Codex` 实时编程专用线
+    - 在产品定位上不该作为 SpeakDock 的通用后纠错默认模型
+    - 它还有独立的 `Codex` 限额和速率口径
 - runner 已覆盖一个真实踩坑：
   - `peak_rss_mb` 必须兼容 bytes / kilobytes 两种 `ru_maxrss` 单位
   - 模型偶发吐出 `输入 / 输出` 包裹层时，runner 必须做清洗
@@ -81,15 +92,20 @@
 - 当前已经不缺入口，缺的是继续压 `term / mixed` 的漏判
 - 只有把这个边界写死，下一轮实现才不会重新扩散
 
-所以当前阶段转为 `2B` 线 prompt 收敛，不直接做本地模型接入。
+所以当前阶段转为：
+
+- 云端默认线固定到 `gpt-5.3-chat-latest`
+- 本地线继续围绕 `2B` 收敛
+- 不直接做本地模型默认接入
 
 ## 5. 本轮范围
 
-1. 落地 term / homophone 定向 prompt profile
-2. 用同一模型和同一夹具跑 profile 对照
-3. 修正 runner 对 `输入 / 输出` 格式回声的清洗
-4. 把默认 eval profile 切到当前最优值
-5. 同步 `CURRENT / research`
+1. 跑通并固定云端默认模型
+2. 落地 term / homophone 定向 prompt profile
+3. 用同一模型和同一夹具跑 profile 对照
+4. 修正 runner 对 `输入 / 输出` 格式回声的清洗
+5. 把默认 eval profile 切到当前最优值
+6. 同步 `CURRENT / research`
 
 ## 6. 明确不做
 
@@ -98,12 +114,13 @@
 - 不在这一轮改 `Workspace Refine`
 - 不在这一轮替换 Apple Speech
 - 不把 `Compose / Capture` 拆成两套评测
+- 不把 `Codex-Spark` 误写成 SpeakDock 的通用默认模型
 
 ## 7. 执行顺序
 
-1. 先保留 `mlx-community/Qwen3.5-2B-OptiQ-4bit` 为唯一继续候选
-2. 再固定 runner 与 make 入口
-3. 然后继续只围绕 `term / mixed` 漏判做下一轮 profile 收敛
+1. 先固定云端默认模型为 `gpt-5.3-chat-latest`
+2. 再保留 `mlx-community/Qwen3.5-2B-OptiQ-4bit` 为唯一继续本地候选
+3. 然后继续只围绕 `term / mixed` 漏判做下一轮本地收敛
 4. 最后再决定是否值得接近热路径
 
 ## 8. 完成定义
