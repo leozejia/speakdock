@@ -225,27 +225,41 @@
 
 当前顺序写死为：
 
-1. 主候选：`mlx-community/Qwen3.5-0.8B-4bit-OptiQ`
-2. 对照候选：`mlx-community/Qwen3.5-0.8B-4bit`
+1. 主候选：`mlx-community/Qwen3.5-2B-OptiQ-4bit`
+2. 对照候选：`mlx-community/Qwen3.5-2B-4bit`
 3. 结构替代：`mlx-community/gemma-3-1b-it-4bit`
-4. 诊断锚点：`Qwen/Qwen3.5-0.8B`
+4. 独立 ASR 线：`mlx-community/Qwen3-ASR-0.6B-4bit`
+5. 诊断锚点：`Qwen/Qwen3.5-2B`
 
 理由：
 
-- `mlx-community/Qwen3.5-0.8B-4bit-OptiQ` 是当前唯一主候选
-- 它是标准 `MLX` 运行路径，模型卡直接给出 `mlx-lm >= 0.30.7`
-- 它不是纯 uniform 4-bit，而是 `OptiQ` 的混合精度方案：`4/8-bit` 分层分配，目标 `4.5 BPW`
-- `mlx-community/Qwen3.5-0.8B-4bit` 只保留为对照组，用来判断 `OptiQ` 的额外复杂度是否真的换来了更好的质量
+- `mlx-community/Qwen3.5-2B-OptiQ-4bit` 是当前唯一继续候选
+- 它不是普通 uniform `4-bit`，而是 `OptiQ` 的混合精度方案：同一模型里按层分配 `4/8-bit`，目标 `4.5 BPW`
+- `mlx-community/Qwen3.5-2B-4bit` 只保留为同族对照，用来判断 `OptiQ` 的额外结构是否真的换来了更好的质量
 - `mlx-community/gemma-3-1b-it-4bit` 保留为结构替代，不和 Qwen 两个 4bit 混成一组
-- 官方 `Qwen/Qwen3.5-0.8B` 不再占第一执行位，只在社区版结果异常时用来定位问题是出在模型、量化还是 runtime
+- `mlx-community/Qwen3-ASR-0.6B-4bit` 是独立 `ASR` 线，不进入这份文本后纠错 shortlist
+- 官方 `Qwen/Qwen3.5-2B` 只在社区版结果异常时用来定位问题是出在模型、量化还是 runtime
+
+首轮真实结果：
+
+- `mlx-community/Qwen3.5-0.8B-OptiQ-4bit`：`12/48`，几乎只会保守保留原文，不足以承担当前任务
+- `mlx-community/Qwen3.5-0.8B-4bit`：`9/48`，比 `OptiQ` 更差，且有额外 `over-edit`
+- `Qwen/Qwen3.5-0.8B`：`12/48`，与 `0.8B-OptiQ` 近似，说明核心问题不是社区量化本身
+- `mlx-community/Qwen3.5-2B-OptiQ-4bit` + few-shot：`15/48`，`over-edit = 1`
+- `mlx-community/Qwen3.5-2B-4bit` + few-shot：`13/48`，`over-edit = 2`
+
+当前结论：
+
+- `0.8B` 线当前直接出局，不再继续消耗时间
+- 当前唯一值得继续优化的是 `mlx-community/Qwen3.5-2B-OptiQ-4bit`
+- 这不等于已经可接入产品默认路径；它只是当前最值得继续优化的本地文本后纠错底座
 
 执行规则：
 
-- 先跑 `mlx-community/Qwen3.5-0.8B-4bit-OptiQ`
-- 再跑 `mlx-community/Qwen3.5-0.8B-4bit` 做同族对照
-- 如果 `OptiQ` 在闸门 A 上没有明显优势，就停止为它追加复杂度
-- 如果两个 Qwen 社区版都不理想，再拉 `mlx-community/gemma-3-1b-it-4bit`
-- 只有社区版结果异常到无法判因，才回头拉官方 `Qwen/Qwen3.5-0.8B`
+- 先围绕 `mlx-community/Qwen3.5-2B-OptiQ-4bit` 做 prompt 与 runner 收敛
+- `mlx-community/Qwen3.5-2B-4bit` 只在需要同族对照时复跑
+- 如果 `2B-OptiQ` 继续上不去，再拉 `mlx-community/gemma-3-1b-it-4bit`
+- 只有社区版结果异常到无法判因，才回头拉官方 `Qwen/Qwen3.5-2B`
 
 ## 9. 这轮所需依赖
 
@@ -283,6 +297,6 @@
 1. `asr-post-correction-anonymous-baseline.json`
 2. 基于该夹具的本地批量评测入口
 3. 统一输出 `exact-match / over-edit / fallback / latency / rss` 的报表
-4. `mlx-community/Qwen3.5-0.8B-4bit-OptiQ` 与 `mlx-community/Qwen3.5-0.8B-4bit` 的首轮真实对比结果
+4. `mlx-community/Qwen3.5-2B-OptiQ-4bit` 的 checked-in 批量评测 runner 与下一轮 prompt 对照结果
 
 如果以上四项没出来，就不应开始讨论“是否默认开启本地 `ASR Post-Correction`”。
