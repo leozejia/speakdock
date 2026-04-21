@@ -146,6 +146,20 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(makefile.contains("report-asr-correction.py --last $(LOG_WINDOW) --min-samples $(ASR_EVAL_THRESHOLD)"))
     }
 
+    func testMakefileExposesASRPostCorrectionEvalReportCommandAndScript() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/report-asr-post-correction-eval.py")
+
+        XCTAssertTrue(makefile.contains("ASR_POST_CORRECTION_FIXTURE ?="))
+        XCTAssertTrue(makefile.contains("ASR_POST_CORRECTION_RESULTS ?="))
+        XCTAssertTrue(makefile.contains("asr-post-correction-eval-report:"))
+        XCTAssertTrue(makefile.contains("report-asr-post-correction-eval.py --fixture $(ASR_POST_CORRECTION_FIXTURE) --results $(ASR_POST_CORRECTION_RESULTS)"))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
+    }
+
     func testMakefileExposesSpeechLogsCommandAndScript() throws {
         let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("Makefile")

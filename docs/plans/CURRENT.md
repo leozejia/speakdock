@@ -100,3 +100,4 @@
 - 已完成：`Qwen3-ASR / Qwen3.5-Omni / 文本后纠错模型` 的命名边界纠偏
 - 已完成：`ASR Post-Correction` 最小 shortlist 已收口
 - 已完成：`ASR Post-Correction` 最小实测设计页已落地
+- 已完成：匿名基线夹具、离线评测报表脚本与 `make asr-post-correction-eval-report` 入口已落地
