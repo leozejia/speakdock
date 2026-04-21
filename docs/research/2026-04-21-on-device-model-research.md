@@ -12,6 +12,12 @@
 2. 在当前机器条件下，哪些候选值得进入第一轮 shortlist
 3. 第一轮应该怎么测，才能避免“先接进去再补评估”的漂移
 
+在本轮研究之后，产品边界已进一步收口为：
+
+- 端侧小模型当前只承担 `ASR Post-Correction`
+- `Workspace Refine` 默认走云端 LLM
+- 高性能机器可允许用户自定义本地 `Refine`，但这不是产品默认路线
+
 ## 2. 当前前提
 
 本轮评测前提固定为本机真实环境：
@@ -60,6 +66,12 @@ SpeakDock 不能把 `ASR`、`ASR Post-Correction`、`Workspace Refine` 混成一
 - `ASR Post-Correction` 候选更偏小型文本模型
 - `Workspace Refine` 候选更偏质量更高的文本模型
 
+当前产品决策：
+
+- 端侧小模型主线只保留给 `ASR Post-Correction`
+- `Workspace Refine` 不再进入端侧默认方案筛选
+- 本地 `Refine` 只保留为高配机器上的用户自定义扩展
+
 它们不该共用一个 shortlist。
 
 ## 4. `ASR` 已完成的第一轮收敛
@@ -78,6 +90,11 @@ SpeakDock 不能把 `ASR`、`ASR Post-Correction`、`Workspace Refine` 混成一
 这页不重复抄一遍 `ASR` 细节，只继续向下回答文本模型与测评设计。
 
 ## 5. 文本模型候选筛选
+
+这里的目标已经收口：
+
+- 主线：筛 `ASR Post-Correction`
+- 非主线：评估哪些 `Workspace Refine` 本地方案应直接 `pass`
 
 ### 5.1 Apple Foundation Models
 
@@ -105,6 +122,7 @@ SpeakDock 不能把 `ASR`、`ASR Post-Correction`、`Workspace Refine` 混成一
 
 - `watchlist`
 - 角色：`未来 Apple 原生文本能力候选`
+- 当前不进入产品默认路线
 
 ### 5.2 Qwen3 小模型
 
@@ -124,12 +142,12 @@ SpeakDock 不能把 `ASR`、`ASR Post-Correction`、`Workspace Refine` 混成一
 
 - 这是当前最有“中文优先 + Apple Silicon 可落地”味道的文本候选之一
 - `0.6B` 更适合做轻量级 `ASR Post-Correction`
-- `1.7B` 可以进入 `ASR Post-Correction / Workspace Refine` 的最小可行测试池
+- `1.7B` 可以进入 `ASR Post-Correction` 的最小可行测试池
 
 结论：
 
 - `进入 shortlist`
-- 角色：`中文优先文本候选`
+- 角色：`ASR Post-Correction` 主候选
 
 ### 5.3 Gemma 3n
 
@@ -149,12 +167,12 @@ SpeakDock 不能把 `ASR`、`ASR Post-Correction`、`Workspace Refine` 混成一
 
 - 从设备约束看，它是最像“端侧小模型”目标答案的文本候选
 - 它很适合做 `ASR Post-Correction`
-- 如果 `Workspace Refine` 目标先限制为短工作区整理，它也值得进 shortlist
+- 但 `4B` 级别不适合作为这台底线机器上的默认路线
 
 结论：
 
 - `进入 shortlist`
-- 角色：`设备友好型文本候选`
+- 角色：`ASR Post-Correction` 候选
 
 ### 5.4 Gemma 3
 
@@ -172,14 +190,14 @@ SpeakDock 不能把 `ASR`、`ASR Post-Correction`、`Workspace Refine` 混成一
 
 现实判断：
 
-- 对 SpeakDock 来说，真正有价值的是 `1B / 4B`
-- `4B` 更适合 `Workspace Refine`
+- 对 SpeakDock 来说，真正有价值的是 `1B`
+- `4B` 更适合质量更高的 `Workspace Refine`
 - `12B / 27B` 对当前 `16 GB` 机器不适合进入首轮主测
 
 结论：
 
-- `进入 shortlist`
-- 角色：`Workspace Refine` 主候选
+- `pass`
+- 原因：`Workspace Refine` 已不再进入端侧默认路线，`4B` 也不适合底线机器
 
 ### 5.5 Llama 3.2
 
@@ -267,16 +285,20 @@ benchmark only：
 
 ### 6.3 `Workspace Refine`
 
+当前产品默认路线：
+
+- 走云端 LLM
+
+高配机器高级自定义扩展：
+
+- 用户可自行配置本地 `Refine` provider
+
+当前不进入默认端侧主线：
+
 - `Gemma 3 4B`
 - `Qwen3-1.7B-MLX-4bit`
 - `Gemma 3n 4B`
-
-watchlist：
-
 - `Apple Foundation Models`
-
-benchmark only：
-
 - `Phi-4-mini`
 - `Llama 3.2 3B`
 
@@ -363,7 +385,7 @@ benchmark only：
 
 目标：
 
-- 判断端侧文本模型是否能在可接受延迟内替代或补充现有云端 `Refine`
+- 当前不做默认端侧测评，直接以云端 LLM 为默认实现路线
 
 样本：
 
@@ -384,10 +406,8 @@ benchmark only：
 
 执行顺序：
 
-1. `Gemma 3 4B`
-2. `Qwen3-1.7B-MLX-4bit`
-3. `Gemma 3n 4B`
-4. `Phi-4-mini` 作为推理对照
+1. 云端 provider 作为默认路线继续保留
+2. 本地 `Refine` 只在高配机器的用户自定义扩展场景下再单独验证
 
 ## 9. 当前结论
 
@@ -395,12 +415,13 @@ benchmark only：
 
 - `ASR` 第一优先不是“马上替换 Apple Speech”，而是先验证 `Qwen3-ASR-0.6B` 在 Apple Silicon 上是否真有可行本地路线
 - `Whisper` 必须保留为 Apple Silicon 对照组，因为它的官方路径比 `Qwen3-ASR` 更清楚
-- 文本模型不该只看一个候选，当前更合理的是并行看 `Qwen3 小模型`、`Gemma 3n`、`Gemma 3`
+- 端侧文本模型主线只保留 `ASR Post-Correction`
+- `Workspace Refine` 默认走云端 LLM，不再把本地 `Refine` 当底线机器上的产品路线
 - `Apple Foundation Models` 是重要 future watchlist，但在当前 `macOS 15.7.4` 机器条件下，不应被写成现阶段主线
 
 ## 10. 下一步建议
 
 1. 先做 `ASR` 候选的可行性闸门，不直接开始全量集成
 2. 同时准备一套真实 `ASR` 错误样本，避免 `ASR Post-Correction` 变成空测
-3. `Workspace Refine` 继续保留当前云端能力作为质量参考，不急着端侧替换
-4. 等第一轮数据出来，再决定具体量化、sidecar 生命周期和默认 provider
+3. `Workspace Refine` 继续保留云端 provider 作为默认实现路线
+4. 等第一轮数据出来，再决定 `ASR Post-Correction` 的具体量化、生命周期和默认 provider
