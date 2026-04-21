@@ -18,10 +18,14 @@
 ## 3. 当前复核结论
 
 - 第二轮 research 已完成，当前不再继续扩大候选池
-- `ASR Post-Correction` 当前最小候选顺序写死为：
-  - `Qwen3.5-0.8B`
-  - `Qwen3.5-2B`
-  - `Gemma 3 1B`
+- `ASR Post-Correction` 当前规则改为：
+  - 官方模型先做语义基线
+  - 社区优化版优先争取成为实际落地候选
+- 当前最小顺序写死为：
+  - 官方 `Qwen3.5-0.8B`
+  - 社区 `mlx-community/Qwen3.5-0.8B-4bit-OptiQ`
+  - 社区 `mlx-community/Qwen3.5-0.8B-4bit`
+  - 官方 `Gemma 3 1B`
 - 当前正确动作不是先接模型，而是先写死样本、指标和准入闸门
 - `ASR Post-Correction` 是路由前层，不单独区分 `Compose / Capture`
 - 当前 app 已经具备现成接线积木：
@@ -62,7 +66,7 @@
 1. 先落地最小实测设计页
 2. 再固定匿名夹具 schema 与样本数量
 3. 然后定义下一轮代码 spike 的最小交付物
-4. 最后只从 `Qwen3.5-0.8B` 开始试第一候选
+4. 最后先跑官方 `Qwen3.5-0.8B`，再立刻试社区 `OptiQ 4bit`
 
 ## 8. 完成定义
 
@@ -77,7 +81,7 @@
 ## 9. 下一轮候选
 
 - 基于匿名夹具的本地批量评测入口
-- `Qwen3.5-0.8B` 第一轮真实结果
+- 官方 `Qwen3.5-0.8B` 与社区 `OptiQ 4bit` 的首轮真实结果
 - `Workspace Refine` prompt 重定义
 
 ## 10. 当前不进入下一轮的项

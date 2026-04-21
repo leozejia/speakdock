@@ -358,8 +358,8 @@ OpenAI 官方文档明确写了：
 - `ASR` 主线与 `ASR Post-Correction` 主线必须拆开
 - 当前可明确验证的开源专用 `ASR` 线是 `Qwen3-ASR`，不是一个已公开的 `Qwen3.5-ASR`
 - `Qwen3.5-Omni` 是更大的全模态模型线，更接近 API / 全模态交互能力，不是底线机器上的默认本地路线
-- 本地 `ASR Post-Correction` 第一优先测 `Qwen3.5-0.8B`
-- `Qwen3.5-2B` 作为上限试探
+- 本地 `ASR Post-Correction` 的官方语义基线仍优先看 `Qwen3.5-0.8B`
+- 如果社区优化版在语义上不明显退化，更小的 `MLX / OptiQ / GGUF` 运行版更适合争取实际落地资格
 - `Gemma 3 1B` 作为结构更简单的替代候选
 - `Gemma 3n E2B` 留在观察名单，不先进第一批
 - `Workspace Refine` 不需要重新争论本地路线，默认就是云端
