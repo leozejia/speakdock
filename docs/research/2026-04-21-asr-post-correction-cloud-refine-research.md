@@ -11,6 +11,7 @@
 - 端侧小模型当前只保留给 `ASR Post-Correction`
 - `Workspace Refine` 默认走云端 LLM
 - 本地 `Refine` 只保留给高配机器上的用户自定义扩展
+- 文本模型选型只看 `Qwen3.5` 最新线，不再考虑 `Qwen3.0` 文本模型
 
 第二轮只回答两个具体问题：
 
@@ -106,24 +107,24 @@
 ## 5. 候选逐项判断
 
 ### 5.1 `Qwen3-0.6B`
+### 5.1 `Qwen3.5-0.8B`
 
 官方来源：
 
-- [Qwen3 官方仓库](https://github.com/QwenLM/qwen3)
-- [Qwen/Qwen3-0.6B](https://huggingface.co/Qwen/Qwen3-0.6B)
-- [MLX-LM](https://github.com/ml-explore/mlx-lm)
+- [Qwen3.5 官方模型仓库](https://github.com/QwenLM/Qwen3.6)
+- [Qwen/Qwen3.5-0.8B](https://huggingface.co/Qwen/Qwen3.5-0.8B)
 
 官方信号：
 
-- Qwen3 官方仓库明确给出 `0.6B` 规格
-- 官方强调 `thinking / non-thinking` 双模式切换
-- 官方仓库明确写了：在 Apple Silicon 上，`mlx-lm` 支持 Qwen3
-- 官方模型卡给出 `100+` 语言与方言支持
+- 官方 Hugging Face 模型卡明确给出 `0.8B` 规格
+- 官方模型卡明确写了：`Qwen3.5-0.8B` 默认运行在 `non-thinking mode`
+- 官方模型卡明确给出 `201 languages and dialects`
+- 官方 quickstart 明确支持 OpenAI-compatible API 与 `Transformers / vLLM / SGLang`
 
 为什么适合 SpeakDock：
 
-- `0.6B` 是当前候选里最符合“保守、低成本、词级纠错”的尺寸
-- `non-thinking` 模式很重要，因为这层不能出现 `<think>` 或长 reasoning 输出
+- `0.8B` 是当前最新 Qwen 线里最接近“保守、低成本、词级纠错”的尺寸
+- 默认 `non-thinking` 很重要，因为这层不能出现 `<think>` 或长 reasoning 输出
 - 中文与多语言信号明显强于 `Llama 3.2`
 
 结论：
@@ -131,24 +132,24 @@
 - `primary shortlist`
 - 当前最值得先测的 `ASR Post-Correction` 候选
 
-### 5.2 `Qwen3-1.7B-MLX-4bit`
+### 5.2 `Qwen3.5-2B`
 
 官方来源：
 
-- [Qwen3 官方仓库](https://github.com/QwenLM/qwen3)
-- [Qwen/Qwen3-1.7B-MLX-4bit](https://huggingface.co/Qwen/Qwen3-1.7B-MLX-4bit)
-- [MLX-LM](https://github.com/ml-explore/mlx-lm)
+- [Qwen3.5 官方模型仓库](https://github.com/QwenLM/Qwen3.6)
+- [Qwen/Qwen3.5-2B](https://huggingface.co/Qwen/Qwen3.5-2B)
 
 官方信号：
 
-- Qwen3 官方仓库明确包含 `1.7B` 规格
-- 官方仓库明确写了 Apple Silicon 下的 `mlx-lm` 支持
-- 官方 Hugging Face 已经提供 `MLX-4bit` 资产
+- 官方 Hugging Face 模型卡明确给出 `2B` 规格
+- 官方模型卡明确写了：`Qwen3.5-2B` 默认运行在 `non-thinking mode`
+- 官方模型卡明确支持 OpenAI-compatible API，并给出 `Transformers / vLLM / SGLang` 的标准启动方式
+- 官方 quickstart 提供 `--language-model-only` 路径，说明可以跳过视觉编码器只跑语言部分
 
 为什么适合 SpeakDock：
 
 - 它是合理的“上限试探”
-- 如果 `0.6B` 词准不够，`1.7B` 是不把复杂度拉到 `4B` 的上探路线
+- 如果 `0.8B` 词准不够，`2B` 是不把复杂度拉到 `4B` 的上探路线
 - 仍然沿用同一模型家族，减少 prompt 与行为差异
 
 结论：
@@ -204,7 +205,7 @@
 
 - SpeakDock 当前这层是 text -> text
 - `Gemma 3n` 的多模态和 effective parameter 机制很有意思，但会引入额外复杂度
-- 对“保守词级纠错”这个很窄的任务来说，它没有明显比 `Qwen3-0.6B` 或 `Gemma 3 1B` 更顺
+- 对“保守词级纠错”这个很窄的任务来说，它没有明显比 `Qwen3.5-0.8B` 或 `Gemma 3 1B` 更顺
 
 结论：
 
@@ -260,8 +261,8 @@
 
 最小候选集：
 
-- `Qwen3-0.6B`
-- `Qwen3-1.7B-MLX-4bit`
+- `Qwen3.5-0.8B`
+- `Qwen3.5-2B`
 - `Gemma 3 1B`
 
 观察名单：
@@ -340,8 +341,9 @@ OpenAI 官方文档明确写了：
 
 截至 2026-04-21，这一轮应收口成下面的判断：
 
-- 本地 `ASR Post-Correction` 第一优先测 `Qwen3-0.6B`
-- `Qwen3-1.7B-MLX-4bit` 作为上限试探
+- 文本后纠错这条线只看 `Qwen3.5` 最新模型，不再考虑 `Qwen3.0` 文本模型
+- 本地 `ASR Post-Correction` 第一优先测 `Qwen3.5-0.8B`
+- `Qwen3.5-2B` 作为上限试探
 - `Gemma 3 1B` 作为结构更简单的替代候选
 - `Gemma 3n E2B` 留在观察名单，不先进第一批
 - `Workspace Refine` 不需要重新争论本地路线，默认就是云端
@@ -350,6 +352,6 @@ OpenAI 官方文档明确写了：
 ## 9. 下一步建议
 
 1. 先写 `ASR Post-Correction` 的最小实测设计
-2. 只围绕 `Qwen3-0.6B / Qwen3-1.7B-MLX-4bit / Gemma 3 1B` 做第一批准备
+2. 只围绕 `Qwen3.5-0.8B / Qwen3.5-2B / Gemma 3 1B` 做第一批准备
 3. 在不换 provider 的前提下，先补一版真正的 `Workspace Refine` prompt 定义
 4. 保持当前 `submit refine fallback -> current workspace text` 不变

@@ -12,6 +12,12 @@
 2. 在当前机器条件下，哪些候选值得进入第一轮 shortlist
 3. 第一轮应该怎么测，才能避免“先接进去再补评估”的漂移
 
+注：
+
+- 这页是第一轮总研究页
+- 对文本模型而言，后续第二轮已经进一步收口为“只看 `Qwen3.5` 最新线，不再考虑 `Qwen3.0` 文本模型”
+- 文本后纠错的最新结论以 [2026-04-21-asr-post-correction-cloud-refine-research.md](./2026-04-21-asr-post-correction-cloud-refine-research.md) 为准
+
 在本轮研究之后，产品边界已进一步收口为：
 
 - 端侧小模型当前只承担 `ASR Post-Correction`
