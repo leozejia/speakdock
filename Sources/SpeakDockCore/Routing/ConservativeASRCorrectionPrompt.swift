@@ -27,9 +27,38 @@ public enum ConservativeASRCorrectionPrompt {
         ("open ai compatible", "OpenAI-compatible"),
     ]
 
+    private static let productTermHints: [(spoken: String, canonical: String)] = [
+        ("gemma free", "Gemma 3"),
+        ("queen three asr", "Qwen3-ASR"),
+        ("qwen three asr", "Qwen3-ASR"),
+        ("claude code cli", "Claude Code CLI"),
+        ("apple speech", "Apple Speech"),
+        ("swift ui", "SwiftUI"),
+    ]
+
+    private static let homophoneHints: [(spoken: String, canonical: String)] = [
+        ("图表组", "对照组"),
+        ("邮化", "优化"),
+        ("增只", "增值"),
+        ("观册", "观测"),
+        ("扩善", "扩散"),
+    ]
+
+    private static let wholeIdentifierHints: [(spoken: String, canonical: String)] = [
+        ("mlx community qwen three point five zero point eight b opt iq four bit", "mlx-community/Qwen3.5-0.8B-OptiQ-4bit"),
+        ("qwen slash qwen three point five zero point eight b", "Qwen/Qwen3.5-0.8B"),
+        ("qwen three point five zero point eight b four bit", "Qwen3.5-0.8B-4bit"),
+        ("qwen three point five zero point eight b", "Qwen3.5-0.8B"),
+    ]
+
     public static func makeUserPrompt(for text: String) -> String {
-        let hintBlock = makeEngineeringHintBlock(for: text)
-        let prefix = hintBlock.map { "\($0)\n\n" } ?? ""
+        let hintBlocks = [
+            makeProductTermHintBlock(for: text),
+            makeWholeIdentifierHintBlock(for: text),
+            makeEngineeringHintBlock(for: text),
+            makeHomophoneHintBlock(for: text),
+        ].compactMap { $0 }
+        let prefix = hintBlocks.isEmpty ? "" : "\(hintBlocks.joined(separator: "\n\n"))\n\n"
 
         return """
 \(prefix)请只修正下面转写文本里的明显识别错误；如果没有明显错误，就原样返回：
@@ -58,6 +87,70 @@ public enum ConservativeASRCorrectionPrompt {
 以下工程片段如果明显是在指向固定写法，优先恢复成右侧格式：
 \(lines.joined(separator: "\n"))
 不要把右侧写法改成自然语言、空格写法或别的大小写形式。
+"""
+    }
+
+    private static func makeProductTermHintBlock(for text: String) -> String? {
+        let normalizedText = text.lowercased()
+        var seenCanonicals = Set<String>()
+        var lines: [String] = []
+
+        for hint in productTermHints where normalizedText.contains(hint.spoken) {
+            if seenCanonicals.insert(hint.canonical).inserted {
+                lines.append("- \(hint.spoken) -> \(hint.canonical)")
+            }
+        }
+
+        guard !lines.isEmpty else {
+            return nil
+        }
+
+        return """
+以下术语如果明显是在指向固定产品或技术名，优先恢复成右侧写法：
+\(lines.joined(separator: "\n"))
+不要把右侧术语拆成自然语言或空格写法。
+"""
+    }
+
+    private static func makeHomophoneHintBlock(for text: String) -> String? {
+        var seenCanonicals = Set<String>()
+        var lines: [String] = []
+
+        for hint in homophoneHints where text.contains(hint.spoken) {
+            if seenCanonicals.insert(hint.canonical).inserted {
+                lines.append("- \(hint.spoken) -> \(hint.canonical)")
+            }
+        }
+
+        guard !lines.isEmpty else {
+            return nil
+        }
+
+        return """
+以下词如果明显是同音误识别，优先恢复成右侧写法：
+\(lines.joined(separator: "\n"))
+"""
+    }
+
+    private static func makeWholeIdentifierHintBlock(for text: String) -> String? {
+        let normalizedText = text.lowercased()
+        var seenCanonicals = Set<String>()
+        var lines: [String] = []
+
+        for hint in wholeIdentifierHints where normalizedText.contains(hint.spoken) {
+            if seenCanonicals.insert(hint.canonical).inserted {
+                lines.append("- \(hint.spoken) -> \(hint.canonical)")
+            }
+        }
+
+        guard !lines.isEmpty else {
+            return nil
+        }
+
+        return """
+完整模型或仓库 ID 如果已经能确定，优先恢复成右侧整串写法：
+\(lines.joined(separator: "\n"))
+不要把整串写法拆成多个空格片段。
 """
     }
 }

@@ -12,7 +12,7 @@
 ## 2. 当前阶段
 
 - 阶段：P1 `AI 语音输入法`
-- 当前 focus：`ASR Post-Correction 双轨收敛（云端已固定，本地 2B 继续）`
+- 当前 focus：`ASR Post-Correction 双轨基线固定，准备最小接线`
 - 状态：`In Progress`
 
 ## 3. 当前复核结论
@@ -47,11 +47,27 @@
   - `homophone` 仍停在 `7/12`
   - `p50 latency` 从约 `1081ms` 降到约 `949ms`
   - `p95 latency` 从约 `1637ms` 降到约 `1162ms`
-- 当前结论不是“已经可接产品”，而是：
-  - `2B-OptiQ-4bit` 是唯一值得继续优化的本地文本后纠错候选
-  - 当前最佳 eval profile 已经收敛到 `fewshot_terms_homophone`
-  - “工程片段提示”已经证明这条线可以用低复杂度工程手段继续往上推
-  - 下一步应该继续压 `term / homophone` 漏判，不应该直接接默认热路径
+- 当前 `2B-OptiQ-4bit` 在“命中式术语 / 同音 / 模型 ID 提示”这一轮之后更新为：
+  - `fewshot_terms_homophone + hit-based hints`：`44/48`，重跑仍为 `44/48`
+  - `over-edit = 1`
+  - `fallback = 0`
+  - `term = 11/12`
+  - `mixed = 10/12`
+  - `homophone = 12/12`
+  - `control = 11/12`
+  - `p50 latency ≈ 948ms`
+  - `p95 latency ≈ 1242ms`
+  - `peak rss ≈ 905MB ~ 1029MB`
+- 当前剩余 4 个误差已经收敛到小边角：
+  - `Apple Speech` 大小写
+  - `Qwen` 首字母大小写
+  - 个别中文前缀丢失
+  - 个别句末标点被抹平
+- 当前结论已经从“继续猜 prompt”切换为：
+  - `2B-OptiQ-4bit` 已经是唯一成立的本地后纠错候选
+  - 当前最佳 eval profile 仍是 `fewshot_terms_homophone`
+  - 当前命中式提示层已经把本地线推进到可准备接线的门槛
+  - 下一步应转为最小接线路由与运行期保护，不再继续无脑堆提示
 - `ASR Post-Correction` 是路由前层，不单独区分 `Compose / Capture`
 - 当前 app 已经具备现成接线积木：
   - `ASRCorrectionEngine`
@@ -86,52 +102,55 @@
     - 它是 `Codex` 实时编程专用线
     - 在产品定位上不该作为 SpeakDock 的通用后纠错默认模型
     - 它还有独立的 `Codex` 限额和速率口径
+- 当前固定夹具下，本地线已经超过云端默认线：
+  - 本地 `2B-OptiQ-4bit`：`44/48`
+  - 云端 `gpt-5.3-chat-latest`：`40/48`
+  - 这只是当前 SpeakDock 域内夹具结论，不外推成通用模型结论
 - runner 已覆盖一个真实踩坑：
   - `peak_rss_mb` 必须兼容 bytes / kilobytes 两种 `ru_maxrss` 单位
   - 模型偶发吐出 `输入 / 输出` 包裹层时，runner 必须做清洗
   - 某些 Cloudflare 风格的 OpenAI-compatible 网关会拒绝 Python 默认请求形态，远端 eval 需要走 `curl`
   - 对本地 `2B` 来说，追加“只在命中时出现”的工程片段提示，比继续无脑堆 few-shot 更值
-- 本轮 live focus 继续不碰默认热路径
+- 本轮 live focus 继续不碰默认热路径，但已经进入“准备最小接线”的阶段
 
 ## 4. 为什么现在做
 
-第二轮 research 已经把方向收住了，runner 也已经落地，当前只剩 `2B` 线 prompt 继续压漏判。
+第二轮 research 已经把方向收住了，runner 也已经落地，本地 `2B` 线也不再停留在早期试探阶段。
 
-- 如果不把当前状态写死，后续很容易重新回到“还在猜哪个 profile 更好”的旧状态
-- 当前已经不缺入口，缺的是继续压 `term / homophone` 的漏判
-- 只有把这个边界写死，下一轮实现才不会重新扩散
+- 如果不把当前状态写死，后续很容易又回到“继续加 prompt 看看”的旧状态
+- 当前已经不缺评测入口，也不缺候选池，缺的是把已收敛结论接回真实路由
+- 只有先把“哪条线成立、成立到什么程度”写死，下一轮实现才不会重新扩散
 
 所以当前阶段转为：
 
 - 云端默认线固定到 `gpt-5.3-chat-latest`
-- 本地线继续围绕 `2B` 收敛
-- 不直接做本地模型默认接入
+- 本地线固定到 `mlx-community/Qwen3.5-2B-OptiQ-4bit + fewshot_terms_homophone`
+- 下一步只允许做最小接线与保护，不继续扩大 prompt 实验面
 
 ## 5. 本轮范围
 
-1. 跑通并固定云端默认模型
-2. 落地 term / homophone 定向 prompt profile
-3. 为本地 `2B` 增加按命中生成的工程片段提示
-4. 用同一模型和同一夹具跑 profile 对照
-5. 修正 runner 对 `输入 / 输出` 格式回声的清洗
-6. 把默认 eval profile 切到当前最优值
-7. 同步 `CURRENT / research`
+1. 把本地 `2B` 最新 `44/48` 结果写回 live doc
+2. 固定当前本地默认评测组合，不再继续扩候选
+3. 为下一步 app 内最小接线明确边界
+4. 只保留极小输出保护项，不引入重后处理链
+5. 同步 `CURRENT`
 
 ## 6. 明确不做
 
-- 不在这一轮默认开启本地 `ASR Post-Correction`
 - 不在这一轮继续扩大候选池
+- 不在这一轮继续堆新的 prompt 花样
 - 不在这一轮改 `Workspace Refine`
 - 不在这一轮替换 Apple Speech
 - 不把 `Compose / Capture` 拆成两套评测
 - 不把 `Codex-Spark` 误写成 SpeakDock 的通用默认模型
+- 不做重量级文本后处理管线
 
 ## 7. 执行顺序
 
-1. 先固定云端默认模型为 `gpt-5.3-chat-latest`
-2. 再保留 `mlx-community/Qwen3.5-2B-OptiQ-4bit` 为唯一继续本地候选
-3. 然后继续只围绕 `term / homophone` 漏判做下一轮本地收敛
-4. 最后再决定是否值得接近热路径
+1. 先固定文档里的双轨基线
+2. 再以 `mlx-community/Qwen3.5-2B-OptiQ-4bit` 作为唯一本地接线候选
+3. 然后只补最小运行期保护
+4. 最后再决定是否灰度进入真实热路径
 
 ## 8. 完成定义
 
@@ -143,18 +162,20 @@
 - 当前唯一继续候选已经收敛到 `mlx-community/Qwen3.5-2B-OptiQ-4bit`
 - checked-in runner 与 make 入口已经落地
 - 当前最佳 profile 已经收敛到 `fewshot_terms_homophone`
+- 当前本地最佳结果已经稳定在 `44/48`
 - 不需要再靠口头解释“为什么是这版，不是那版”
 
 ## 9. 下一轮候选
 
-- `mlx-community/Qwen3.5-2B-OptiQ-4bit` 的 prompt 变体对照
+- `ASR Post-Correction` app 内最小接线路由
+- 极小输出保护项
 - `Workspace Refine` prompt 重定义
 
 ## 10. 当前不进入下一轮的项
 
 - 不重新打开本地 `Workspace Refine` 默认路线
-- 不在当前结果下直接默认启用本地 `ASR Post-Correction`
 - 不提前把 `Qwen3-ASR` 混进文本后纠错线
+- 不重新开始本地文本模型 shortlist
 
 ## 11. 阻塞项
 
@@ -174,3 +195,5 @@
 - 已完成：`fewshot / fewshot_terms / fewshot_terms_homophone` 的首轮 prompt 对照
 - 已完成：默认 eval profile 已切到 `fewshot_terms_homophone`
 - 已完成：本地 `2B` 的工程片段提示层已落地，真实结果从 `28/48` 提升到 `33/48`
+- 已完成：本地 `2B` 的命中式术语 / 同音 / 模型 ID 提示层已落地，真实结果从 `33/48` 提升到 `44/48`
+- 已完成：同一夹具下，本地 `2B` 结果已超过当前云端默认线

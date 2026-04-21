@@ -456,6 +456,101 @@ final class ASRPostCorrectionEvalRunnerScriptTests: XCTestCase {
         XCTAssertTrue(prompt?.contains("four bit -> 4bit") == true)
     }
 
+    func testRunnerPromptAddsProductTermAndHomophoneHintsWhenKnownPhrasesAreHit() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-asr-post-correction-eval.py")
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+        process.arguments = [
+            "-c",
+            """
+            import importlib.util
+            import json
+            import sys
+
+            spec = importlib.util.spec_from_file_location("runner", r"\(scriptURL.path)")
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[spec.name] = module
+            spec.loader.exec_module(module)
+
+            payload = {
+                "prompt": module.make_user_prompt(
+                    "queen three asr 先别删，swift ui 页面先别动，今天先测图表组，这个版本先看邮化",
+                    "fewshot_terms_homophone"
+                )
+            }
+            print(json.dumps(payload, ensure_ascii=False))
+            """,
+        ]
+
+        let stdoutPipe = Pipe()
+        process.standardOutput = stdoutPipe
+        process.standardError = Pipe()
+
+        try process.run()
+        process.waitUntilExit()
+
+        XCTAssertEqual(process.terminationStatus, 0)
+
+        let outputData = try stdoutPipe.fileHandleForReading.readToEnd() ?? Data()
+        let payload = try JSONSerialization.jsonObject(with: outputData) as? [String: String]
+        let prompt = payload?["prompt"]
+
+        XCTAssertTrue(prompt?.contains("以下术语如果明显是在指向固定产品或技术名，优先恢复成右侧写法") == true)
+        XCTAssertTrue(prompt?.contains("queen three asr -> Qwen3-ASR") == true)
+        XCTAssertTrue(prompt?.contains("swift ui -> SwiftUI") == true)
+        XCTAssertTrue(prompt?.contains("以下词如果明显是同音误识别，优先恢复成右侧写法") == true)
+        XCTAssertTrue(prompt?.contains("图表组 -> 对照组") == true)
+        XCTAssertTrue(prompt?.contains("邮化 -> 优化") == true)
+    }
+
+    func testRunnerPromptAddsWholeModelIdentifierHintsWhenKnownPhrasesAreHit() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-asr-post-correction-eval.py")
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+        process.arguments = [
+            "-c",
+            """
+            import importlib.util
+            import json
+            import sys
+
+            spec = importlib.util.spec_from_file_location("runner", r"\(scriptURL.path)")
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[spec.name] = module
+            spec.loader.exec_module(module)
+
+            payload = {
+                "prompt": module.make_user_prompt(
+                    "主候选就是 mlx community qwen three point five zero point eight b opt iq four bit，如果出问题就回到 qwen slash qwen three point five zero point eight b",
+                    "fewshot_terms_homophone"
+                )
+            }
+            print(json.dumps(payload, ensure_ascii=False))
+            """,
+        ]
+
+        let stdoutPipe = Pipe()
+        process.standardOutput = stdoutPipe
+        process.standardError = Pipe()
+
+        try process.run()
+        process.waitUntilExit()
+
+        XCTAssertEqual(process.terminationStatus, 0)
+
+        let outputData = try stdoutPipe.fileHandleForReading.readToEnd() ?? Data()
+        let payload = try JSONSerialization.jsonObject(with: outputData) as? [String: String]
+        let prompt = payload?["prompt"]
+
+        XCTAssertTrue(prompt?.contains("完整模型或仓库 ID 如果已经能确定，优先恢复成右侧整串写法") == true)
+        XCTAssertTrue(prompt?.contains("mlx community qwen three point five zero point eight b opt iq four bit -> mlx-community/Qwen3.5-0.8B-OptiQ-4bit") == true)
+        XCTAssertTrue(prompt?.contains("qwen slash qwen three point five zero point eight b -> Qwen/Qwen3.5-0.8B") == true)
+    }
+
     func testRunnerStripsEchoedInputOutputWrapperFromModelOutput() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/run-asr-post-correction-eval.py")

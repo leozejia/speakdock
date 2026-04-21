@@ -92,6 +92,30 @@ ENGINEERING_FRAGMENT_HINTS: list[tuple[str, str]] = [
     ("open ai compatible", "OpenAI-compatible"),
 ]
 
+PRODUCT_TERM_HINTS: list[tuple[str, str]] = [
+    ("gemma free", "Gemma 3"),
+    ("queen three asr", "Qwen3-ASR"),
+    ("qwen three asr", "Qwen3-ASR"),
+    ("claude code cli", "Claude Code CLI"),
+    ("apple speech", "Apple Speech"),
+    ("swift ui", "SwiftUI"),
+]
+
+HOMOPHONE_HINTS: list[tuple[str, str]] = [
+    ("图表组", "对照组"),
+    ("邮化", "优化"),
+    ("增只", "增值"),
+    ("观册", "观测"),
+    ("扩善", "扩散"),
+]
+
+WHOLE_IDENTIFIER_HINTS: list[tuple[str, str]] = [
+    ("mlx community qwen three point five zero point eight b opt iq four bit", "mlx-community/Qwen3.5-0.8B-OptiQ-4bit"),
+    ("qwen slash qwen three point five zero point eight b", "Qwen/Qwen3.5-0.8B"),
+    ("qwen three point five zero point eight b four bit", "Qwen3.5-0.8B-4bit"),
+    ("qwen three point five zero point eight b", "Qwen3.5-0.8B"),
+]
+
 
 @dataclass
 class FixtureSample:
@@ -175,9 +199,21 @@ def make_user_prompt(text: str, prompt_profile: str) -> str:
         prefix_parts.append(HOMOPHONE_HINT)
         prefix_parts.append(HOMOPHONE_EXAMPLES)
 
+    product_term_hint_block = make_product_term_hint_block(text)
+    if product_term_hint_block:
+        prefix_parts.append(product_term_hint_block)
+
+    whole_identifier_hint_block = make_whole_identifier_hint_block(text)
+    if whole_identifier_hint_block:
+        prefix_parts.append(whole_identifier_hint_block)
+
     engineering_hint_block = make_engineering_hint_block(text)
     if engineering_hint_block:
         prefix_parts.append(engineering_hint_block)
+
+    homophone_hint_block = make_homophone_hint_block(text)
+    if homophone_hint_block:
+        prefix_parts.append(homophone_hint_block)
 
     prefix = ""
     if prefix_parts:
@@ -207,6 +243,61 @@ def make_engineering_hint_block(text: str) -> str:
         "以下工程片段如果明显是在指向固定写法，优先恢复成右侧格式：\n"
         + "\n".join(lines)
         + "\n不要把右侧写法改成自然语言、空格写法或别的大小写形式。"
+    )
+
+
+def make_product_term_hint_block(text: str) -> str:
+    normalized_text = text.lower()
+    seen_canonicals: set[str] = set()
+    lines: list[str] = []
+
+    for spoken, canonical in PRODUCT_TERM_HINTS:
+        if spoken in normalized_text and canonical not in seen_canonicals:
+            seen_canonicals.add(canonical)
+            lines.append(f"- {spoken} -> {canonical}")
+
+    if not lines:
+        return ""
+
+    return (
+        "以下术语如果明显是在指向固定产品或技术名，优先恢复成右侧写法：\n"
+        + "\n".join(lines)
+        + "\n不要把右侧术语拆成自然语言或空格写法。"
+    )
+
+
+def make_homophone_hint_block(text: str) -> str:
+    seen_canonicals: set[str] = set()
+    lines: list[str] = []
+
+    for spoken, canonical in HOMOPHONE_HINTS:
+        if spoken in text and canonical not in seen_canonicals:
+            seen_canonicals.add(canonical)
+            lines.append(f"- {spoken} -> {canonical}")
+
+    if not lines:
+        return ""
+
+    return "以下词如果明显是同音误识别，优先恢复成右侧写法：\n" + "\n".join(lines)
+
+
+def make_whole_identifier_hint_block(text: str) -> str:
+    normalized_text = text.lower()
+    seen_canonicals: set[str] = set()
+    lines: list[str] = []
+
+    for spoken, canonical in WHOLE_IDENTIFIER_HINTS:
+        if spoken in normalized_text and canonical not in seen_canonicals:
+            seen_canonicals.add(canonical)
+            lines.append(f"- {spoken} -> {canonical}")
+
+    if not lines:
+        return ""
+
+    return (
+        "完整模型或仓库 ID 如果已经能确定，优先恢复成右侧整串写法：\n"
+        + "\n".join(lines)
+        + "\n不要把整串写法拆成多个空格片段。"
     )
 
 
