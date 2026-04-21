@@ -11,7 +11,7 @@
 - 端侧小模型当前只保留给 `ASR Post-Correction`
 - `Workspace Refine` 默认走云端 LLM
 - 本地 `Refine` 只保留给高配机器上的用户自定义扩展
-- 文本模型选型只看 `Qwen3.5` 最新线，不再考虑 `Qwen3.0` 文本模型
+- `ASR` 与 `ASR Post-Correction` 必须分开看，不能把专用语音模型和文本后纠错模型混写
 
 第二轮只回答两个具体问题：
 
@@ -33,6 +33,21 @@
 - 中英混输、术语保真优先于英文 benchmark
 - `ASR Post-Correction` 只允许保守纠错，不允许整句重写
 - `Workspace Refine` 必须失败可回退，不能阻塞发送
+
+## 2.1 命名澄清
+
+截至 `2026-04-21`，基于官方 GitHub、官方 Hugging Face、官方发布页和官方技术报告，可以先把三条线分清：
+
+- `Qwen3-ASR`：开源专用语音识别线，当前可明确验证的公开 checkpoint 是 `Qwen3-ASR-0.6B / 1.7B`
+- `Qwen3.5-Omni`：更大的全模态模型线；官方发布页把它定义为 `latest generation of fully omnimodal LLM`，支持文本、图像、音频和音视频理解；系列规格是 `Plus / Flash / Light`
+- `ASR Post-Correction`：SpeakDock 自己定义的 text-to-text 词级纠错层，不等于 `ASR`
+
+这意味着：
+
+- 当前没有理由把 `Qwen3.5-Omni` 直接写成底线机器上的默认本地方案
+- `Qwen3.5-Omni` 更接近“全模态交互 / API 能力 / 长音视频处理”这类上层能力，不是当前这轮要落地的轻量本地后纠错组件
+- 当前也不能把 `Qwen3.5` 文本模型误写成“`Qwen3.5-ASR` 已存在”
+- 如果我们讨论的是“端侧专用 ASR”，当前主线仍应先看 `Qwen3-ASR`
 
 ## 3. 当前实现现实
 
@@ -106,7 +121,6 @@
 
 ## 5. 候选逐项判断
 
-### 5.1 `Qwen3-0.6B`
 ### 5.1 `Qwen3.5-0.8B`
 
 官方来源：
@@ -341,7 +355,9 @@ OpenAI 官方文档明确写了：
 
 截至 2026-04-21，这一轮应收口成下面的判断：
 
-- 文本后纠错这条线只看 `Qwen3.5` 最新模型，不再考虑 `Qwen3.0` 文本模型
+- `ASR` 主线与 `ASR Post-Correction` 主线必须拆开
+- 当前可明确验证的开源专用 `ASR` 线是 `Qwen3-ASR`，不是一个已公开的 `Qwen3.5-ASR`
+- `Qwen3.5-Omni` 是更大的全模态模型线，更接近 API / 全模态交互能力，不是底线机器上的默认本地路线
 - 本地 `ASR Post-Correction` 第一优先测 `Qwen3.5-0.8B`
 - `Qwen3.5-2B` 作为上限试探
 - `Gemma 3 1B` 作为结构更简单的替代候选

@@ -19,7 +19,10 @@
 
 - 端侧小模型当前只保留给 `ASR Post-Correction`
 - `Workspace Refine` 默认走云端 LLM，本地 `Refine` 只保留为高配用户自定义扩展
-- 文本后纠错这条线只看 `Qwen3.5` 最新模型，不再考虑 `Qwen3.0` 文本模型
+- `ASR` 与 `ASR Post-Correction` 必须分开看：当前可明确验证的开源专用 `ASR` 线是 `Qwen3-ASR`
+- 截至 `2026-04-21`，未查到官方公开、可直接下载的 `Qwen3.5-ASR` checkpoint
+- `ASR Post-Correction` 仍然是独立的文本小模型问题，当前候选可继续看 `Qwen3.5-0.8B / Qwen3.5-2B / Gemma 3 1B`
+- `Qwen3.5-Omni` 是更大的全模态模型线，不是底线机器上的默认本地路线
 - 第二轮调研要解决两个具体问题：
   - 哪些小模型值得进入 `ASR Post-Correction` shortlist
   - 云端 `Refine` 的默认 provider 契约与失败回退应如何写死

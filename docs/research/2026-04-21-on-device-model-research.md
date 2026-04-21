@@ -15,7 +15,8 @@
 注：
 
 - 这页是第一轮总研究页
-- 对文本模型而言，后续第二轮已经进一步收口为“只看 `Qwen3.5` 最新线，不再考虑 `Qwen3.0` 文本模型”
+- 后续第二轮已经把 `ASR` 与 `ASR Post-Correction` 明确拆开：`ASR` 看专用语音模型，`ASR Post-Correction` 再单独看文本小模型
+- 截至 `2026-04-21`，未查到官方公开、可直接下载的 `Qwen3.5-ASR` checkpoint；当前可明确验证的开源专用 `ASR` 线仍是 `Qwen3-ASR`
 - 文本后纠错的最新结论以 [2026-04-21-asr-post-correction-cloud-refine-research.md](./2026-04-21-asr-post-correction-cloud-refine-research.md) 为准
 
 在本轮研究之后，产品边界已进一步收口为：
