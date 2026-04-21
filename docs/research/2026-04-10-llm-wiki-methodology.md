@@ -1,5 +1,7 @@
 # LLM Wiki Methodology for SpeakDock
 
+Status: research input only. Product truth lives in `docs/technical/ARCHITECTURE.md`.
+
 ## 1. Why This Matters
 
 SpeakDock should not only help users capture voice. It should help them accumulate usable knowledge over time.
@@ -48,8 +50,7 @@ The hot path is the user-facing action that happens immediately after speaking:
 
 - insert text at cursor
 - create inbox markdown note
-- generate summary
-- generate task block
+- optionally run explicit workspace refine
 
 The hot path must stay fast and deterministic.
 
@@ -69,13 +70,11 @@ The cold path should never block immediate completion.
 
 The source of truth should remain the local file system.
 
-Obsidian compatibility follows naturally from this decision. Obsidian is useful as a browser and editor, but it should not become a dependency of the architecture.
-
 The right mental model is:
 
 - SpeakDock writes markdown and metadata files
-- any compatible local markdown tool can read them
-- Obsidian is simply the best immediate viewer for many users
+- wiki output is served via a lightweight local HTTP server, viewable in any browser
+- any compatible local markdown tool (including Obsidian) can also read the files, but none is a dependency
 
 ## 6. Recommended Directory Layout
 
@@ -163,24 +162,20 @@ The schema should remain small at first. Too much metadata becomes a maintenance
 
 ## 11. Role of Local Models
 
-Local models should not be asked to free-form author a full wiki. Their role should be narrower:
+One likely near-term role for local models in SpeakDock is on-device ASR. `Qwen3-ASR-0.6B via MLX` is the current leading candidate, but the exact model package, quantization, and runtime shape still need a dedicated evaluation before they become product truth.
 
-- classify capture type
-- extract entities
-- summarize locally
-- suggest target page categories
-- generate structured blocks under templates
+Wiki compilation is a multi-turn knowledge task requiring autonomous exploration, cross-referencing, and error correction. It is handled by an external agent (Claude Code CLI or Codex CLI), not by local small models.
 
-This keeps the system stable and makes local inference much more practical.
+Local models should not be asked to free-form author a full wiki.
 
 ## 12. Strategic Outcome
 
-By combining local voice capture with a file-based wiki compiler, SpeakDock can become:
+By combining local voice capture with an agent-driven wiki compiler, SpeakDock can become:
 
 - a dictation replacement
 - a local voice inbox
 - a markdown-native knowledge system
-- an Obsidian-compatible personal memory layer
+- a browser-viewable personal memory layer
 
 That is a stronger product position than a pure speech-to-text tool.
 

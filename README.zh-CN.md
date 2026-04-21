@@ -2,7 +2,7 @@
 
 SpeakDock 是一个不止会打字的 macOS AI 语音输入法。
 
-你说话，它把内容写进当前光标。热路径先走确定性的 `Clean`，保证稳定；你需要进一步整理时，再显式打开模型 `Refine` 对整个 workspace 做保守整理。你只是想先记下来，它会把这段想法保存成本地 Markdown，并把它变成后续进入本地知识库和 LLM Wiki 的入口。
+你说话，它把内容写进当前光标。热路径先走确定性的 `Clean`，保证稳定；你需要进一步整理时，再显式打开 `Workspace Refine` 对整个 workspace 做保守整理。你只是想先记下来，它会把这段想法保存成本地 Markdown，并把它变成后续进入本地知识库和 LLM Wiki 的入口，再通过轻量浏览器视图查看。
 
 长期目标是做一个会写、会学会正确词汇、会整理、也会记住的语音层，同时把事实源留在你的机器上。
 
@@ -61,8 +61,8 @@ SpeakDock 现在处于早期 macOS 实现阶段。第一阶段目标是把热路
 - 语言选项覆盖 `en-US`、`zh-CN`、`zh-TW`、`ja-JP`、`ko-KR`。
 - 通过剪贴板粘贴执行 Compose，并临时切换 ASCII 输入源。
 - Capture 到本地 Markdown，文件名为 `speakdock-YYYYMMDD-HHMMSS.md`。
-- 轻量 overlay，显示 listening、thinking、refining、转写预览和音频电平。
-- 确定性的 `Clean`、本地 `Term Dictionary`，以及可选的 OpenAI 兼容 workspace 级 `Refine`。
+- 轻量 overlay，显示 listening、thinking、转写预览、音频电平和 workspace 整理状态。
+- 确定性的 `Clean`、本地 `Term Dictionary`，以及可选的 OpenAI 兼容 `Workspace Refine`。
 - 在“可读回文本”的目标里支持保守的被动词级学习，重复且稳定的修正会晋升进本地 active 词典。
 - 最近一次写入撤回和 refine 撤回。
 - 第三方输入框兼容性诊断。
@@ -72,9 +72,10 @@ SpeakDock 现在处于早期 macOS 实现阶段。第一阶段目标是把热路
 还没有交付：
 
 - 正式打包和签名的公开版本。
-- 本地 ASR 模型路径。
+- 本地 ASR 模型路径。`Qwen3-ASR-0.6B via MLX` 是当前优先评估的候选方向，但模型封装、量化方式和运行形态都还没有锁死；Apple Speech 继续承担实时展示和 fallback。
+- 可选的模型型 `ASR Post-Correction`，用于补 transcript 级词准。
 - 端侧小模型清洗或抽取引擎。
-- 后台 Wiki compiler 和 schema 工作流。
+- 后台 `Wiki Compile`，通过 Claude Code 或 Codex CLI 驱动，并提供一个以本地 `wiki/` 根目录为入口的轻量浏览器阅读方式。
 - DJI 或其他硬件 trigger adapter。
 - iOS 触发或 capture 入口。
 

@@ -10,33 +10,36 @@
 
 ## 2. 复核时间
 
-2026-04-20
+- 2026-04-21
 
 ## 3. 复核范围
 
-基于当前代码库与 `ARCHITECTURE.md`，只检查“文档已定义、实现仍缺失”的窄缺口。
+- `README.md`
+- `README.zh-CN.md`
+- `docs/technical/ARCHITECTURE.md`
+- `docs/plans/CURRENT.md`
+- `docs/README.md`
+- `docs/research/2026-04-10-llm-wiki-methodology.md`
+- `docs/research/2026-04-20-next-phase-brainstorm.md`
 
 ## 4. 结论
 
-整体架构仍然一致。当前最明确的实现缺口不是主模型漂移，而是 `TermDictionary` 的导出能力还没补齐。
+- 活文档口径已经重新收口到 `ActiveWorkspace + SecondaryAction`
+- `Streaming Preview / ASR Post-Correction / Workspace Refine / Wiki Compile` 已成为当前统一术语
+- `Qwen3-ASR-0.6B via MLX` 当前只保留为优先候选方向，未被写死为已锁定实现
+- `Wiki` 的默认浏览方式已经明确为“本地 HTTP server + 浏览器打开 `wiki/` 根目录”
+- research 继续保留，但不再反向覆盖架构主模型
 
-## 5. 本轮已处理项
+## 5. 待进入下一轮 plan 的项
 
-### 5.1 TermDictionary 导出缺口
-
-- 之前状态：词典已经支持添加、删除、确认、忽略与本地被动学习，但没有显式导出入口
-- 本轮动作：补 `TermDictionaryStore` 导出能力、`Settings -> Dictionary` 入口与人工验收口径
-- 当前结果：定义与实现已经一致；导出不改变现有词级学习和热路径语义
+- 端侧 ASR 候选评测页，明确真实失败样本、延迟、内存和热量口径
+- `Wiki Compile` 的最小入口和浏览器浏览验证
 
 ## 6. 不需要进入 plan 的观察
 
-- `ActiveWorkspace + SecondaryAction` 主线当前没有新的漂移信号
-- `AX probe` 与 `ASR` 样本观测这两条诊断线已经收口，不需要继续占用当前 plan
-- 当前无需为导出能力引入新的服务、数据库或同步层
+- 不需要为了术语统一去做全仓实现名重写
+- 不需要现在就锁死 sidecar 常驻、量化方案或具体模型封装
 
 ## 7. 归档条件
 
-以下条件满足后，本文档归档：
-
-- 当前 plan 已完成并归档
-- 导出能力、验证口径和文档口径已经一致
+- 下一轮 `CURRENT.md` 接管 focus 时归档

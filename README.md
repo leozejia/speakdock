@@ -2,7 +2,7 @@
 
 SpeakDock is an AI voice input method for macOS that does not stop at typing.
 
-Speak, and it writes where you are. Deterministic cleanup keeps the hot path stable, an optional future ASR post-correction layer can improve transcript accuracy, and workspace-level `Refine` can reorganize a whole working draft when the user wants clearer expression. Capture a thought instead, and it becomes the entry point to a local Markdown knowledge base that can later be compiled into an LLM-maintained wiki.
+Speak, and it writes where you are. Deterministic cleanup keeps the hot path stable, an optional future `ASR Post-Correction` layer can improve transcript accuracy, and `Workspace Refine` can reorganize a whole working draft when the user wants clearer expression. Capture a thought instead, and it becomes the entry point to a local Markdown knowledge base that can later be compiled into an LLM-maintained wiki and browsed from a lightweight local web view.
 
 The long-term goal is a voice layer that can write, learn the right terms, organize expression, and remember, while keeping the source of truth on your machine.
 
@@ -61,8 +61,8 @@ What works today:
 - Language options for `en-US`, `zh-CN`, `zh-TW`, `ja-JP`, and `ko-KR`.
 - Compose through clipboard paste with temporary ASCII input-source switching.
 - Capture to local Markdown files named `speakdock-YYYYMMDD-HHMMSS.md`.
-- Lightweight overlay for listening, thinking, refining, transcript preview, and audio level.
-- Deterministic `Clean`, a local `Term Dictionary`, and optional OpenAI-compatible workspace-level `Refine`.
+- Lightweight overlay for listening, thinking, streaming preview, audio level, and workspace refine state.
+- Deterministic `Clean`, a local `Term Dictionary`, and optional OpenAI-compatible `Workspace Refine`.
 - Conservative passive word-level learning in readable targets, with repeated stable corrections promoted into the local term dictionary.
 - Recent insertion undo and refine undo.
 - Compatibility diagnostics for third-party text targets.
@@ -72,10 +72,10 @@ What works today:
 Not shipped yet:
 
 - A packaged and signed public release.
-- A local ASR model path.
-- An optional model-backed ASR post-correction layer for transcript accuracy.
+- A local ASR model path. `Qwen3-ASR-0.6B via MLX` is the current leading candidate, but model packaging, quantization, and runtime shape are not locked yet. Apple Speech remains the streaming preview and fallback.
+- An optional model-backed `ASR Post-Correction` layer for transcript accuracy.
 - A local small-model cleanup or extraction engine.
-- Background Wiki compiler and schema workflow.
+- Background `Wiki Compile` via Claude Code or Codex CLI, plus the minimal browser-based reader over the local `wiki/` root.
 - DJI or other hardware trigger adapters.
 - iOS trigger or capture surface.
 
