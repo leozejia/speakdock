@@ -5,10 +5,9 @@ import argparse
 import json
 import os
 import resource
+import subprocess
 import sys
 import time
-import urllib.error
-import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -304,19 +303,52 @@ def run_openai_eval(
                         },
                     ],
                     "temperature": 0,
-                }
-            ).encode("utf-8")
-            request = urllib.request.Request(
-                url=url,
-                data=payload,
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
                 },
-                method="POST",
+                ensure_ascii=False,
             )
-            with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
-                response_payload = json.loads(response.read().decode("utf-8"))
+            completed = subprocess.run(
+                [
+                    "curl",
+                    "-sS",
+                    "--max-time",
+                    str(timeout_seconds),
+                    "-H",
+                    f"Authorization: Bearer {api_key}",
+                    "-H",
+                    "Content-Type: application/json",
+                    "--data-binary",
+                    "@-",
+                    "-o",
+                    "-",
+                    "-w",
+                    "\n__HTTP_STATUS__:%{http_code}",
+                    url,
+                ],
+                input=payload,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            if completed.returncode != 0:
+                raise SystemExit(
+                    f"openai-compatible request failed for sample {sample.id}: {completed.stderr.strip() or 'curl failed'}"
+                )
+
+            marker = "\n__HTTP_STATUS__:"
+            if marker not in completed.stdout:
+                raise SystemExit(
+                    f"openai-compatible request failed for sample {sample.id}: invalid response"
+                )
+
+            response_body, status_text = completed.stdout.rsplit(marker, 1)
+            status_code = int(status_text.strip())
+            if not 200 <= status_code <= 299:
+                raise SystemExit(
+                    f"openai-compatible request failed for sample {sample.id}: HTTP {status_code}"
+                )
+
+            response_payload = json.loads(response_body)
             content = str(
                 response_payload.get("choices", [{}])[0]
                 .get("message", {})
@@ -328,15 +360,7 @@ def run_openai_eval(
             else:
                 output = sample.input
                 outcome = "fallback"
-        except urllib.error.HTTPError as error:
-            raise SystemExit(
-                f"openai-compatible request failed for sample {sample.id}: HTTP {error.code}"
-            ) from error
-        except urllib.error.URLError as error:
-            raise SystemExit(
-                f"openai-compatible request failed for sample {sample.id}: {error.reason}"
-            ) from error
-        except (TimeoutError, json.JSONDecodeError, KeyError, IndexError) as error:
+        except (subprocess.TimeoutExpired, json.JSONDecodeError, KeyError, IndexError, ValueError) as error:
             raise SystemExit(
                 f"openai-compatible request failed for sample {sample.id}: invalid response"
             ) from error

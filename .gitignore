@@ -5,3 +5,4 @@
 .swift-home/
 .tmp/
 .env
+__pycache__/

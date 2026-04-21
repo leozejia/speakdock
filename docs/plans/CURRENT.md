@@ -58,9 +58,19 @@
   - `make asr-post-correction-openai-eval`
   - 本地 `.env` / `.env.example`
   - 仅用于离线评测对比，不接入 app 默认热路径
+- 首轮远端对比结果已经拿到：
+  - `gpt-5.4` via OpenAI-compatible：`38/48`
+  - `over-edit = 1`
+  - `term = 11/12`
+  - `mixed = 6/12`
+  - `homophone = 10/12`
+  - `control = 11/12`
+  - `p50 latency ≈ 2445ms`
+  - `p95 latency ≈ 5135ms`
 - runner 已覆盖一个真实踩坑：
   - `peak_rss_mb` 必须兼容 bytes / kilobytes 两种 `ru_maxrss` 单位
   - 模型偶发吐出 `输入 / 输出` 包裹层时，runner 必须做清洗
+  - 某些 Cloudflare 风格的 OpenAI-compatible 网关会拒绝 Python 默认请求形态，远端 eval 需要走 `curl`
 - 本轮 live focus 继续不碰默认热路径
 
 ## 4. 为什么现在做
