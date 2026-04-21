@@ -52,8 +52,8 @@
 
 补一条当前阶段的固定偏好：
 
-- 官方模型负责验证“这件事在语义上值不值得做”
-- 社区优化版负责竞争“这件事能不能在底线机器上更轻地落地”
+- 直接优先跑来源清晰的社区运行优化版
+- 官方原版只在结果异常时作为诊断锚点
 - 没有明确来路的二次训练或激进魔改版，不进入当前主线
 
 ## 4. 这轮建立在哪些现有积木上
@@ -219,31 +219,33 @@
 
 候选分三层：
 
-1. `官方语义基线`
-2. `社区落地候选`
-3. `替代对照组`
+1. `主候选`
+2. `对照候选`
+3. `结构替代`
 
 当前顺序写死为：
 
-1. 官方 `Qwen3.5-0.8B`
-2. 社区 `mlx-community/Qwen3.5-0.8B-4bit-OptiQ`
-3. 社区 `mlx-community/Qwen3.5-0.8B-4bit`
-4. 官方 `Gemma 3 1B`
+1. 主候选：`mlx-community/Qwen3.5-0.8B-4bit-OptiQ`
+2. 对照候选：`mlx-community/Qwen3.5-0.8B-4bit`
+3. 结构替代：`mlx-community/gemma-3-1b-it-4bit`
+4. 诊断锚点：`Qwen/Qwen3.5-0.8B`
 
 理由：
 
-- 官方 `Qwen3.5-0.8B` 先只做一次语义基线，防止后面把社区量化差异误判成模型能力
-- `OptiQ 4bit` 是当前最值得争取的实际落地候选，因为它更小
-- 普通 `4bit` 是次选，用来判断 `OptiQ` 的收益是否真实
-- `Gemma 3 1B` 保留为结构不同的替代对照组
+- `mlx-community/Qwen3.5-0.8B-4bit-OptiQ` 是当前唯一主候选
+- 它是标准 `MLX` 运行路径，模型卡直接给出 `mlx-lm >= 0.30.7`
+- 它不是纯 uniform 4-bit，而是 `OptiQ` 的混合精度方案：`4/8-bit` 分层分配，目标 `4.5 BPW`
+- `mlx-community/Qwen3.5-0.8B-4bit` 只保留为对照组，用来判断 `OptiQ` 的额外复杂度是否真的换来了更好的质量
+- `mlx-community/gemma-3-1b-it-4bit` 保留为结构替代，不和 Qwen 两个 4bit 混成一组
+- 官方 `Qwen/Qwen3.5-0.8B` 不再占第一执行位，只在社区版结果异常时用来定位问题是出在模型、量化还是 runtime
 
 执行规则：
 
-- 先跑一次官方 `Qwen3.5-0.8B`
-- 只要官方基线过闸门 A，就立刻把主注意力切到社区 `OptiQ 4bit`
-- 如果社区版在闸门 A 上相比官方基线只多错 `<= 1` 条，但运行指标明显更优，社区版优先成为实际落地候选
-- 如果第一条社区候选失败，再看普通 `4bit`
-- `Gemma 3 1B` 只在 Qwen 这条线不理想时再拉起来
+- 先跑 `mlx-community/Qwen3.5-0.8B-4bit-OptiQ`
+- 再跑 `mlx-community/Qwen3.5-0.8B-4bit` 做同族对照
+- 如果 `OptiQ` 在闸门 A 上没有明显优势，就停止为它追加复杂度
+- 如果两个 Qwen 社区版都不理想，再拉 `mlx-community/gemma-3-1b-it-4bit`
+- 只有社区版结果异常到无法判因，才回头拉官方 `Qwen/Qwen3.5-0.8B`
 
 ## 9. 这轮所需依赖
 
@@ -281,6 +283,6 @@
 1. `asr-post-correction-anonymous-baseline.json`
 2. 基于该夹具的本地批量评测入口
 3. 统一输出 `exact-match / over-edit / fallback / latency / rss` 的报表
-4. 官方 `Qwen3.5-0.8B` 与社区 `OptiQ 4bit` 的首轮真实对比结果
+4. `mlx-community/Qwen3.5-0.8B-4bit-OptiQ` 与 `mlx-community/Qwen3.5-0.8B-4bit` 的首轮真实对比结果
 
 如果以上四项没出来，就不应开始讨论“是否默认开启本地 `ASR Post-Correction`”。
