@@ -117,6 +117,203 @@ final class ASRPostCorrectionEvalRunnerScriptTests: XCTestCase {
         XCTAssertTrue(errorOutput.contains("either --model-path or --mock-responses is required"))
     }
 
+    func testRunnerWritesEvalResultsUsingOpenAICompatibleEndpoint() throws {
+        let rootURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        let scriptURL = rootURL.appendingPathComponent("scripts/run-asr-post-correction-eval.py")
+        let stubServerURL = rootURL.appendingPathComponent("scripts/run-refine-stub-server.py")
+
+        let fixture = """
+        {
+          "samples": [
+            { "id": "term-001", "bucket": "term", "input": "project adults", "expected": "Project Atlas", "should_change": true, "source": "real-anonymized", "notes": "project name" }
+          ]
+        }
+        """
+
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("asr-post-correction-eval-openai-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let fixtureURL = tempDirectory.appendingPathComponent("fixture.json")
+        let resultsURL = tempDirectory.appendingPathComponent("results.json")
+        let requestURL = tempDirectory.appendingPathComponent("request.txt")
+        try fixture.write(to: fixtureURL, atomically: true, encoding: .utf8)
+
+        let port = try availableLocalPort()
+        let server = Process()
+        server.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+        server.arguments = [
+            stubServerURL.path,
+            "--port", String(port),
+            "--response-text", "Project Atlas",
+            "--record-user-message", requestURL.path,
+        ]
+        server.standardOutput = Pipe()
+        server.standardError = Pipe()
+
+        try server.run()
+        defer {
+            if server.isRunning {
+                server.terminate()
+                server.waitUntilExit()
+            }
+        }
+
+        XCTAssertTrue(waitForServerReady(port: port))
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+        process.arguments = [
+            scriptURL.path,
+            "--fixture", fixtureURL.path,
+            "--results", resultsURL.path,
+            "--base-url", "http://127.0.0.1:\(port)/v1",
+            "--api-key", "test-token",
+            "--model", "gpt-5.4",
+            "--prompt-profile", "fewshot_terms_homophone",
+        ]
+
+        let stdoutPipe = Pipe()
+        process.standardOutput = stdoutPipe
+        process.standardError = Pipe()
+
+        try process.run()
+        process.waitUntilExit()
+
+        XCTAssertEqual(process.terminationStatus, 0)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: resultsURL.path))
+
+        let outputData = try stdoutPipe.fileHandleForReading.readToEnd() ?? Data()
+        let output = String(decoding: outputData, as: UTF8.self)
+        XCTAssertTrue(output.contains("driver: openai-compatible"))
+
+        let resultsData = try Data(contentsOf: resultsURL)
+        let payload = try JSONSerialization.jsonObject(with: resultsData) as? [[String: Any]]
+        XCTAssertEqual(payload?.count, 1)
+        XCTAssertEqual(payload?.first?["output"] as? String, "Project Atlas")
+        XCTAssertEqual(payload?.first?["outcome"] as? String, "corrected")
+
+        let requestText = try String(contentsOf: requestURL, encoding: .utf8)
+        XCTAssertTrue(requestText.contains("输入：project adults"))
+        XCTAssertTrue(requestText.contains("请只修正下面转写文本里的明显识别错误"))
+    }
+
+    func testRunnerRejectsIncompleteOpenAICompatibleConfiguration() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-asr-post-correction-eval.py")
+
+        let fixture = """
+        {
+          "samples": [
+            { "id": "term-001", "bucket": "term", "input": "project adults", "expected": "Project Atlas", "should_change": true, "source": "real-anonymized", "notes": "project name" }
+          ]
+        }
+        """
+
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("asr-post-correction-eval-openai-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let fixtureURL = tempDirectory.appendingPathComponent("fixture.json")
+        let resultsURL = tempDirectory.appendingPathComponent("results.json")
+        try fixture.write(to: fixtureURL, atomically: true, encoding: .utf8)
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+        process.arguments = [
+            scriptURL.path,
+            "--fixture", fixtureURL.path,
+            "--results", resultsURL.path,
+            "--base-url", "https://example.com/v1",
+            "--model", "gpt-5.4",
+        ]
+
+        let stderrPipe = Pipe()
+        process.standardOutput = Pipe()
+        process.standardError = stderrPipe
+
+        try process.run()
+        process.waitUntilExit()
+
+        XCTAssertNotEqual(process.terminationStatus, 0)
+
+        let errorData = try stderrPipe.fileHandleForReading.readToEnd() ?? Data()
+        let errorOutput = String(decoding: errorData, as: UTF8.self)
+        XCTAssertTrue(errorOutput.contains("openai-compatible runs require --base-url, --model, and an API key"))
+    }
+
+    func testRunnerFailsFastWhenOpenAICompatibleEndpointReturnsHTTPError() throws {
+        let rootURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        let scriptURL = rootURL.appendingPathComponent("scripts/run-asr-post-correction-eval.py")
+        let stubServerURL = rootURL.appendingPathComponent("scripts/run-refine-stub-server.py")
+
+        let fixture = """
+        {
+          "samples": [
+            { "id": "term-001", "bucket": "term", "input": "project adults", "expected": "Project Atlas", "should_change": true, "source": "real-anonymized", "notes": "project name" }
+          ]
+        }
+        """
+
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("asr-post-correction-eval-openai-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let fixtureURL = tempDirectory.appendingPathComponent("fixture.json")
+        let resultsURL = tempDirectory.appendingPathComponent("results.json")
+        try fixture.write(to: fixtureURL, atomically: true, encoding: .utf8)
+
+        let port = try availableLocalPort()
+        let server = Process()
+        server.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+        server.arguments = [
+            stubServerURL.path,
+            "--port", String(port),
+            "--response-text", "Project Atlas",
+            "--status-code", "401",
+        ]
+        server.standardOutput = Pipe()
+        server.standardError = Pipe()
+
+        try server.run()
+        defer {
+            if server.isRunning {
+                server.terminate()
+                server.waitUntilExit()
+            }
+        }
+
+        XCTAssertTrue(waitForServerReady(port: port))
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+        process.arguments = [
+            scriptURL.path,
+            "--fixture", fixtureURL.path,
+            "--results", resultsURL.path,
+            "--base-url", "http://127.0.0.1:\(port)/v1",
+            "--api-key", "test-token",
+            "--model", "gpt-5.4",
+        ]
+
+        let stderrPipe = Pipe()
+        process.standardOutput = Pipe()
+        process.standardError = stderrPipe
+
+        try process.run()
+        process.waitUntilExit()
+
+        XCTAssertNotEqual(process.terminationStatus, 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: resultsURL.path))
+
+        let errorData = try stderrPipe.fileHandleForReading.readToEnd() ?? Data()
+        let errorOutput = String(decoding: errorData, as: UTF8.self)
+        XCTAssertTrue(errorOutput.contains("openai-compatible request failed"))
+    }
+
     func testRunnerNormalizesPeakRSSAcrossByteAndKilobyteUnits() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/run-asr-post-correction-eval.py")
@@ -249,5 +446,69 @@ final class ASRPostCorrectionEvalRunnerScriptTests: XCTestCase {
 
         XCTAssertEqual(payload?["wrapped"], "community 版本只是运行优化。")
         XCTAssertEqual(payload?["plain"], "SpeakDock 今天更稳定")
+    }
+
+    private func availableLocalPort() throws -> Int {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+        process.arguments = [
+            "-c",
+            """
+            import socket
+            with socket.socket() as sock:
+                sock.bind(("127.0.0.1", 0))
+                print(sock.getsockname()[1])
+            """,
+        ]
+
+        let stdoutPipe = Pipe()
+        process.standardOutput = stdoutPipe
+        process.standardError = Pipe()
+
+        try process.run()
+        process.waitUntilExit()
+        XCTAssertEqual(process.terminationStatus, 0)
+
+        let outputData = try stdoutPipe.fileHandleForReading.readToEnd() ?? Data()
+        let output = String(decoding: outputData, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        return try XCTUnwrap(Int(output))
+    }
+
+    private func waitForServerReady(port: Int) -> Bool {
+        for _ in 0..<50 {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+            process.arguments = [
+                "-c",
+                """
+                import socket
+                import sys
+                port = int(sys.argv[1])
+                with socket.socket() as sock:
+                    sock.settimeout(0.1)
+                    try:
+                        sock.connect(("127.0.0.1", port))
+                    except OSError:
+                        raise SystemExit(1)
+                """,
+                String(port),
+            ]
+            process.standardOutput = Pipe()
+            process.standardError = Pipe()
+
+            do {
+                try process.run()
+                process.waitUntilExit()
+                if process.terminationStatus == 0 {
+                    return true
+                }
+            } catch {
+                return false
+            }
+
+            Thread.sleep(forTimeInterval: 0.1)
+        }
+
+        return false
     }
 }

@@ -16,7 +16,7 @@ CLANG_MODULE_CACHE := $(SWIFT_CACHE)/clang/ModuleCache
 SWIFT_ENV := HOME=$(SWIFT_HOME) XDG_CACHE_HOME=$(SWIFT_CACHE) CLANG_MODULE_CACHE_PATH=$(CLANG_MODULE_CACHE) SWIFTPM_MODULECACHE_OVERRIDE=$(CLANG_MODULE_CACHE)
 TEST_FILTER ?=
 
-.PHONY: build run clean test logs speech-logs traces trace-report speech-error-report asr-correction-report asr-sample-report asr-post-correction-eval asr-post-correction-eval-report term-learning-report probe-compose smoke-compose smoke-compose-continue smoke-compose-undo smoke-compose-switch-undo smoke-capture-continue smoke-capture-undo smoke-asr-correction smoke-refine smoke-refine-manual smoke-capture-refine-manual smoke-refine-dirty-undo smoke-capture-refine-dirty-undo smoke-refine-fallback smoke-capture-refine-fallback smoke-refine-submit-sync smoke-term-learning smoke-term-learning-conflict
+.PHONY: build run clean test logs speech-logs traces trace-report speech-error-report asr-correction-report asr-sample-report asr-post-correction-eval asr-post-correction-openai-eval asr-post-correction-eval-report term-learning-report probe-compose smoke-compose smoke-compose-continue smoke-compose-undo smoke-compose-switch-undo smoke-capture-continue smoke-capture-undo smoke-asr-correction smoke-refine smoke-refine-manual smoke-capture-refine-manual smoke-refine-dirty-undo smoke-capture-refine-dirty-undo smoke-refine-fallback smoke-capture-refine-fallback smoke-refine-submit-sync smoke-term-learning smoke-term-learning-conflict
 
 build:
 	./scripts/build-app.sh $(CONFIGURATION)
@@ -51,6 +51,9 @@ asr-post-correction-eval-report:
 
 asr-post-correction-eval:
 	$(ASR_POST_CORRECTION_PYTHON) ./scripts/run-asr-post-correction-eval.py --fixture $(ASR_POST_CORRECTION_FIXTURE) --results $(ASR_POST_CORRECTION_RESULTS) --model-path $(ASR_POST_CORRECTION_MODEL) --prompt-profile $(ASR_POST_CORRECTION_PROMPT_PROFILE)
+
+asr-post-correction-openai-eval:
+	./scripts/run-asr-post-correction-openai-eval.sh $(ASR_POST_CORRECTION_PYTHON) $(ASR_POST_CORRECTION_FIXTURE) $(ASR_POST_CORRECTION_RESULTS) $(ASR_POST_CORRECTION_PROMPT_PROFILE)
 
 term-learning-report:
 	python3 ./scripts/report-term-learning.py $(if $(TERM_DICTIONARY_STORAGE),--storage $(TERM_DICTIONARY_STORAGE),)

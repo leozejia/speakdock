@@ -3,9 +3,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import resource
 import sys
 import time
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -94,18 +97,44 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--results", required=True)
     parser.add_argument("--model-path")
     parser.add_argument("--mock-responses")
+    parser.add_argument("--base-url")
+    parser.add_argument("--api-key")
+    parser.add_argument("--api-key-env", default="OPENAI_API_KEY")
+    parser.add_argument("--model")
     parser.add_argument(
         "--prompt-profile",
         default="fewshot_terms_homophone",
         choices=prompt_profiles(),
     )
     parser.add_argument("--max-tokens", type=int, default=48)
+    parser.add_argument("--request-timeout-seconds", type=float, default=60)
     args = parser.parse_args()
 
-    if not args.model_path and not args.mock_responses:
+    remote_selected = any(
+        value is not None and str(value).strip()
+        for value in (args.base_url, args.api_key, args.model)
+    )
+    driver_count = sum(
+        [
+            bool(args.model_path),
+            bool(args.mock_responses),
+            bool(remote_selected),
+        ]
+    )
+
+    if driver_count == 0:
         parser.error("either --model-path or --mock-responses is required")
-    if args.model_path and args.mock_responses:
-        parser.error("use either --model-path or --mock-responses, not both")
+    if driver_count > 1:
+        parser.error("use exactly one driver: --model-path, --mock-responses, or openai-compatible config")
+
+    resolved_api_key = args.api_key
+    if remote_selected and not resolved_api_key and args.api_key_env:
+        resolved_api_key = os.environ.get(args.api_key_env)
+
+    if remote_selected:
+        if not args.base_url or not args.model or not resolved_api_key:
+            parser.error("openai-compatible runs require --base-url, --model, and an API key")
+        setattr(args, "resolved_api_key", resolved_api_key)
 
     return args
 
@@ -164,6 +193,13 @@ def clean_output(output: str) -> str:
         cleaned = cleaned.removeprefix("输出：").strip()
 
     return cleaned
+
+
+def endpoint_url(base_url: str) -> str:
+    trimmed = base_url.strip()
+    if trimmed.endswith("/chat/completions"):
+        return trimmed
+    return trimmed.rstrip("/") + "/chat/completions"
 
 
 def run_mock_eval(
@@ -243,6 +279,82 @@ def run_model_eval(
     return results
 
 
+def run_openai_eval(
+    samples: list[FixtureSample],
+    base_url: str,
+    api_key: str,
+    model: str,
+    prompt_profile: str,
+    timeout_seconds: float,
+) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    url = endpoint_url(base_url)
+
+    for sample in samples:
+        started = time.perf_counter()
+        try:
+            payload = json.dumps(
+                {
+                    "model": model,
+                    "messages": [
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {
+                            "role": "user",
+                            "content": make_user_prompt(sample.input, prompt_profile),
+                        },
+                    ],
+                    "temperature": 0,
+                }
+            ).encode("utf-8")
+            request = urllib.request.Request(
+                url=url,
+                data=payload,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+                response_payload = json.loads(response.read().decode("utf-8"))
+            content = str(
+                response_payload.get("choices", [{}])[0]
+                .get("message", {})
+                .get("content", "")
+            )
+            output = clean_output(content)
+            if output:
+                outcome = "corrected" if output != sample.input else "unchanged"
+            else:
+                output = sample.input
+                outcome = "fallback"
+        except urllib.error.HTTPError as error:
+            raise SystemExit(
+                f"openai-compatible request failed for sample {sample.id}: HTTP {error.code}"
+            ) from error
+        except urllib.error.URLError as error:
+            raise SystemExit(
+                f"openai-compatible request failed for sample {sample.id}: {error.reason}"
+            ) from error
+        except (TimeoutError, json.JSONDecodeError, KeyError, IndexError) as error:
+            raise SystemExit(
+                f"openai-compatible request failed for sample {sample.id}: invalid response"
+            ) from error
+
+        latency_ms = (time.perf_counter() - started) * 1000
+        results.append(
+            {
+                "id": sample.id,
+                "output": output,
+                "latency_ms": round(latency_ms, 2),
+                "peak_rss_mb": round(peak_rss_mb(), 2),
+                "outcome": outcome,
+            }
+        )
+
+    return results
+
+
 def main() -> None:
     args = parse_args()
     fixture_path = Path(args.fixture)
@@ -254,6 +366,16 @@ def main() -> None:
     if args.mock_responses:
         results = run_mock_eval(samples, Path(args.mock_responses))
         driver = "mock"
+    elif args.base_url:
+        results = run_openai_eval(
+            samples=samples,
+            base_url=args.base_url,
+            api_key=args.resolved_api_key,
+            model=args.model,
+            prompt_profile=args.prompt_profile,
+            timeout_seconds=args.request_timeout_seconds,
+        )
+        driver = "openai-compatible"
     else:
         results = run_model_eval(
             samples=samples,

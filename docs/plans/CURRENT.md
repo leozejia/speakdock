@@ -54,6 +54,10 @@
   - `make asr-sample-report`
 - checked-in runner 已经能真实跑 `mlx-community/Qwen3.5-2B-OptiQ-4bit`
 - `make asr-post-correction-eval` 默认 profile 已切到 `fewshot_terms_homophone`
+- 已补最小远端对比入口：
+  - `make asr-post-correction-openai-eval`
+  - 本地 `.env` / `.env.example`
+  - 仅用于离线评测对比，不接入 app 默认热路径
 - runner 已覆盖一个真实踩坑：
   - `peak_rss_mb` 必须兼容 bytes / kilobytes 两种 `ru_maxrss` 单位
   - 模型偶发吐出 `输入 / 输出` 包裹层时，runner 必须做清洗

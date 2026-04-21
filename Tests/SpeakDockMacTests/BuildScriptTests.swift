@@ -175,6 +175,21 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
     }
 
+    func testMakefileExposesASRPostCorrectionOpenAIEvalCommandAndScript() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-asr-post-correction-openai-eval.sh")
+        let envExampleURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent(".env.example")
+
+        XCTAssertTrue(makefile.contains("asr-post-correction-openai-eval:"))
+        XCTAssertTrue(makefile.contains("./scripts/run-asr-post-correction-openai-eval.sh $(ASR_POST_CORRECTION_PYTHON) $(ASR_POST_CORRECTION_FIXTURE) $(ASR_POST_CORRECTION_RESULTS) $(ASR_POST_CORRECTION_PROMPT_PROFILE)"))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: envExampleURL.path))
+    }
+
     func testMakefileExposesSpeechLogsCommandAndScript() throws {
         let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("Makefile")
