@@ -3,13 +3,11 @@
 当前唯一真相源：
 
 - `docs/technical/ARCHITECTURE.md`
-- `docs/plans/CURRENT.md` 负责当前唯一 live focus
-- `docs/reviews/CURRENT.md` 负责当前 live review
+- `docs/plans/CURRENT.md` 负责当前唯一 live focus，并同时承接 live review
 
 快速入口：
 
-- 当前唯一 live plan：`docs/plans/CURRENT.md`
-- 当前唯一 live review：`docs/reviews/CURRENT.md`
+- 当前唯一 live focus：`docs/plans/CURRENT.md`
 - 仓库启动与权限概览：`README.md`
 - 人工验收顺序：`docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md`
 - 最近一次阶段快照归档：`docs/plans/archive/2026-04-20-speakdock-term-dictionary-export.md`
@@ -23,7 +21,6 @@
 ## 当前
 
 - `docs/plans/CURRENT.md`
-- `docs/reviews/CURRENT.md`
 - `docs/plans/2026-04-10-speakdock-macos-v1-manual-test.md`
 
 ## 归档
@@ -57,8 +54,7 @@
 - 外部参考放 `research`
 - SpeakDock 自己的行为定义最终以 `technical/ARCHITECTURE.md` 为准
 - `research` 只能启发入口和表达方式，不能反向覆盖架构主模型
-- `docs/plans/CURRENT.md` 是当前唯一 live plan
-- `docs/reviews/CURRENT.md` 是当前唯一 live review
+- `docs/plans/CURRENT.md` 是当前唯一 live doc，同时承接 plan 和 review
 - 当前 focus 完成后，先把 `CURRENT.md` 快照归档，再开启下一轮
 - README 负责入口、权限矩阵和当前支持范围，不替代架构文档
 - `archive/` 只保留历史计划、执行记录和阶段性快照，不承担当前指挥作用
