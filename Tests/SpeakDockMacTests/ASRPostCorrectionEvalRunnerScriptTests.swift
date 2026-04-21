@@ -406,6 +406,56 @@ final class ASRPostCorrectionEvalRunnerScriptTests: XCTestCase {
         XCTAssertTrue(homophonePrompt?.contains("这里不要再漂移了") == true)
     }
 
+    func testRunnerPromptAddsStructuredIdentifierHintsForMixedEngineeringFragments() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-asr-post-correction-eval.py")
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+        process.arguments = [
+            "-c",
+            """
+            import importlib.util
+            import json
+            import sys
+
+            spec = importlib.util.spec_from_file_location("runner", r"\(scriptURL.path)")
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[spec.name] = module
+            spec.loader.exec_module(module)
+
+            payload = {
+                "prompt": module.make_user_prompt(
+                    "这个字段用 should change 就行，主候选是 mlx community qwen three point five zero point eight b opt iq four bit",
+                    "fewshot_terms_homophone"
+                )
+            }
+            print(json.dumps(payload, ensure_ascii=False))
+            """,
+        ]
+
+        let stdoutPipe = Pipe()
+        process.standardOutput = stdoutPipe
+        process.standardError = Pipe()
+
+        try process.run()
+        process.waitUntilExit()
+
+        XCTAssertEqual(process.terminationStatus, 0)
+
+        let outputData = try stdoutPipe.fileHandleForReading.readToEnd() ?? Data()
+        let payload = try JSONSerialization.jsonObject(with: outputData) as? [String: String]
+        let prompt = payload?["prompt"]
+
+        XCTAssertTrue(prompt?.contains("以下工程片段如果明显是在指向固定写法，优先恢复成右侧格式") == true)
+        XCTAssertTrue(prompt?.contains("should change -> should_change") == true)
+        XCTAssertTrue(prompt?.contains("mlx community -> mlx-community") == true)
+        XCTAssertTrue(prompt?.contains("qwen three point five -> Qwen3.5") == true)
+        XCTAssertTrue(prompt?.contains("zero point eight b -> 0.8B") == true)
+        XCTAssertTrue(prompt?.contains("opt iq -> OptiQ") == true)
+        XCTAssertTrue(prompt?.contains("four bit -> 4bit") == true)
+    }
+
     func testRunnerStripsEchoedInputOutputWrapperFromModelOutput() throws {
         let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("scripts/run-asr-post-correction-eval.py")

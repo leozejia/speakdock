@@ -40,10 +40,18 @@
   - `fewshot`：`16/48`，`over-edit = 1`
   - `fewshot_terms`：`24/48`，`over-edit = 1`
   - `fewshot_terms_homophone`：`28/48`，`over-edit = 1`
+- 当前 `2B-OptiQ-4bit` 在“工程片段提示”这一轮之后更新为：
+  - `fewshot_terms_homophone + engineering fragment hints`：`33/48`，`over-edit = 1`
+  - `mixed` 从 `5/12` 提升到 `8/12`
+  - `term` 从 `5/12` 提升到 `7/12`
+  - `homophone` 仍停在 `7/12`
+  - `p50 latency` 从约 `1081ms` 降到约 `949ms`
+  - `p95 latency` 从约 `1637ms` 降到约 `1162ms`
 - 当前结论不是“已经可接产品”，而是：
   - `2B-OptiQ-4bit` 是唯一值得继续优化的本地文本后纠错候选
   - 当前最佳 eval profile 已经收敛到 `fewshot_terms_homophone`
-  - 下一步应该继续压 `term / mixed` 漏判，不应该直接接默认热路径
+  - “工程片段提示”已经证明这条线可以用低复杂度工程手段继续往上推
+  - 下一步应该继续压 `term / homophone` 漏判，不应该直接接默认热路径
 - `ASR Post-Correction` 是路由前层，不单独区分 `Compose / Capture`
 - 当前 app 已经具备现成接线积木：
   - `ASRCorrectionEngine`
@@ -82,6 +90,7 @@
   - `peak_rss_mb` 必须兼容 bytes / kilobytes 两种 `ru_maxrss` 单位
   - 模型偶发吐出 `输入 / 输出` 包裹层时，runner 必须做清洗
   - 某些 Cloudflare 风格的 OpenAI-compatible 网关会拒绝 Python 默认请求形态，远端 eval 需要走 `curl`
+  - 对本地 `2B` 来说，追加“只在命中时出现”的工程片段提示，比继续无脑堆 few-shot 更值
 - 本轮 live focus 继续不碰默认热路径
 
 ## 4. 为什么现在做
@@ -89,7 +98,7 @@
 第二轮 research 已经把方向收住了，runner 也已经落地，当前只剩 `2B` 线 prompt 继续压漏判。
 
 - 如果不把当前状态写死，后续很容易重新回到“还在猜哪个 profile 更好”的旧状态
-- 当前已经不缺入口，缺的是继续压 `term / mixed` 的漏判
+- 当前已经不缺入口，缺的是继续压 `term / homophone` 的漏判
 - 只有把这个边界写死，下一轮实现才不会重新扩散
 
 所以当前阶段转为：
@@ -102,10 +111,11 @@
 
 1. 跑通并固定云端默认模型
 2. 落地 term / homophone 定向 prompt profile
-3. 用同一模型和同一夹具跑 profile 对照
-4. 修正 runner 对 `输入 / 输出` 格式回声的清洗
-5. 把默认 eval profile 切到当前最优值
-6. 同步 `CURRENT / research`
+3. 为本地 `2B` 增加按命中生成的工程片段提示
+4. 用同一模型和同一夹具跑 profile 对照
+5. 修正 runner 对 `输入 / 输出` 格式回声的清洗
+6. 把默认 eval profile 切到当前最优值
+7. 同步 `CURRENT / research`
 
 ## 6. 明确不做
 
@@ -120,7 +130,7 @@
 
 1. 先固定云端默认模型为 `gpt-5.3-chat-latest`
 2. 再保留 `mlx-community/Qwen3.5-2B-OptiQ-4bit` 为唯一继续本地候选
-3. 然后继续只围绕 `term / mixed` 漏判做下一轮本地收敛
+3. 然后继续只围绕 `term / homophone` 漏判做下一轮本地收敛
 4. 最后再决定是否值得接近热路径
 
 ## 8. 完成定义
@@ -163,3 +173,4 @@
 - 已完成：runner 真实回归已验证，并修正 `peak_rss_mb` 单位归一化
 - 已完成：`fewshot / fewshot_terms / fewshot_terms_homophone` 的首轮 prompt 对照
 - 已完成：默认 eval profile 已切到 `fewshot_terms_homophone`
+- 已完成：本地 `2B` 的工程片段提示层已落地，真实结果从 `28/48` 提升到 `33/48`
