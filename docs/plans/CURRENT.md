@@ -12,78 +12,79 @@
 ## 2. 当前阶段
 
 - 阶段：P1 `AI 语音输入法`
-- 当前 focus：`第二轮调研：ASR Post-Correction 与云端 Refine`
+- 当前 focus：`ASR Post-Correction 最小实测准备`
 - 状态：`In Progress`
 
 ## 3. 当前复核结论
 
-- 端侧小模型当前只保留给 `ASR Post-Correction`
-- `Workspace Refine` 默认走云端 LLM，本地 `Refine` 只保留为高配用户自定义扩展
-- `ASR` 与 `ASR Post-Correction` 必须分开看：当前可明确验证的开源专用 `ASR` 线是 `Qwen3-ASR`
-- 截至 `2026-04-21`，未查到官方公开、可直接下载的 `Qwen3.5-ASR` checkpoint
-- `ASR Post-Correction` 仍然是独立的文本小模型问题，当前候选可继续看 `Qwen3.5-0.8B / Qwen3.5-2B / Gemma 3 1B`
-- `Qwen3.5-Omni` 是更大的全模态模型线，不是底线机器上的默认本地路线
-- 第二轮调研要解决两个具体问题：
-  - 哪些小模型值得进入 `ASR Post-Correction` shortlist
-  - 云端 `Refine` 的默认 provider 契约与失败回退应如何写死
-- 当前实现里 `Refine` 的失败回退已经存在，但 prompt 语义仍然偏“保守纠错”，还没完全对齐“工作区整理”
-- 本轮调研继续只接受官方/一手资料：官方 repo、官方技术报告、官方模型卡、官方框架文档
+- 第二轮 research 已完成，当前不再继续扩大候选池
+- `ASR Post-Correction` 当前最小候选顺序写死为：
+  - `Qwen3.5-0.8B`
+  - `Qwen3.5-2B`
+  - `Gemma 3 1B`
+- 当前正确动作不是先接模型，而是先写死样本、指标和准入闸门
+- `ASR Post-Correction` 是路由前层，不单独区分 `Compose / Capture`
+- 当前 app 已经具备现成接线积木：
+  - `ASRCorrectionEngine`
+  - `make smoke-asr-correction`
+  - `make asr-correction-report`
+  - `make asr-sample-report`
+- 本轮 live focus 只做“最小实测准备”，不碰默认热路径
 
 ## 4. 为什么现在做
 
-第一轮已经把“哪些能力不该默认端侧化”收口完了，第二轮要把真正剩下的主线问题做细。
+第二轮 research 已经把方向收住了，但还没有把“怎么测才算过”写成工程动作。
 
-- `ASR Post-Correction` 是当前唯一保留的端侧文本模型入口
-- `Workspace Refine` 默认转到云端后，重点不再是本地跑不跑得动，而是默认 provider 契约和失败体验是否正确
-- 当前实现已经具备 `ASRCorrectionEngine` 与 `RefineEngine` 两条 seam，现在缺的是候选筛选与规则写死
-- 如果不先补这一轮，后面会继续在“模型选型”“provider 选型”“fallback 语义”之间来回漂
+- 如果先接模型、后补评测，主线很容易再次漂移
+- 当前缺的是样本真源、评测闸门和候选执行顺序
+- 只有把这些写死，下一轮代码 spike 才不会变成“谁先跑通谁赢”
 
-所以第二轮依然先做 research 和边界收口，不直接写模型接入或 provider 迁移代码。
+所以这一轮先做评测准备，不直接做本地模型接入。
 
 ## 5. 本轮范围
 
-1. 基于官方资料筛 `ASR Post-Correction` 候选
-2. 明确底线机器上的 `pass / shortlist / watchlist / benchmark only`
-3. 复核当前 `ASRCorrectionEngine` 和 `RefineEngine` 的真实契约
-4. 研究云端 `Workspace Refine` 的默认 provider 契约
-5. 把当前已经存在的失败回退语义写清楚，避免后续误改
-6. 同步 `CURRENT / research / docs index`
+1. 写死 `ASR Post-Correction` 匿名样本夹具的字段与 bucket
+2. 写死最小正确性闸门、运行闸门和接线 smoke 闸门
+3. 写死候选执行顺序与停止条件
+4. 把现有 `smoke / report` 命令映射回评测流程
+5. 同步 `CURRENT / research / docs index`
 
 ## 6. 明确不做
 
-- 不在这一轮接入任何本地 `ASR Post-Correction` 模型
-- 不在这一轮切换 `Workspace Refine` 的云端 provider
-- 不在这一轮重新打开本地 `Workspace Refine` 主线
-- 不用二手博客、第三方评测视频或社区跑分贴替代官方资料
+- 不在这一轮默认开启本地 `ASR Post-Correction`
+- 不在这一轮下载所有候选模型做大杂烩横评
+- 不在这一轮改 `Workspace Refine`
+- 不在这一轮替换 Apple Speech
+- 不把 `Compose / Capture` 拆成两套评测
 
 ## 7. 执行顺序
 
-1. 先收 `ASR Post-Correction` 候选与 pass 条件
-2. 再收云端 `Refine` 的 provider 契约与 fallback 设计
-3. 然后把研究页与 `CURRENT` 对齐
-4. 最后给出下一轮最小 spike 顺序
+1. 先落地最小实测设计页
+2. 再固定匿名夹具 schema 与样本数量
+3. 然后定义下一轮代码 spike 的最小交付物
+4. 最后只从 `Qwen3.5-0.8B` 开始试第一候选
 
 ## 8. 完成定义
 
 满足以下条件才算完成：
 
-- `ASR Post-Correction` 已有独立研究页
-- 第二轮研究页已经写清 `shortlist / pass / benchmark only`
-- 云端 `Workspace Refine` 的默认契约与失败回退已写清
-- 当前实现里的 prompt / provider / fallback 漂移已被明确记录
-- 下一轮可以直接进入最小可行性 spike
+- 已有独立的 `ASR Post-Correction` 最小实测设计页
+- 样本真源、bucket、字段、数量已经写死
+- 三道闸门和 `ready / watchlist / pass` 规则已经写死
+- 下一轮代码 spike 的最小交付物已经明确
+- 不需要再靠口头解释“先测什么、测到什么算过”
 
 ## 9. 下一轮候选
 
-- `ASR Post-Correction` 的最小实测设计
-- 云端 `Workspace Refine` 的 prompt 重定义与 provider smoke
-- `ASR` 与 `ASR Post-Correction` 的样本协同设计
+- 基于匿名夹具的本地批量评测入口
+- `Qwen3.5-0.8B` 第一轮真实结果
+- `Workspace Refine` prompt 重定义
 
 ## 10. 当前不进入下一轮的项
 
-- 不重新讨论本地 `Workspace Refine` 是否应成为默认路线
-- 不锁死最终云端厂商
-- 不提前写死 `Responses API` 或其他 vendor-specific API 为统一契约
+- 不重新打开本地 `Workspace Refine` 默认路线
+- 不提前锁定量化版本与 sidecar 形态
+- 不在没有真实评测结果前讨论是否默认启用
 
 ## 11. 阻塞项
 
@@ -91,6 +92,7 @@
 
 ## 12. 最近完成
 
-- 已完成：上一轮 `端侧模型收口` 已归档
-- 已完成：产品默认路线已经收口为“端侧只保留 `ASR Post-Correction`，`Workspace Refine` 默认云端”
-- 已完成：`ASR` 一手资料 research 已落地，可作为第二轮输入
+- 已完成：`第二轮调研：ASR Post-Correction 与云端 Refine` 已归档
+- 已完成：`Qwen3-ASR / Qwen3.5-Omni / 文本后纠错模型` 的命名边界纠偏
+- 已完成：`ASR Post-Correction` 最小 shortlist 已收口
+- 已完成：`ASR Post-Correction` 最小实测设计页已落地
