@@ -12,74 +12,74 @@
 ## 2. 当前阶段
 
 - 阶段：P1 `AI 语音输入法`
-- 当前 focus：`docs 真值源收口`
-- 状态：`Completed`（待下一轮 focus 接管）
+- 当前 focus：`端侧 ASR 官方资料调研与 shortlist 收敛`
+- 状态：`In Progress`
 
 ## 3. 当前复核结论
 
-- 活文档口径已经重新收口到 `ActiveWorkspace + SecondaryAction`
-- `Streaming Preview / ASR Post-Correction / Workspace Refine / Wiki Compile` 已成为当前统一术语
-- `Qwen3-ASR-0.6B via MLX` 当前只保留为优先候选方向，未被写死为已锁定实现
-- `Wiki` 的默认浏览方式已经明确为“本地 HTTP server + 浏览器打开 `wiki/` 根目录”
-- research 继续保留，但不再反向覆盖架构主模型
+- `Qwen3-ASR-0.6B via MLX` 仍然只能算候选方向，不能越级写成已锁定实现
+- 端侧模型调研必须按角色拆开推进，当前只先收 `ASR`，不把 `ASR Post-Correction / Workspace Refine` 混进同一轮
+- 本轮调研只接受官方/一手资料：官方 repo、官方技术报告、官方模型卡、官方框架文档
+- Apple Speech 继续作为系统基线，不因候选模型调研而被提前移出比较集
 
 ## 4. 为什么现在做
 
-当前热路径、诊断入口和词级学习链路已经基本稳定，但 docs 里还存在一个更直接的风险：实现已经往前推进，活文档的术语和候选方向却开始混写。
+当前热路径已经稳定到足以开始做下一轮架构判断，但端侧 ASR 仍然停留在“方向判断”而不是“证据判断”。
 
-- `Refine / ASR Correction / WikiCompiler` 的实现名、研究名和对外表达没有完全统一
-- `Qwen3-ASR-0.6B via MLX` 在部分文档里被写得过于像已锁定实现
-- 活文档、索引和 README 里还残留旧 focus、分离的 review 结构和过期索引
+- 我们已经知道 Apple Speech 是当前可用基线，但它不是长期准确率终局
+- `Qwen3-ASR / Whisper / SenseVoice / Moonshine` 的讨论已经开始出现，但还没有一份只基于官方资料的收敛结论
+- 机器边界已经明确：`Apple Silicon M3 / 16GB / macOS 15.7.4`
+- 如果不先把候选收敛，后续实现会把“社区口碑”“二手经验”和“架构承诺”混在一起
 
-这一轮先收口文档，比直接继续加功能更值，因为：
+这一轮先做官方资料调研与 shortlist 收敛，比直接写模型接入层更值，因为：
 
-- 不先收口，下一阶段接本地 ASR、Wiki 和 workspace 行为时会继续漂
-- 这属于低复杂度、高确定性的修正，不引入新的产品状态
-- 当前用户和实现都需要一份唯一正确的术语表
+- 这决定后续到底先接哪个模型、测什么、以及哪些候选只配做对照组
+- 这是低风险、高确定性的文档推进，不会引入新的运行时复杂度
+- 先把“值得测”和“不值得先测”写清楚，可以减少后续无效试错
 
-所以这一轮不追新入口，只把真值源重新对齐。
+所以这一轮不接模型，只收敛证据、候选和测评入口。
 
 ## 5. 本轮范围
 
-1. 统一产品术语：`Streaming Preview / ASR Post-Correction / Workspace Refine / Wiki Compile`
-2. 把 `Qwen3-ASR-0.6B via MLX` 明确回“优先候选方向”，不写成已锁定实现
-3. 把 `Wiki` 默认浏览方式写死为“本地 HTTP server + 浏览器打开 `wiki/` 根目录”
-4. 修复 `CURRENT / docs index / README` 的活文档状态，并把 review 收回单文档
-5. 明确 research 只是研究输入，不能反向覆盖架构主模型
+1. 只基于官方资料复核 `Apple Speech / Qwen3-ASR-0.6B / Whisper / SenseVoice / Moonshine`
+2. 对每个候选写清楚：官方来源、擅长、不擅长、是否值得进中文实时语音输入 shortlist
+3. 明确哪些判断已经有官方证据，哪些地方仍然资料不足
+4. 形成可直接进入后续综合 research doc 的 ASR 子提纲
+5. 同步 `CURRENT / docs index`，确保 live doc 与 research 索引同轨
 
 ## 6. 明确不做
 
-- 不在这一轮接入本地 ASR 模型
-- 不在这一轮实现 `Wiki Compile`
-- 不把 research 脑爆直接升级成架构承诺
-- 不为了术语对齐去做全仓实现名 mass rename
+- 不在这一轮接入任何本地 ASR 模型
+- 不在这一轮开始 `ASR Post-Correction` 或 `Workspace Refine` 模型筛选
+- 不使用二手博客、第三方评测视频或社区跑分贴
+- 不因为某个候选“看起来强”就提前锁定实现路径
 
 ## 7. 执行顺序
 
-1. 先收口 `ARCHITECTURE` 的术语、候选边界和 Wiki 浏览方式
-2. 再同步 `README / README.zh-CN`
-3. 然后修复 `CURRENT / docs index`
-4. 最后检查 research 是否仍然越界
+1. 先完成 ASR 候选的官方资料收集
+2. 再输出候选对比与 shortlist 判断
+3. 然后把 research 文档与 docs index 对齐
+4. 最后再进入下一轮模型测评设计
 
 ## 8. 完成定义
 
 满足以下条件才算完成：
 
-- `ARCHITECTURE / README / CURRENT` 对核心术语口径一致
-- live 文档不再出现“待定 + 旧 focus 混写”或双轨结构残留
-- `Qwen / Refine / Wiki` 的文档边界清楚区分“已定 / 候选 / 研究”
-- research 继续保留，但不再反向覆盖真值源
+- 五个 ASR 候选都已有官方来源落表
+- 每个候选都已有明确的 `擅长 / 不擅长 / shortlist 判断 / 资料缺口`
+- 当前机器边界 `M3 / 16GB / macOS 15.7.4` 已进入判断前提
+- 下一轮可以直接基于这份结论制定实测名单
 
 ## 9. 下一轮候选
 
-- 补一页独立的端侧 ASR 候选评测文档，再决定模型、量化和运行形态
-- 回到 `ActiveWorkspace + SecondaryAction` 主线，继续推进 `Compose / Capture` 的下一轮实现
-- `Wiki Compile` 的最小入口和浏览器浏览验证
+- 端侧 ASR shortlist 的实测设计与样本集定义
+- `ASR Post-Correction` 的候选研究与角色边界
+- `Workspace Refine` 的本地/远端模型筛选
 
 ## 10. 当前不进入下一轮的项
 
-- 不需要为了术语统一去做全仓实现名重写
-- 不需要现在就锁死 sidecar 常驻、量化方案或具体模型封装
+- 不锁死 sidecar 常驻、量化方案或具体 Swift 桥接形态
+- 不提前决定 streaming 与 final transcript 是否由同一模型承担
 
 ## 11. 阻塞项
 
@@ -87,7 +87,6 @@
 
 ## 12. 最近完成
 
-- 已完成：`ARCHITECTURE` 已补统一术语表，明确 `Streaming Preview / ASR Post-Correction / Workspace Refine / Wiki Compile`
-- 已完成：`Qwen3-ASR-0.6B via MLX` 已回收到“优先候选方向”，不再在真值源里当成已锁定实现
-- 已完成：`Wiki` 默认浏览方式已明确为“本地 HTTP server + 浏览器打开 `wiki/` 根目录”
-- 已完成：`CURRENT / docs index / README` 已重新收口，review 已回收进单文档，活文档不再混写旧 focus
+- 已完成：`ARCHITECTURE / CURRENT / docs index` 已重新收口到单活文档结构
+- 已完成：`Qwen3-ASR-0.6B via MLX` 已被回收到“候选方向”而不是“既定实现”
+- 已完成：`Streaming Preview / ASR Post-Correction / Workspace Refine / Wiki Compile` 已成为当前统一术语

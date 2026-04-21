@@ -48,6 +48,7 @@
 - `docs/research/2026-04-14-typeless-shandianshuo-research.md`
 - `docs/research/2026-04-15-brand-icon-research.md`
 - `docs/research/2026-04-20-next-phase-brainstorm.md`
+- `docs/research/2026-04-21-asr-official-source-shortlist.md`
 
 原则：
 
