@@ -158,4 +158,96 @@ final class ASRPostCorrectionEvalRunnerScriptTests: XCTestCase {
         XCTAssertEqual(payload?["bytes"], 768)
         XCTAssertEqual(payload?["kilobytes"], 768)
     }
+
+    func testRunnerExposesTermAwareAndHomophoneAwarePromptProfiles() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-asr-post-correction-eval.py")
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+        process.arguments = [
+            "-c",
+            """
+            import importlib.util
+            import json
+            import sys
+
+            spec = importlib.util.spec_from_file_location("runner", r"\(scriptURL.path)")
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[spec.name] = module
+            spec.loader.exec_module(module)
+
+            payload = {
+                "profiles": module.prompt_profiles(),
+                "term_prompt": module.make_user_prompt("speak doc 今天更稳定", "fewshot_terms"),
+                "homophone_prompt": module.make_user_prompt("现在先把评测炸门写死", "fewshot_terms_homophone"),
+            }
+            print(json.dumps(payload, ensure_ascii=False))
+            """,
+        ]
+
+        let stdoutPipe = Pipe()
+        process.standardOutput = stdoutPipe
+        process.standardError = Pipe()
+
+        try process.run()
+        process.waitUntilExit()
+
+        XCTAssertEqual(process.terminationStatus, 0)
+
+        let outputData = try stdoutPipe.fileHandleForReading.readToEnd() ?? Data()
+        let payload = try JSONSerialization.jsonObject(with: outputData) as? [String: Any]
+        let profiles = payload?["profiles"] as? [String]
+        let termPrompt = payload?["term_prompt"] as? String
+        let homophonePrompt = payload?["homophone_prompt"] as? String
+
+        XCTAssertTrue(profiles?.contains("fewshot_terms") == true)
+        XCTAssertTrue(profiles?.contains("fewshot_terms_homophone") == true)
+        XCTAssertTrue(termPrompt?.contains("SpeakDock 今天更稳定") == true)
+        XCTAssertTrue(termPrompt?.contains("OpenAI-compatible 接口先留着") == true)
+        XCTAssertTrue(homophonePrompt?.contains("现在先把评测闸门写死") == true)
+        XCTAssertTrue(homophonePrompt?.contains("这里不要再漂移了") == true)
+    }
+
+    func testRunnerStripsEchoedInputOutputWrapperFromModelOutput() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-asr-post-correction-eval.py")
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+        process.arguments = [
+            "-c",
+            """
+            import importlib.util
+            import json
+            import sys
+
+            spec = importlib.util.spec_from_file_location("runner", r"\(scriptURL.path)")
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[spec.name] = module
+            spec.loader.exec_module(module)
+
+            payload = {
+                "wrapped": module.clean_output("输入：community 版本只是运行优化。\\n输出：community 版本只是运行优化。"),
+                "plain": module.clean_output("SpeakDock 今天更稳定"),
+            }
+            print(json.dumps(payload, ensure_ascii=False))
+            """,
+        ]
+
+        let stdoutPipe = Pipe()
+        process.standardOutput = stdoutPipe
+        process.standardError = Pipe()
+
+        try process.run()
+        process.waitUntilExit()
+
+        XCTAssertEqual(process.terminationStatus, 0)
+
+        let outputData = try stdoutPipe.fileHandleForReading.readToEnd() ?? Data()
+        let payload = try JSONSerialization.jsonObject(with: outputData) as? [String: String]
+
+        XCTAssertEqual(payload?["wrapped"], "community 版本只是运行优化。")
+        XCTAssertEqual(payload?["plain"], "SpeakDock 今天更稳定")
+    }
 }

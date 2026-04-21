@@ -254,6 +254,18 @@
 - 当前唯一值得继续优化的是 `mlx-community/Qwen3.5-2B-OptiQ-4bit`
 - 这不等于已经可接入产品默认路径；它只是当前最值得继续优化的本地文本后纠错底座
 
+`2B-OptiQ-4bit` 的首轮 prompt 对照结果：
+
+- `fewshot`：`16/48`，`over-edit = 1`
+- `fewshot_terms`：`24/48`，`over-edit = 1`
+- `fewshot_terms_homophone`：`28/48`，`over-edit = 1`
+
+当前 prompt 结论：
+
+- `fewshot_terms_homophone` 是当前最佳 eval profile
+- 它把提升主要带到了 `term / mixed / homophone`，没有继续放大 `control` 损失
+- 当前残留的主要问题已经不是 profile 存不存在，而是 `term / mixed` 漏判仍然偏多
+
 执行规则：
 
 - 先围绕 `mlx-community/Qwen3.5-2B-OptiQ-4bit` 做 prompt 与 runner 收敛

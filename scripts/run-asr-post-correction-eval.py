@@ -34,11 +34,58 @@ FEWSHOT_EXAMPLES = """示例：
 输出：今天先补匿名夹具。
 """
 
+TERM_STYLE_HINT = "尤其注意产品名、仓库名、命令名、字段名、环境变量、路径、模型 ID 的大小写、连字符、下划线、斜杠和数字格式。"
+
+TERM_STYLE_EXAMPLES = """示例：
+输入：speak doc 今天更稳定
+输出：SpeakDock 今天更稳定
+
+输入：open ai compatible 接口先留着
+输出：OpenAI-compatible 接口先留着
+
+输入：codex cli 保持在 path 里
+输出：Codex CLI 保持在 PATH 里
+
+输入：这个 commit 先 push 到 dev internal
+输出：这个 commit 先 push 到 dev/internal
+
+输入：把 base url api key model 先补齐
+输出：把 baseURL / apiKey / model 先补齐
+
+输入：先看 qwen three asr zero point six b
+输出：先看 Qwen3-ASR-0.6B
+"""
+
+HOMOPHONE_HINT = "如果某个中文词明显是同音误识别，且改正后更符合当前工程语境，应直接修正。"
+
+HOMOPHONE_EXAMPLES = """示例：
+输入：现在先把评测炸门写死
+输出：现在先把评测闸门写死
+
+输入：这里不要再票移了
+输出：这里不要再漂移了
+
+输入：先把诊断毛点补上
+输出：先把诊断锚点补上
+
+输入：把首轮街果贴出来
+输出：把首轮结果贴出来
+"""
+
 
 @dataclass
 class FixtureSample:
     id: str
     input: str
+
+
+def prompt_profiles() -> list[str]:
+    return [
+        "conservative",
+        "fewshot",
+        "fewshot_terms",
+        "fewshot_terms_homophone",
+    ]
 
 
 def parse_args() -> argparse.Namespace:
@@ -49,8 +96,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mock-responses")
     parser.add_argument(
         "--prompt-profile",
-        default="fewshot",
-        choices=("conservative", "fewshot"),
+        default="fewshot_terms_homophone",
+        choices=prompt_profiles(),
     )
     parser.add_argument("--max-tokens", type=int, default=48)
     args = parser.parse_args()
@@ -72,9 +119,19 @@ def load_fixture(path: Path) -> list[FixtureSample]:
 
 
 def make_user_prompt(text: str, prompt_profile: str) -> str:
+    prefix_parts: list[str] = []
+    if prompt_profile in {"fewshot", "fewshot_terms", "fewshot_terms_homophone"}:
+        prefix_parts.append(FEWSHOT_EXAMPLES)
+    if prompt_profile in {"fewshot_terms", "fewshot_terms_homophone"}:
+        prefix_parts.append(TERM_STYLE_HINT)
+        prefix_parts.append(TERM_STYLE_EXAMPLES)
+    if prompt_profile == "fewshot_terms_homophone":
+        prefix_parts.append(HOMOPHONE_HINT)
+        prefix_parts.append(HOMOPHONE_EXAMPLES)
+
     prefix = ""
-    if prompt_profile == "fewshot":
-        prefix = FEWSHOT_EXAMPLES + "\n"
+    if prefix_parts:
+        prefix = "\n\n".join(prefix_parts) + "\n\n"
 
     return (
         f"{prefix}请只修正下面转写文本里的明显识别错误；如果没有明显错误，就原样返回：\n\n"
@@ -99,7 +156,14 @@ def peak_rss_mb() -> float:
 
 
 def clean_output(output: str) -> str:
-    return output.replace("<|im_end|>", "").replace("<|endoftext|>", "").strip()
+    cleaned = output.replace("<|im_end|>", "").replace("<|endoftext|>", "").strip()
+
+    if cleaned.startswith("输入：") and "\n输出：" in cleaned:
+        cleaned = cleaned.split("\n输出：")[-1].strip()
+    elif cleaned.startswith("输出："):
+        cleaned = cleaned.removeprefix("输出：").strip()
+
+    return cleaned
 
 
 def run_mock_eval(
