@@ -297,6 +297,6 @@
 1. `asr-post-correction-anonymous-baseline.json`
 2. 基于该夹具的本地批量评测入口
 3. 统一输出 `exact-match / over-edit / fallback / latency / rss` 的报表
-4. `mlx-community/Qwen3.5-2B-OptiQ-4bit` 的 checked-in 批量评测 runner 与下一轮 prompt 对照结果
+4. `mlx-community/Qwen3.5-2B-OptiQ-4bit` 的下一轮 prompt 对照结果
 
 如果以上四项没出来，就不应开始讨论“是否默认开启本地 `ASR Post-Correction`”。

@@ -160,6 +160,21 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
     }
 
+    func testMakefileExposesASRPostCorrectionEvalRunnerCommandAndScript() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-asr-post-correction-eval.py")
+
+        XCTAssertTrue(makefile.contains("ASR_POST_CORRECTION_PYTHON ?="))
+        XCTAssertTrue(makefile.contains("ASR_POST_CORRECTION_MODEL ?="))
+        XCTAssertTrue(makefile.contains("ASR_POST_CORRECTION_PROMPT_PROFILE ?="))
+        XCTAssertTrue(makefile.contains("asr-post-correction-eval:"))
+        XCTAssertTrue(makefile.contains("$(ASR_POST_CORRECTION_PYTHON) ./scripts/run-asr-post-correction-eval.py --fixture $(ASR_POST_CORRECTION_FIXTURE) --results $(ASR_POST_CORRECTION_RESULTS) --model-path $(ASR_POST_CORRECTION_MODEL) --prompt-profile $(ASR_POST_CORRECTION_PROMPT_PROFILE)"))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: scriptURL.path))
+    }
+
     func testMakefileExposesSpeechLogsCommandAndScript() throws {
         let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("Makefile")

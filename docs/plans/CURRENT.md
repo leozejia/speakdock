@@ -12,7 +12,7 @@
 ## 2. 当前阶段
 
 - 阶段：P1 `AI 语音输入法`
-- 当前 focus：`ASR Post-Correction 首轮实测收敛`
+- 当前 focus：`ASR Post-Correction 2B prompt 收敛`
 - 状态：`In Progress`
 
 ## 3. 当前复核结论
@@ -42,28 +42,33 @@
 - `ASR Post-Correction` 是路由前层，不单独区分 `Compose / Capture`
 - 当前 app 已经具备现成接线积木：
   - `ASRCorrectionEngine`
+  - `make asr-post-correction-eval`
+  - `make asr-post-correction-eval-report`
   - `make smoke-asr-correction`
   - `make asr-correction-report`
   - `make asr-sample-report`
+- checked-in runner 已经能真实跑 `mlx-community/Qwen3.5-2B-OptiQ-4bit`
+- runner 已覆盖一个真实踩坑：
+  - `peak_rss_mb` 必须兼容 bytes / kilobytes 两种 `ru_maxrss` 单位
 - 本轮 live focus 继续不碰默认热路径
 
 ## 4. 为什么现在做
 
-第二轮 research 已经把方向收住了，首轮真实结果也已经出来，但“唯一继续项”还没有写死。
+第二轮 research 已经把方向收住了，runner 也已经落地，当前只剩 `2B` 线 prompt 收敛还没写死。
 
-- 如果不把当前结论写死，后续很容易重新回到 `0.8B / 2B / ASR / Refine` 混线状态
-- 当前缺的是唯一继续版本、同族对照和下一轮最小代码 spike
-- 只有先把这些写死，下一轮实现才不会重新扩散
+- 如果不把当前状态写死，后续很容易重新回到“runner 还没做完”的旧状态
+- 当前缺的是 prompt 变体对照，而不是新的入口脚本
+- 只有把这个边界写死，下一轮实现才不会再回头补基建
 
-所以这一轮先做实测收敛，不直接做本地模型接入。
+所以当前阶段转为 `2B` 线 prompt 收敛，不直接做本地模型接入。
 
 ## 5. 本轮范围
 
-1. 把首轮真实结果写回唯一 live doc
-2. 纠正候选仓库名与执行顺序
-3. 明确 `2B-OptiQ-4bit` 为什么保留、普通 `4bit` 为什么只做对照
-4. 写死下一轮代码 spike 只服务于 `2B` 线
-5. 同步 `CURRENT / research / docs index`
+1. 落地 checked-in 本地批量评测 runner
+2. 暴露稳定的 `make asr-post-correction-eval` 入口
+3. 修正 runner 在真实 macOS Python 下的 `peak_rss_mb` 单位归一化
+4. 把 live doc 切到下一轮唯一 focus
+5. 同步 `CURRENT / research`
 
 ## 6. 明确不做
 
@@ -75,10 +80,10 @@
 
 ## 7. 执行顺序
 
-1. 先把首轮实测结果和错误仓库名纠回文档
-2. 再把继续版本收敛到 `mlx-community/Qwen3.5-2B-OptiQ-4bit`
-3. 然后定义下一轮代码 spike 的最小交付物
-4. 最后只围绕 `2B` 线继续跑 prompt 与评测入口
+1. 先保留 `mlx-community/Qwen3.5-2B-OptiQ-4bit` 为唯一继续候选
+2. 再固定 runner 与 make 入口
+3. 然后只围绕 `fewshot / prompt 变体` 继续跑对照
+4. 最后再决定是否值得接近热路径
 
 ## 8. 完成定义
 
@@ -88,11 +93,11 @@
 - 样本真源、bucket、字段、数量已经写死
 - `0.8B` 与 `2B` 的首轮结果已经写回文档
 - 当前唯一继续候选已经收敛到 `mlx-community/Qwen3.5-2B-OptiQ-4bit`
+- checked-in runner 与 make 入口已经落地
 - 不需要再靠口头解释“为什么是这版，不是那版”
 
 ## 9. 下一轮候选
 
-- 基于匿名夹具的 checked-in 本地批量评测 runner
 - `mlx-community/Qwen3.5-2B-OptiQ-4bit` 的 prompt 变体对照
 - `Workspace Refine` prompt 重定义
 
@@ -115,3 +120,5 @@
 - 已完成：匿名基线夹具、离线评测报表脚本与 `make asr-post-correction-eval-report` 入口已落地
 - 已完成：`0.8B / 2B / OptiQ / 普通 4bit` 的首轮真实对照
 - 已完成：当前唯一继续候选收敛到 `mlx-community/Qwen3.5-2B-OptiQ-4bit`
+- 已完成：checked-in `run-asr-post-correction-eval.py` 与 `make asr-post-correction-eval` 入口已落地
+- 已完成：runner 真实回归已验证，并修正 `peak_rss_mb` 单位归一化

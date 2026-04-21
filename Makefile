@@ -3,8 +3,11 @@ CONFIGURATION ?= debug
 LOG_WINDOW ?= 20m
 TRACE_WINDOW ?= 20m
 ASR_EVAL_THRESHOLD ?= 20
+ASR_POST_CORRECTION_PYTHON ?= $(if $(wildcard ./.tmp/asr-eval-venv/bin/python),./.tmp/asr-eval-venv/bin/python,python3)
 ASR_POST_CORRECTION_FIXTURE ?= ./Tests/SpeakDockMacTests/Fixtures/asr-post-correction-anonymous-baseline.json
-ASR_POST_CORRECTION_RESULTS ?= ./tmp/asr-post-correction-results.json
+ASR_POST_CORRECTION_RESULTS ?= ./.tmp/asr-post-correction-results.json
+ASR_POST_CORRECTION_MODEL ?= ./.tmp/models/Qwen3.5-2B-OptiQ-4bit
+ASR_POST_CORRECTION_PROMPT_PROFILE ?= fewshot
 PROBE_SECONDS ?= 30
 ROOT_DIR := $(CURDIR)
 SWIFT_HOME := $(ROOT_DIR)/.swift-home
@@ -13,7 +16,7 @@ CLANG_MODULE_CACHE := $(SWIFT_CACHE)/clang/ModuleCache
 SWIFT_ENV := HOME=$(SWIFT_HOME) XDG_CACHE_HOME=$(SWIFT_CACHE) CLANG_MODULE_CACHE_PATH=$(CLANG_MODULE_CACHE) SWIFTPM_MODULECACHE_OVERRIDE=$(CLANG_MODULE_CACHE)
 TEST_FILTER ?=
 
-.PHONY: build run clean test logs speech-logs traces trace-report speech-error-report asr-correction-report asr-sample-report asr-post-correction-eval-report term-learning-report probe-compose smoke-compose smoke-compose-continue smoke-compose-undo smoke-compose-switch-undo smoke-capture-continue smoke-capture-undo smoke-asr-correction smoke-refine smoke-refine-manual smoke-capture-refine-manual smoke-refine-dirty-undo smoke-capture-refine-dirty-undo smoke-refine-fallback smoke-capture-refine-fallback smoke-refine-submit-sync smoke-term-learning smoke-term-learning-conflict
+.PHONY: build run clean test logs speech-logs traces trace-report speech-error-report asr-correction-report asr-sample-report asr-post-correction-eval asr-post-correction-eval-report term-learning-report probe-compose smoke-compose smoke-compose-continue smoke-compose-undo smoke-compose-switch-undo smoke-capture-continue smoke-capture-undo smoke-asr-correction smoke-refine smoke-refine-manual smoke-capture-refine-manual smoke-refine-dirty-undo smoke-capture-refine-dirty-undo smoke-refine-fallback smoke-capture-refine-fallback smoke-refine-submit-sync smoke-term-learning smoke-term-learning-conflict
 
 build:
 	./scripts/build-app.sh $(CONFIGURATION)
@@ -45,6 +48,9 @@ asr-sample-report:
 
 asr-post-correction-eval-report:
 	python3 ./scripts/report-asr-post-correction-eval.py --fixture $(ASR_POST_CORRECTION_FIXTURE) --results $(ASR_POST_CORRECTION_RESULTS)
+
+asr-post-correction-eval:
+	$(ASR_POST_CORRECTION_PYTHON) ./scripts/run-asr-post-correction-eval.py --fixture $(ASR_POST_CORRECTION_FIXTURE) --results $(ASR_POST_CORRECTION_RESULTS) --model-path $(ASR_POST_CORRECTION_MODEL) --prompt-profile $(ASR_POST_CORRECTION_PROMPT_PROFILE)
 
 term-learning-report:
 	python3 ./scripts/report-term-learning.py $(if $(TERM_DICTIONARY_STORAGE),--storage $(TERM_DICTIONARY_STORAGE),)
