@@ -44,8 +44,8 @@ final class OpenAICompatibleRefineEngine: RefineEngine {
             ChatCompletionRequest(
                 model: configuration.model,
                 messages: [
-                    .init(role: "system", content: ConservativeRefinePrompt.systemPrompt),
-                    .init(role: "user", content: ConservativeRefinePrompt.makeUserPrompt(for: request.text)),
+                    .init(role: "system", content: WorkspaceRefinePrompt.systemPrompt),
+                    .init(role: "user", content: WorkspaceRefinePrompt.makeUserPrompt(for: request.text)),
                 ],
                 temperature: 0
             )

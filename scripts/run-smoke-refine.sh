@@ -45,9 +45,11 @@ case "$SCENARIO" in
     HOST_COMMAND_TRIGGER_TEXT="$REFINED_TEXT"
     ;;
   manual-fallback)
-    EXPECTED_TEXT="$SOURCE_TEXT"
+    EXPECTED_TEXT="嗯  ${SOURCE_TEXT} edited，，"
     APP_REFINE_PHASE="manual"
     STUB_STATUS_CODE="500"
+    HOST_COMMAND_TEXT="$EXPECTED_TEXT"
+    HOST_COMMAND_TRIGGER_TEXT="$SOURCE_TEXT"
     ;;
   fallback)
     EXPECTED_TEXT="$SOURCE_TEXT"
@@ -71,6 +73,9 @@ cleanup() {
   if [[ -n "${COMMAND_WRITER_PID:-}" ]]; then
     kill "$COMMAND_WRITER_PID" >/dev/null 2>&1 || true
   fi
+  if [[ -n "${FOCUS_KEEPALIVE_PID:-}" ]]; then
+    kill "$FOCUS_KEEPALIVE_PID" >/dev/null 2>&1 || true
+  fi
   osascript -e 'tell application id "com.leozejia.speakdock.testhost" to quit' >/dev/null 2>&1 || true
   rm -rf "$WORK_DIR"
 }
@@ -79,6 +84,13 @@ trap cleanup EXIT
 activate_test_host() {
   osascript -e 'tell application id "com.leozejia.speakdock.testhost" to activate' >/dev/null 2>&1 || true
   sleep 0.2
+}
+
+keep_test_host_frontmost() {
+  while true; do
+    activate_test_host
+    sleep 0.2
+  done
 }
 
 server_ready() {
@@ -187,6 +199,8 @@ if [[ "$TARGET" == "compose" ]]; then
   fi
 
   activate_test_host
+  keep_test_host_frontmost &
+  FOCUS_KEEPALIVE_PID=$!
 
   if [[ -n "$HOST_COMMAND_TEXT" ]]; then
     (

@@ -643,6 +643,69 @@
 - `swift test --filter TermDictionaryTests/testConfirmedAliasesDoNotRewriteInsideLongerASCIIWords`
 - `make test TEST_FILTER=TermDictionary`
 
+### 3.16 `Workspace Refine` 不能复用 ASR 纠错 prompt，也不能把 fallback 偷换成 `clean text`
+
+现象：
+
+- 文档里定义的是“工作区整理”，但模型提示词还是“保守转写纠错”
+- `manual refine` 失败后，当前工作区会被偷偷压回 `clean` / `normalize` 后的版本
+
+错误做法：
+
+- 直接复用 ASR 纠错 prompt 给 `Workspace Refine`
+- 请求给模型的是 `modelInputText`，失败时也直接把 `modelInputText` 写回去
+
+正确做法：
+
+- `Workspace Refine` 要有独立 prompt，语义明确是“整理整个当前工作区”
+- `modelInputText` 只用于模型调用，不是失败回退真源
+- `manual refine` 关闭或失败时，保留的必须是当前 workspace 文本
+- 至少补一条真实 smoke，确保失败不会把用户当前文本压成 `clean text`
+
+当前落实位置：
+
+- `Sources/SpeakDockCore/Refine/WorkspaceRefinePrompt.swift`
+- `Sources/SpeakDockMac/App/HotPathCoordinator.swift`
+- `scripts/run-smoke-refine.sh`
+- `Tests/SpeakDockCoreTests/WorkspaceRefinePromptTests.swift`
+
+验收方式：
+
+- `make test TEST_FILTER=WorkspaceRefinePromptTests`
+- `make smoke-capture-refine-fallback`
+- `make smoke-refine-submit-sync`
+
+### 3.17 compose target identity 不能包含会随文本变化的 AX 字段
+
+现象：
+
+- 同一个输入框，第一次提交能写进去
+- 过一会儿再做 `submit refine / undo / replace`，却突然提示目标不可用
+- smoke 里最明显的表现是 `refine request succeeded`，但 `compose refine apply` 和 `submit` 紧接着失败
+
+错误做法：
+
+- 把 `AXTitle`、`AXDescription` 这种会随文本变化的字段拼进 target identity
+- 后续又要求恢复后的 target 必须重新算出完全相同的 identity
+
+正确做法：
+
+- compose target identity 只保留稳定字段
+- 当前仓库里优先保留：`pid / role / AXIdentifier / windowTitle / structuralPath`
+- `submit / undo / replace` 走同一 workspace 时，应优先恢复已捕获 target，而不是死等当前前台重新算出同一串 ID
+
+当前落实位置：
+
+- `Sources/SpeakDockMac/Target/ClipboardComposeTarget.swift`
+- `Tests/SpeakDockMacTests/ComposeTargetIdentifierTests.swift`
+- `scripts/run-smoke-refine.sh`
+
+验收方式：
+
+- `make test TEST_FILTER=ComposeTargetIdentifierTests`
+- `make smoke-refine`
+- `make smoke-refine-submit-sync`
+
 ## 4. 每轮结束前的固定检查
 
 所有涉及 Swift/macOS 行为改动的任务，结束前至少检查：

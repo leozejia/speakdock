@@ -34,12 +34,12 @@ final class ClipboardComposeTarget {
         processIdentifier: pid_t,
         role: String,
         identifier: String,
-        description: String,
+        description _: String,
         windowTitle: String,
-        title: String,
+        title _: String,
         structuralPath: String
     ) -> String {
-        "\(processIdentifier):\(role):\(identifier):\(description):\(windowTitle):\(title):\(structuralPath)"
+        "\(processIdentifier):\(role):\(identifier):\(windowTitle):\(structuralPath)"
     }
 
     nonisolated static func composeProbeVerdict(for availability: ComposeTargetAvailability) -> ComposeProbeVerdict {
@@ -292,12 +292,12 @@ final class ClipboardComposeTarget {
     }
 
     func submitCurrentTarget(expectedTargetID: String) throws {
-        try ensureAvailableTarget(expectedTargetID: expectedTargetID)
+        try ensureAvailableTargetOrRestoreCapturedTarget(expectedTargetID: expectedTargetID)
         postKeyboardShortcut(keyCode: 0x24, flags: [])
     }
 
     func undoLastInsertion(expectedTargetID: String) throws {
-        try ensureAvailableTarget(expectedTargetID: expectedTargetID)
+        try ensureAvailableTargetOrRestoreCapturedTarget(expectedTargetID: expectedTargetID)
         postKeyboardShortcut(keyCode: 0x06, flags: .maskCommand)
     }
 
@@ -307,7 +307,7 @@ final class ClipboardComposeTarget {
         expectedTargetID: String
     ) throws {
         let effectiveUndoCount = max(undoCount, 1)
-        try ensureAvailableTarget(expectedTargetID: expectedTargetID)
+        try ensureAvailableTargetOrRestoreCapturedTarget(expectedTargetID: expectedTargetID)
 
         for _ in 0..<effectiveUndoCount {
             postKeyboardShortcut(keyCode: 0x06, flags: .maskCommand)
@@ -377,16 +377,13 @@ final class ClipboardComposeTarget {
         switch capturedTarget {
         case let .focusedEditableElement(target):
             restoreFocus(to: target.element)
+            return
 
         case let .pasteOnlyApplication(target):
             guard isFrontmostPasteOnlyApplicationTarget(target) else {
                 throw ClipboardComposeTargetError.unavailable(ClipboardComposeTargetError.composeUnavailableReason)
             }
             return
-        }
-
-        guard case let .available(targetID) = availability(), targetID == expectedTargetID else {
-            throw ClipboardComposeTargetError.unavailable(ClipboardComposeTargetError.composeUnavailableReason)
         }
     }
 

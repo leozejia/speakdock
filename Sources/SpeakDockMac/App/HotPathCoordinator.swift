@@ -263,14 +263,26 @@ final class HotPathCoordinator {
 
     func runSmokeManualRefine(
         text: String,
+        actionDelay: TimeInterval = 0.4,
         onFinished: @escaping @MainActor () -> Void
     ) {
         runSmokeCommit(text: text)
-        runSmokeRefineSecondaryAction(onFinished: onFinished)
+        Task { @MainActor [weak self] in
+            guard let self else {
+                return
+            }
+
+            if actionDelay > 0 {
+                try? await Task.sleep(for: .seconds(actionDelay))
+            }
+
+            self.runSmokeRefineSecondaryAction(onFinished: onFinished)
+        }
     }
 
     func runSmokeCaptureManualRefine(
         text: String,
+        actionDelay: TimeInterval = 0.4,
         onFinished: @escaping @MainActor () -> Void
     ) {
         guard let captureRootURL = runtimeCaptureRootURLOverride else {
@@ -280,7 +292,17 @@ final class HotPathCoordinator {
         }
 
         runSmokeCaptureCommit(text: text, captureRootURL: captureRootURL)
-        runSmokeRefineSecondaryAction(onFinished: onFinished)
+        Task { @MainActor [weak self] in
+            guard let self else {
+                return
+            }
+
+            if actionDelay > 0 {
+                try? await Task.sleep(for: .seconds(actionDelay))
+            }
+
+            self.runSmokeRefineSecondaryAction(onFinished: onFinished)
+        }
     }
 
     private func runSmokeRefineSecondaryAction(
@@ -499,6 +521,7 @@ final class HotPathCoordinator {
                 try? await Task.sleep(for: .seconds(submitDelay))
             }
 
+            self.synchronizeObservedWorkspaceTextIfNeeded()
             self.beginSubmitAction(
                 origin: .smoke,
                 shouldRecordWordCorrectionEvidence: recordWordCorrectionEvidence,
@@ -850,21 +873,22 @@ final class HotPathCoordinator {
             for: workspace,
             configuration: configuration
         )
-        let baseText = preparation.modelInputText
+        let sourceText = preparation.sourceText
+        let modelInputText = preparation.modelInputText
 
-        guard !baseText.isEmpty else {
+        guard !sourceText.isEmpty else {
             refreshSecondaryAction()
             return
         }
 
         if !preparation.shouldCallModel {
-            SpeakDockLog.refine.debug("manual refine requested while refine is disabled; applying clean text")
-            applyRefinedText(baseText, toWorkspaceID: workspace.id)
+            SpeakDockLog.refine.debug("manual refine requested while refine is unavailable; keeping current workspace text")
+            applyRefinedText(sourceText, toWorkspaceID: workspace.id)
             return
         }
 
         SpeakDockLog.refine.notice("manual refine request started")
-        overlayPanelController.showRefining(transcript: baseText)
+        overlayPanelController.showRefining(transcript: sourceText)
         cancelRefineTask()
         activeRefineTask = Task { [weak self] in
             guard let self else {
@@ -874,14 +898,14 @@ final class HotPathCoordinator {
             let refinedText: String
             do {
                 let response = try await self.refineEngine.refine(
-                    RefineRequest(text: baseText),
+                    RefineRequest(text: modelInputText),
                     configuration: configuration
                 )
                 let trimmedResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
-                refinedText = trimmedResponse.isEmpty ? baseText : trimmedResponse
+                refinedText = trimmedResponse.isEmpty ? sourceText : trimmedResponse
             } catch {
-                SpeakDockLog.refine.error("manual refine request failed; falling back to clean text")
-                refinedText = baseText
+                SpeakDockLog.refine.error("manual refine request failed; falling back to current workspace text")
+                refinedText = sourceText
             }
 
             guard !Task.isCancelled else {

@@ -88,7 +88,7 @@
 当前行为：
 
 - 当前 HTTP 契约也是 OpenAI-compatible `POST /chat/completions`
-- `manual refine` 失败时回退到 `clean text`
+- `manual refine` 失败时回退到 `current workspace text`
 - `submit refine` 失败时回退到 `current workspace text`，继续发送
 - 仓库里已有对应 smoke：
   - `make smoke-refine`
@@ -97,8 +97,9 @@
 
 关键发现：
 
-- 当前 `ConservativeRefinePrompt` 仍然是“保守纠错”语义，而不是“工作区整理”语义
-- 也就是说，云端 `Refine` 的网络缝隙和回退策略已经成熟，但 prompt 语义仍存在漂移
+- 旧的 `ConservativeRefinePrompt` 确实造成过“保守纠错”语义漂移
+- 当前已收口到 `WorkspaceRefinePrompt`，语义改成“工作区整理”
+- 也就是说，云端 `Refine` 的主问题不是 provider，而是必须先把产品语义写死
 
 结论：
 
@@ -342,7 +343,7 @@ OpenAI 官方文档明确写了：
 
 当前不是 provider 契约不够，而是 prompt 语义漂移：
 
-- `ConservativeRefinePrompt` 现在更像“保守纠错”
+- 旧的 `ConservativeRefinePrompt` 更像“保守纠错”
 - 但产品定义里的 `Workspace Refine` 已经是“工作区整理”
 
 所以第二轮之后，真正该推进的不是先换 provider，而是：
