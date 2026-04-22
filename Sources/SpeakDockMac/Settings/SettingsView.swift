@@ -771,6 +771,10 @@ struct SettingsView: View {
             return localized(.settingsASRCorrectionStatusTimedOut)
         case let .failed(.readinessUnexpectedStatus(statusCode)):
             return localizedFormat(.settingsASRCorrectionStatusUnexpectedStatusFormat, statusCode)
+        case .failed(.invalidModelsResponse):
+            return localized(.settingsASRCorrectionStatusInvalidModelsResponse)
+        case .failed(.modelUnavailable):
+            return localized(.settingsASRCorrectionStatusModelUnavailable)
         }
     }
 
@@ -787,7 +791,7 @@ struct SettingsView: View {
 
     private var onDeviceASRCorrectionStatusDetail: String? {
         switch onDeviceASRCorrectionServerSupervisor.status {
-        case .failed(.launchFailed), .failed(.readinessUnexpectedStatus):
+        case .failed(.launchFailed), .failed(.readinessUnexpectedStatus), .failed(.invalidModelsResponse), .failed(.modelUnavailable):
             return onDeviceASRCorrectionServerSupervisor.statusDetail
         case .inactive, .starting, .ready, .failed(.executableUnavailable), .failed(.readinessTimedOut):
             return nil

@@ -216,5 +216,21 @@ final class AppLocalizerTests: XCTestCase {
             ),
             "没有找到 mlx_lm.server。"
         )
+        XCTAssertEqual(
+            AppLocalizer.string(
+                .settingsASRCorrectionStatusModelUnavailable,
+                appLanguage: .english,
+                preferredLanguages: ["en"]
+            ),
+            "Configured model is unavailable on the local server."
+        )
+        XCTAssertEqual(
+            AppLocalizer.string(
+                .settingsASRCorrectionStatusInvalidModelsResponse,
+                appLanguage: .simplifiedChinese,
+                preferredLanguages: ["en"]
+            ),
+            "本地服务返回了不可读的模型列表。"
+        )
     }
 }

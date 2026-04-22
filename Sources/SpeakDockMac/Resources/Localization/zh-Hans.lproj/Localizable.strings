@@ -76,6 +76,8 @@
 "settings.asr_correction.status_launch_failed" = "本地服务启动失败。";
 "settings.asr_correction.status_timed_out" = "本地服务在时限内没有就绪。";
 "settings.asr_correction.status_unexpected_status_format" = "本地服务返回了状态码 %d。";
+"settings.asr_correction.status_invalid_models_response" = "本地服务返回了不可读的模型列表。";
+"settings.asr_correction.status_model_unavailable" = "当前配置的模型不在本地服务里。";
 "settings.refine_configuration.title" = "整理服务";
 "settings.refine_configuration.subtitle" = "只有在开启整理后，SpeakDock 才会读取下面这组接口配置。";
 "settings.enable_refine.title" = "开启整理";

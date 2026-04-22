@@ -3,6 +3,16 @@ import SpeakDockCore
 @testable import SpeakDockMac
 
 final class OnDeviceASRCorrectionServerSupervisorTests: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        mockOnDeviceASRCorrectionReadinessRequestStore.requestHandler = nil
+    }
+
+    override func tearDown() {
+        mockOnDeviceASRCorrectionReadinessRequestStore.requestHandler = nil
+        super.tearDown()
+    }
+
     func testCommandBuilderReturnsNilWhenExecutableCannotBeResolved() {
         let temporaryDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -123,6 +133,52 @@ final class OnDeviceASRCorrectionServerSupervisorTests: XCTestCase {
         XCTAssertEqual(supervisor.status, .inactive)
     }
 
+    func testReadinessCheckerReturnsReadyWhenConfiguredModelAppearsInModelsList() async throws {
+        mockOnDeviceASRCorrectionReadinessRequestStore.requestHandler = { request in
+            XCTAssertEqual(request.url?.absoluteString, "http://127.0.0.1:42100/v1/models")
+            return (
+                HTTPURLResponse(
+                    url: try XCTUnwrap(request.url),
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!,
+                #"{"data":[{"id":"Qwen3.5-2B-OptiQ-4bit"},{"id":"other-model"}]}"#.data(using: .utf8)!
+            )
+        }
+
+        let result = await OnDeviceASRCorrectionServerReadinessChecker.check(
+            configuration: makeOnDeviceConfiguration(),
+            session: makeReadinessSession()
+        )
+
+        XCTAssertEqual(result.status, .ready)
+        XCTAssertNil(result.detail)
+    }
+
+    func testReadinessCheckerReturnsModelUnavailableWhenConfiguredModelIsMissing() async throws {
+        mockOnDeviceASRCorrectionReadinessRequestStore.requestHandler = { request in
+            return (
+                HTTPURLResponse(
+                    url: try XCTUnwrap(request.url),
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!,
+                #"{"data":[{"id":"some-other-model"},{"id":"fallback-model"}]}"#.data(using: .utf8)!
+            )
+        }
+
+        let result = await OnDeviceASRCorrectionServerReadinessChecker.check(
+            configuration: makeOnDeviceConfiguration(),
+            session: makeReadinessSession()
+        )
+
+        XCTAssertEqual(result.status, .failed(.modelUnavailable))
+        XCTAssertTrue(result.detail?.contains("Qwen3.5-2B-OptiQ-4bit") == true)
+        XCTAssertTrue(result.detail?.contains("some-other-model") == true)
+    }
+
     private func makeOnDeviceConfiguration() -> ASRCorrectionConfiguration {
         ASRCorrectionConfiguration(
             provider: .onDevice,
@@ -131,6 +187,12 @@ final class OnDeviceASRCorrectionServerSupervisorTests: XCTestCase {
             apiKey: "",
             model: OnDeviceASRCorrectionDefaults.modelIdentifier
         )
+    }
+
+    private func makeReadinessSession() -> URLSession {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockOnDeviceASRCorrectionReadinessURLProtocol.self]
+        return URLSession(configuration: configuration)
     }
 }
 
@@ -141,5 +203,53 @@ private final class ProcessSpy: OnDeviceASRCorrectionServerProcessControlling {
     func terminate() {
         terminateCallCount += 1
         isRunning = false
+    }
+}
+
+private final class MockOnDeviceASRCorrectionReadinessURLProtocol: URLProtocol {
+    override class func canInit(with request: URLRequest) -> Bool {
+        true
+    }
+
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        request
+    }
+
+    override func startLoading() {
+        guard let handler = mockOnDeviceASRCorrectionReadinessRequestStore.requestHandler else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
+
+        do {
+            let (response, data) = try handler(request)
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: data)
+            client?.urlProtocolDidFinishLoading(self)
+        } catch {
+            client?.urlProtocol(self, didFailWithError: error)
+        }
+    }
+
+    override func stopLoading() {}
+}
+
+private let mockOnDeviceASRCorrectionReadinessRequestStore = MockOnDeviceASRCorrectionReadinessRequestStore()
+
+private final class MockOnDeviceASRCorrectionReadinessRequestStore: @unchecked Sendable {
+    private let lock = NSLock()
+    private var handler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+
+    var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))? {
+        get {
+            lock.lock()
+            defer { lock.unlock() }
+            return handler
+        }
+        set {
+            lock.lock()
+            handler = newValue
+            lock.unlock()
+        }
     }
 }

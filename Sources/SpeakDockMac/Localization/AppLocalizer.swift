@@ -80,6 +80,8 @@ enum AppLocalizedStringKey: String {
     case settingsASRCorrectionStatusLaunchFailed = "settings.asr_correction.status_launch_failed"
     case settingsASRCorrectionStatusTimedOut = "settings.asr_correction.status_timed_out"
     case settingsASRCorrectionStatusUnexpectedStatusFormat = "settings.asr_correction.status_unexpected_status_format"
+    case settingsASRCorrectionStatusInvalidModelsResponse = "settings.asr_correction.status_invalid_models_response"
+    case settingsASRCorrectionStatusModelUnavailable = "settings.asr_correction.status_model_unavailable"
     case settingsRefineConfigurationTitle = "settings.refine_configuration.title"
     case settingsRefineConfigurationSubtitle = "settings.refine_configuration.subtitle"
     case settingsEnableRefineTitle = "settings.enable_refine.title"

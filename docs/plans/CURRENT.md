@@ -92,6 +92,7 @@
 - 当前最小运行期诊断已经补上：
   - `mlx_lm.server` 找不到时，直接判失败，不再静默尝试
   - 端侧 server 启动后会轮询 `/v1/models`
+  - `200 OK` 也不会直接算 ready，只有目标模型真的出现在 `/v1/models` 里才算就绪
   - 设置页会显示 `starting / ready / failed`
   - 日志会明确写出启动失败或 readiness 失败
 - `ASR Post-Correction` 是路由前层，不单独区分 `Compose / Capture`
@@ -192,12 +193,13 @@
 - app 退出时已能关闭它拉起的 server
 - 缺少 `mlx_lm.server` 时已能明确失败
 - `onDevice` 已有最小 readiness 探测与设置页状态反馈
+- `onDevice` 已能区分“server 已起但当前模型不在服务里”
 - `CURRENT` 与 `ARCHITECTURE` 已同步到同一口径
 - 不需要再靠口头解释“到底谁管 server 生命周期”
 
 ## 9. 下一轮候选
 
-- model 可用性与缺失原因细化
+- model 可用性与缺失原因继续细化
 - provider 失败细节收束
 - `Workspace Refine` prompt 重定义
 
@@ -231,3 +233,4 @@
 - 已完成：`ASR Post-Correction` provider 契约已收口到 `disabled / onDevice / customEndpoint`
 - 已完成：`onDevice` 第一版已固定为由 SpeakDock 管理生命周期的 `mlx_lm.server`
 - 已完成：`mlx_lm.server` 缺失诊断、readiness 探测和设置页状态反馈已落地
+- 已完成：`/v1/models` 已真正校验目标模型是否可用，不再把任意 `200 OK` 当成 ready

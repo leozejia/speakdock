@@ -17,6 +17,8 @@ enum OnDeviceASRCorrectionServerFailure: Equatable {
     case launchFailed
     case readinessTimedOut
     case readinessUnexpectedStatus(Int)
+    case invalidModelsResponse
+    case modelUnavailable
 }
 
 enum OnDeviceASRCorrectionServerStatus: Equatable {
@@ -24,6 +26,36 @@ enum OnDeviceASRCorrectionServerStatus: Equatable {
     case starting
     case ready
     case failed(OnDeviceASRCorrectionServerFailure)
+}
+
+struct OnDeviceASRCorrectionServerReadinessResult: Equatable {
+    let status: OnDeviceASRCorrectionServerStatus
+    let detail: String?
+
+    static let inactive = OnDeviceASRCorrectionServerReadinessResult(
+        status: .inactive,
+        detail: nil
+    )
+
+    static let starting = OnDeviceASRCorrectionServerReadinessResult(
+        status: .starting,
+        detail: nil
+    )
+
+    static let ready = OnDeviceASRCorrectionServerReadinessResult(
+        status: .ready,
+        detail: nil
+    )
+
+    static func failed(
+        _ failure: OnDeviceASRCorrectionServerFailure,
+        detail: String? = nil
+    ) -> OnDeviceASRCorrectionServerReadinessResult {
+        OnDeviceASRCorrectionServerReadinessResult(
+            status: .failed(failure),
+            detail: detail
+        )
+    }
 }
 
 enum OnDeviceASRCorrectionServerCommandBuilder {
@@ -103,7 +135,7 @@ enum OnDeviceASRCorrectionServerReadinessChecker {
     static func check(
         configuration: ASRCorrectionConfiguration,
         session: URLSession = .shared
-    ) async -> OnDeviceASRCorrectionServerStatus {
+    ) async -> OnDeviceASRCorrectionServerReadinessResult {
         guard let readinessURL = URL(string: configuration.baseURL)?
             .appendingPathComponent("models") else {
             return .failed(.readinessTimedOut)
@@ -118,10 +150,32 @@ enum OnDeviceASRCorrectionServerReadinessChecker {
             request.timeoutInterval = 0.35
 
             do {
-                let (_, response) = try await session.data(for: request)
+                let (data, response) = try await session.data(for: request)
                 if let httpResponse = response as? HTTPURLResponse {
                     if (200...299).contains(httpResponse.statusCode) {
-                        return .ready
+                        do {
+                            let modelsResponse = try JSONDecoder().decode(
+                                OnDeviceASRCorrectionModelsResponse.self,
+                                from: data
+                            )
+                            let availableModelIdentifiers = modelsResponse.data.map(\.id)
+                            if availableModelIdentifiers.contains(configuration.model) {
+                                return .ready
+                            }
+
+                            let availableModelSummary = availableModelIdentifiers.isEmpty
+                                ? "none"
+                                : availableModelIdentifiers.joined(separator: ", ")
+                            return .failed(
+                                .modelUnavailable,
+                                detail: "configured model \(configuration.model) not advertised by mlx_lm.server; available: \(availableModelSummary)"
+                            )
+                        } catch {
+                            return .failed(
+                                .invalidModelsResponse,
+                                detail: "mlx_lm.server returned an unreadable model list"
+                            )
+                        }
                     }
                     return .failed(.readinessUnexpectedStatus(httpResponse.statusCode))
                 }
@@ -139,7 +193,7 @@ enum OnDeviceASRCorrectionServerReadinessChecker {
 final class OnDeviceASRCorrectionServerSupervisor {
     typealias CommandBuilder = (ASRCorrectionConfiguration) -> OnDeviceASRCorrectionServerCommand?
     typealias Launcher = (OnDeviceASRCorrectionServerCommand) throws -> any OnDeviceASRCorrectionServerProcessControlling
-    typealias ReadinessChecker = (ASRCorrectionConfiguration) async -> OnDeviceASRCorrectionServerStatus
+    typealias ReadinessChecker = (ASRCorrectionConfiguration) async -> OnDeviceASRCorrectionServerReadinessResult
 
     private(set) var status: OnDeviceASRCorrectionServerStatus = .inactive
     private(set) var statusDetail: String?
@@ -157,9 +211,9 @@ final class OnDeviceASRCorrectionServerSupervisor {
         launcher: @escaping Launcher = { command in
             try FoundationOnDeviceASRCorrectionServerProcess.launch(command: command)
         },
-        readinessChecker: @escaping ReadinessChecker = { configuration in
-            await OnDeviceASRCorrectionServerReadinessChecker.check(configuration: configuration)
-        }
+            readinessChecker: @escaping ReadinessChecker = { configuration in
+                await OnDeviceASRCorrectionServerReadinessChecker.check(configuration: configuration)
+            }
     ) {
         self.commandBuilder = commandBuilder
         self.launcher = launcher
@@ -239,7 +293,7 @@ final class OnDeviceASRCorrectionServerSupervisor {
                 return
             }
 
-            let readinessStatus = await readinessChecker(configuration)
+            let readinessResult = await readinessChecker(configuration)
 
             await MainActor.run {
                 guard !Task.isCancelled else {
@@ -250,7 +304,7 @@ final class OnDeviceASRCorrectionServerSupervisor {
                     return
                 }
 
-                switch readinessStatus {
+                switch readinessResult.status {
                 case .inactive:
                     break
                 case .starting:
@@ -262,7 +316,7 @@ final class OnDeviceASRCorrectionServerSupervisor {
                     SpeakDockLog.speech.notice("on-device asr correction server ready")
                 case let .failed(failure):
                     self.status = .failed(failure)
-                    self.statusDetail = failure.detail
+                    self.statusDetail = readinessResult.detail ?? failure.detail
                     SpeakDockLog.speech.error("on-device asr correction server not ready: \(failure.logDescription, privacy: .public)")
                 }
 
@@ -283,6 +337,10 @@ private extension OnDeviceASRCorrectionServerFailure {
             "readiness timed out"
         case let .readinessUnexpectedStatus(statusCode):
             "unexpected readiness status \(statusCode)"
+        case .invalidModelsResponse:
+            "invalid models response"
+        case .modelUnavailable:
+            "configured model unavailable"
         }
     }
 
@@ -296,8 +354,20 @@ private extension OnDeviceASRCorrectionServerFailure {
             "mlx_lm.server did not become ready in time"
         case let .readinessUnexpectedStatus(statusCode):
             "mlx_lm.server responded with status \(statusCode)"
+        case .invalidModelsResponse:
+            "mlx_lm.server returned an unreadable model list"
+        case .modelUnavailable:
+            "configured model is unavailable"
         }
     }
+}
+
+private struct OnDeviceASRCorrectionModelsResponse: Decodable {
+    let data: [OnDeviceASRCorrectionModelDescriptor]
+}
+
+private struct OnDeviceASRCorrectionModelDescriptor: Decodable {
+    let id: String
 }
 
 private final class FoundationOnDeviceASRCorrectionServerProcess: OnDeviceASRCorrectionServerProcessControlling {
