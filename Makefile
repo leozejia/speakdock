@@ -16,7 +16,7 @@ CLANG_MODULE_CACHE := $(SWIFT_CACHE)/clang/ModuleCache
 SWIFT_ENV := HOME=$(SWIFT_HOME) XDG_CACHE_HOME=$(SWIFT_CACHE) CLANG_MODULE_CACHE_PATH=$(CLANG_MODULE_CACHE) SWIFTPM_MODULECACHE_OVERRIDE=$(CLANG_MODULE_CACHE)
 TEST_FILTER ?=
 
-.PHONY: build run clean test logs speech-logs traces trace-report speech-error-report asr-correction-report asr-sample-report asr-post-correction-eval asr-post-correction-openai-eval asr-post-correction-eval-report term-learning-report probe-compose smoke-compose smoke-compose-continue smoke-compose-undo smoke-compose-switch-undo smoke-capture-continue smoke-capture-undo smoke-asr-correction smoke-refine smoke-refine-manual smoke-capture-refine-manual smoke-refine-dirty-undo smoke-capture-refine-dirty-undo smoke-refine-fallback smoke-capture-refine-fallback smoke-refine-submit-sync smoke-term-learning smoke-term-learning-conflict
+.PHONY: build run clean test logs speech-logs traces trace-report speech-error-report asr-correction-report asr-sample-report asr-post-correction-eval asr-post-correction-openai-eval asr-post-correction-eval-report term-learning-report probe-compose smoke-compose smoke-compose-continue smoke-compose-undo smoke-compose-switch-undo smoke-capture-continue smoke-capture-undo smoke-asr-correction smoke-refine smoke-refine-manual smoke-refine-mixed smoke-refine-mixed-manual smoke-capture-refine-manual smoke-refine-dirty-undo smoke-capture-refine-dirty-undo smoke-refine-fallback smoke-capture-refine-fallback smoke-refine-submit-sync smoke-term-learning smoke-term-learning-conflict
 
 build:
 	./scripts/build-app.sh $(CONFIGURATION)
@@ -87,6 +87,12 @@ smoke-refine:
 
 smoke-refine-manual:
 	SMOKE_REFINE_SCENARIO=manual ./scripts/run-smoke-refine.sh $(CONFIGURATION)
+
+smoke-refine-mixed:
+	./scripts/run-smoke-refine.sh $(CONFIGURATION) "今天先 review api key fallback 然后 push dev internal" "今天先 review apiKey fallback，然后 push dev/internal。"
+
+smoke-refine-mixed-manual:
+	SMOKE_REFINE_SCENARIO=manual ./scripts/run-smoke-refine.sh $(CONFIGURATION) "今天先 review api key fallback 然后 push dev internal" "今天先 review apiKey fallback，然后 push dev/internal。"
 
 smoke-capture-refine-manual:
 	SMOKE_REFINE_TARGET=capture SMOKE_REFINE_SCENARIO=manual ./scripts/run-smoke-refine.sh $(CONFIGURATION)

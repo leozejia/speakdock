@@ -30,6 +30,8 @@
 - 当前 smoke 已经覆盖：
   - `submit refine`
   - `manual refine`
+  - `mixed-language submit refine`
+  - `mixed-language manual refine`
   - `dirty undo`
   - `submit observed edit`
   - `capture manual / dirty undo / fallback`
@@ -119,3 +121,4 @@
 - 已完成：`WorkspaceRefinePrompt` 已替换旧的保守纠错 prompt 命名与语义
 - 已完成：`smoke-capture-refine-fallback` 已能卡住“manual fallback 保留当前 workspace 原文”
 - 已完成：compose target identity 已去掉易漂移字段，提交前整理 smoke 再次闭环
+- 已完成：`Workspace Refine` 的中英混合 smoke 已补到 `submit + manual` 两条路径

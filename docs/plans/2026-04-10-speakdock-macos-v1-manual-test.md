@@ -93,10 +93,12 @@
 16. 运行 `make smoke-refine-dirty-undo` 时，命令会走“写入当前 workspace -> 手动整理 -> 模拟用户改字 -> 二次点击确认撤回”路径，验证真实热路径里的 `dirty -> confirm undo -> undo`。
 17. 运行 `make smoke-refine-fallback` 时，命令会强制让 stub server 返回失败，验证发送前整理失败时仍按当前 workspace 文本提交。
 18. 运行 `make smoke-refine-submit-sync` 时，命令会先模拟用户手改当前 workspace，再触发送前整理，并校验发送到 stub server 的整理文本已经同步为手改后的版本。
-19. 运行 `make smoke-term-learning` 时，命令会使用隔离的临时词典和测试宿主，回放匿名 `promotion` 场景，验证 `词级观察 -> 晋升 -> 下次命中`。
-20. 运行 `make smoke-term-learning-conflict` 时，命令会回放匿名 `conflict` 场景，验证冲突 alias 不会被错误晋升。
-21. 两条 `smoke-term-learning` 都成功后，说明 `TermDictionary` 的被动学习链路已有更完整的本地自驱基线。
-22. 运行 `make term-learning-report` 时，可以直接查看当前本地词典学习摘要；输出只包含 `alias / canonical / evidence / outcome`，不包含完整正文。
+19. 运行 `make smoke-refine-mixed` 时，命令会走一条固定的中英混合 workspace，验证发送前整理后的中文语义与英文标识会一起稳定写回目标。
+20. 运行 `make smoke-refine-mixed-manual` 时，命令会走同一条中英混合 workspace 的手动整理路径，验证不提交时也能直接写回目标。
+21. 运行 `make smoke-term-learning` 时，命令会使用隔离的临时词典和测试宿主，回放匿名 `promotion` 场景，验证 `词级观察 -> 晋升 -> 下次命中`。
+22. 运行 `make smoke-term-learning-conflict` 时，命令会回放匿名 `conflict` 场景，验证冲突 alias 不会被错误晋升。
+23. 两条 `smoke-term-learning` 都成功后，说明 `TermDictionary` 的被动学习链路已有更完整的本地自驱基线。
+24. 运行 `make term-learning-report` 时，可以直接查看当前本地词典学习摘要；输出只包含 `alias / canonical / evidence / outcome`，不包含完整正文。
 
 ## 9. Capture
 

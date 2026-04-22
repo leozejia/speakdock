@@ -504,6 +504,18 @@ final class BuildScriptTests: XCTestCase {
         XCTAssertTrue(makefile.contains("SMOKE_REFINE_SCENARIO=submit-observed-edit"))
     }
 
+    func testMakefileExposesMixedLanguageRefineSmokeTargets() throws {
+        let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Makefile")
+        let makefile = try String(contentsOf: makefileURL, encoding: .utf8)
+
+        XCTAssertTrue(makefile.contains("smoke-refine-mixed:"))
+        XCTAssertTrue(makefile.contains("smoke-refine-mixed-manual:"))
+        XCTAssertTrue(makefile.contains("api key fallback"))
+        XCTAssertTrue(makefile.contains("apiKey fallback"))
+        XCTAssertTrue(makefile.contains("push dev/internal"))
+    }
+
     func testMakefileExposesASRCorrectionSmokeTarget() throws {
         let makefileURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("Makefile")
