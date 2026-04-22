@@ -57,8 +57,10 @@ struct SpeakDockLaunchOptions: Equatable {
     let asrCorrectionBaseURL: String
     let asrCorrectionAPIKey: String
     let asrCorrectionModel: String
+    let onDeviceASRCorrectionExecutableOverridePath: String
     let smokeTermDictionaryStoragePath: String
     let smokeCaptureRootPath: String
+    private let requestedASRCorrectionProvider: ASRCorrectionProvider?
 
     init(arguments: [String] = CommandLine.arguments) {
         if arguments.contains("--probe-compose") {
@@ -135,6 +137,16 @@ struct SpeakDockLaunchOptions: Equatable {
             after: "--asr-correction-model",
             in: arguments
         ) ?? ""
+        onDeviceASRCorrectionExecutableOverridePath = Self.stringValue(
+            after: "--on-device-asr-correction-executable",
+            in: arguments
+        ) ?? ""
+        requestedASRCorrectionProvider = Self.asrCorrectionProviderValue(in: arguments)
+            ?? Self.inferredASRCorrectionProvider(
+                baseURL: asrCorrectionBaseURL,
+                apiKey: asrCorrectionAPIKey,
+                model: asrCorrectionModel
+            )
         smokeTermDictionaryStoragePath = Self.stringValue(
             after: "--smoke-term-dictionary-storage",
             in: arguments
@@ -146,19 +158,34 @@ struct SpeakDockLaunchOptions: Equatable {
     }
 
     var runtimeASRCorrectionConfigurationOverride: ASRCorrectionConfiguration? {
-        let configuration = ASRCorrectionConfiguration(
-            provider: .customEndpoint,
-            enabled: true,
-            baseURL: asrCorrectionBaseURL,
-            apiKey: asrCorrectionAPIKey,
-            model: asrCorrectionModel
-        )
-
-        guard configuration.executionMode == .modelCorrection else {
+        switch requestedASRCorrectionProvider {
+        case nil:
             return nil
-        }
+        case .disabled:
+            return .disabled
+        case .onDevice:
+            return ASRCorrectionConfiguration(
+                provider: .onDevice,
+                enabled: true,
+                baseURL: Self.nonEmptyString(asrCorrectionBaseURL) ?? OnDeviceASRCorrectionDefaults.baseURL,
+                apiKey: "",
+                model: Self.nonEmptyString(asrCorrectionModel) ?? OnDeviceASRCorrectionDefaults.modelIdentifier
+            )
+        case .customEndpoint:
+            let configuration = ASRCorrectionConfiguration(
+                provider: .customEndpoint,
+                enabled: true,
+                baseURL: asrCorrectionBaseURL,
+                apiKey: asrCorrectionAPIKey,
+                model: asrCorrectionModel
+            )
 
-        return configuration
+            guard configuration.executionMode == .modelCorrection else {
+                return nil
+            }
+
+            return configuration
+        }
     }
 
     private static func durationValue(after flag: String, in arguments: [String]) -> TimeInterval? {
@@ -185,6 +212,36 @@ struct SpeakDockLaunchOptions: Equatable {
         }
 
         return arguments[valueIndex]
+    }
+
+    private static func asrCorrectionProviderValue(in arguments: [String]) -> ASRCorrectionProvider? {
+        switch stringValue(after: "--asr-correction-provider", in: arguments) {
+        case "disabled":
+            .disabled
+        case "on-device", "onDevice":
+            .onDevice
+        case "custom", "custom-endpoint", "customEndpoint":
+            .customEndpoint
+        default:
+            nil
+        }
+    }
+
+    private static func inferredASRCorrectionProvider(
+        baseURL: String,
+        apiKey: String,
+        model: String
+    ) -> ASRCorrectionProvider? {
+        if !baseURL.isEmpty || !apiKey.isEmpty || !model.isEmpty {
+            return .customEndpoint
+        }
+
+        return nil
+    }
+
+    private static func nonEmptyString(_ value: String) -> String? {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 
     private static func smokeRefinePhaseValue(in arguments: [String]) -> SmokeRefinePhase {

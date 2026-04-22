@@ -529,10 +529,25 @@ final class BuildScriptTests: XCTestCase {
         let script = try String(contentsOf: scriptURL, encoding: .utf8)
 
         XCTAssertTrue(script.contains("run-refine-stub-server.py"))
+        XCTAssertTrue(script.contains("SMOKE_ASR_CORRECTION_PROVIDER"))
+        XCTAssertTrue(script.contains("--asr-correction-provider"))
+        XCTAssertTrue(script.contains("SPEAKDOCK_MLX_LM_SERVER_STUB_RESPONSE_TEXT"))
+        XCTAssertTrue(script.contains("run-mlx-lm-server-stub.sh"))
+        XCTAssertTrue(script.contains("--on-device-asr-correction-executable"))
         XCTAssertTrue(script.contains("tell application id \"com.leozejia.speakdock.testhost\" to activate"))
         XCTAssertTrue(script.contains("--smoke-asr-correction"))
         XCTAssertTrue(script.contains("--asr-correction-base-url"))
         XCTAssertTrue(script.contains("SpeakDockTestHost"))
+    }
+
+    func testRefineStubServerCanAdvertiseModelsForOnDeviceSmoke() throws {
+        let scriptURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/run-refine-stub-server.py")
+        let script = try String(contentsOf: scriptURL, encoding: .utf8)
+
+        XCTAssertTrue(script.contains("--advertised-model"))
+        XCTAssertTrue(script.contains("/v1/models"))
+        XCTAssertTrue(script.contains("\"data\": models"))
     }
 
     func testSmokeTermLearningScriptLaunchesSmokeModeAgainstIsolatedTermDictionaryStore() throws {

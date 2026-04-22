@@ -47,7 +47,20 @@ struct SpeakDockApp: App {
         let captureTarget = CaptureFileTarget(opensFilesOnFirstWrite: opensCaptureFilesOnFirstWrite)
         let speechController = SpeechController(settingsStore: settingsStore)
         let overlayPanelController = OverlayPanelController()
-        let onDeviceASRCorrectionServerSupervisor = OnDeviceASRCorrectionServerSupervisor()
+        let onDeviceExecutableOverride = launchOptions.onDeviceASRCorrectionExecutableOverridePath
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let onDeviceASRCorrectionServerSupervisor = OnDeviceASRCorrectionServerSupervisor(
+            commandBuilder: { configuration in
+                var environment = ProcessInfo.processInfo.environment
+                if !onDeviceExecutableOverride.isEmpty {
+                    environment[OnDeviceASRCorrectionServerCommandBuilder.executableOverrideEnvironmentKey] = onDeviceExecutableOverride
+                }
+                return OnDeviceASRCorrectionServerCommandBuilder.makeCommand(
+                    for: configuration,
+                    environment: environment
+                )
+            }
+        )
         let runtimeRefineConfigurationOverride: RefineConfiguration?
         if launchOptions.mode == .smokeRefine {
             runtimeRefineConfigurationOverride = RefineConfiguration(

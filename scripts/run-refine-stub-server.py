@@ -11,6 +11,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--response-text", required=True)
     parser.add_argument("--status-code", type=int, default=200)
     parser.add_argument("--record-user-message")
+    parser.add_argument("--advertised-model")
     return parser.parse_args()
 
 
@@ -31,8 +32,11 @@ def main() -> None:
                     continue
 
                 content = str(message.get("content", ""))
-                parts = content.split("\n\n", 1)
-                extracted_text = parts[1].strip() if len(parts) == 2 else content.strip()
+                if "输入：" in content and "\n输出：" in content:
+                    extracted_text = content.split("输入：", 1)[1].split("\n输出：", 1)[0].strip()
+                else:
+                    parts = content.split("\n\n", 1)
+                    extracted_text = parts[1].strip() if len(parts) == 2 else content.strip()
                 break
         except (UnicodeDecodeError, json.JSONDecodeError, AttributeError):
             extracted_text = ""
@@ -41,6 +45,22 @@ def main() -> None:
             handle.write(extracted_text)
 
     class Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            if self.path not in ("/v1/models", "/models"):
+                self.send_error(404)
+                return
+
+            models = []
+            if args.advertised_model:
+                models.append({"id": args.advertised_model})
+
+            encoded = json.dumps({"data": models}).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(encoded)))
+            self.end_headers()
+            self.wfile.write(encoded)
+
         def do_POST(self) -> None:
             if self.path not in ("/v1/chat/completions", "/chat/completions"):
                 self.send_error(404)

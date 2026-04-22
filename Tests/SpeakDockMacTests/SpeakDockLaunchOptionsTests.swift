@@ -256,6 +256,70 @@ final class SpeakDockLaunchOptionsTests: XCTestCase {
         XCTAssertNil(options.runtimeASRCorrectionConfigurationOverride)
     }
 
+    func testASRCorrectionOverrideParsesOnDeviceProviderWithDefaults() {
+        let options = SpeakDockLaunchOptions(
+            arguments: [
+                "SpeakDock",
+                "--asr-correction-provider", "on-device",
+            ]
+        )
+
+        guard let configuration = options.runtimeASRCorrectionConfigurationOverride else {
+            return XCTFail("Expected runtime ASR correction override")
+        }
+
+        XCTAssertEqual(configuration.provider, .onDevice)
+        XCTAssertTrue(configuration.enabled)
+        XCTAssertEqual(configuration.baseURL, OnDeviceASRCorrectionDefaults.baseURL)
+        XCTAssertEqual(configuration.apiKey, "")
+        XCTAssertEqual(configuration.model, OnDeviceASRCorrectionDefaults.modelIdentifier)
+    }
+
+    func testASRCorrectionOverrideParsesOnDeviceProviderWithExplicitEndpointAndModel() {
+        let options = SpeakDockLaunchOptions(
+            arguments: [
+                "SpeakDock",
+                "--asr-correction-provider", "on-device",
+                "--asr-correction-base-url", "http://127.0.0.1:43100/v1",
+                "--asr-correction-model", "smoke-model",
+            ]
+        )
+
+        guard let configuration = options.runtimeASRCorrectionConfigurationOverride else {
+            return XCTFail("Expected runtime ASR correction override")
+        }
+
+        XCTAssertEqual(configuration.provider, .onDevice)
+        XCTAssertEqual(configuration.baseURL, "http://127.0.0.1:43100/v1")
+        XCTAssertEqual(configuration.model, "smoke-model")
+        XCTAssertEqual(configuration.apiKey, "")
+    }
+
+    func testASRCorrectionOverrideParsesDisabledProvider() {
+        let options = SpeakDockLaunchOptions(
+            arguments: [
+                "SpeakDock",
+                "--asr-correction-provider", "disabled",
+            ]
+        )
+
+        XCTAssertEqual(options.runtimeASRCorrectionConfigurationOverride, .disabled)
+    }
+
+    func testLaunchOptionsParseOnDeviceExecutableOverridePath() {
+        let options = SpeakDockLaunchOptions(
+            arguments: [
+                "SpeakDock",
+                "--on-device-asr-correction-executable", "/tmp/speakdock-smoke/mlx-lm-server-stub.sh",
+            ]
+        )
+
+        XCTAssertEqual(
+            options.onDeviceASRCorrectionExecutableOverridePath,
+            "/tmp/speakdock-smoke/mlx-lm-server-stub.sh"
+        )
+    }
+
     func testSmokeASRCorrectionModeParsesAsDedicatedMode() {
         let options = SpeakDockLaunchOptions(
             arguments: [

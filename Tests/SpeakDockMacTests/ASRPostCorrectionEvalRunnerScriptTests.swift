@@ -195,8 +195,7 @@ final class ASRPostCorrectionEvalRunnerScriptTests: XCTestCase {
         XCTAssertEqual(payload?.first?["outcome"] as? String, "corrected")
 
         let requestText = try String(contentsOf: requestURL, encoding: .utf8)
-        XCTAssertTrue(requestText.contains("输入：project adults"))
-        XCTAssertTrue(requestText.contains("请只修正下面转写文本里的明显识别错误"))
+        XCTAssertEqual(requestText, "project adults 已经完成")
     }
 
     func testRunnerRejectsIncompleteOpenAICompatibleConfiguration() throws {

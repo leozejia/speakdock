@@ -13,7 +13,7 @@
 
 - 阶段：P1 `AI 语音输入法`
 - 当前 focus：`ASR Post-Correction provider 收口与端侧 server 生命周期接线`
-- 状态：`In Progress`
+- 状态：`Completed`
 
 ## 3. 当前复核结论
 
@@ -96,6 +96,11 @@
   - 空模型列表和不可读响应会把 detail 直接带到 settings 与日志里
   - 设置页会显示 `starting / ready / failed`
   - 日志会明确写出启动失败或 readiness 失败
+- 当前最小真实闭环也已经补上：
+  - `smoke-asr-correction` 继续覆盖 custom endpoint 路径
+  - 同一条 smoke 已能切到 `on-device`
+  - `on-device` smoke 会真实让 app 自己拉起 stub `mlx_lm.server`
+  - custom endpoint 与 on-device 两条 smoke 都已跑通
 - `ASR Post-Correction` 是路由前层，不单独区分 `Compose / Capture`
 - 当前 app 已经具备现成接线积木：
   - `ASRCorrectionEngine`
@@ -197,6 +202,7 @@
 - `onDevice` 已能区分“server 已起但当前模型不在服务里”
 - `CURRENT` 与 `ARCHITECTURE` 已同步到同一口径
 - 不需要再靠口头解释“到底谁管 server 生命周期”
+- custom endpoint 与 on-device 的最小 smoke 都已通过
 
 ## 9. 下一轮候选
 
@@ -236,3 +242,4 @@
 - 已完成：`mlx_lm.server` 缺失诊断、readiness 探测和设置页状态反馈已落地
 - 已完成：`/v1/models` 已真正校验目标模型是否可用，不再把任意 `200 OK` 当成 ready
 - 已完成：空模型列表和坏 `models` 响应已能在 detail 与日志里直接暴露
+- 已完成：custom endpoint 与 on-device 的真实 smoke 都已闭环
