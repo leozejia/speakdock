@@ -89,6 +89,11 @@
   - `ASR Post-Correction` 是可选层，默认关闭
   - 失败直接回退到 `Clean`
   - `Workspace Refine` 继续与它分层，不混写
+- 当前最小运行期诊断已经补上：
+  - `mlx_lm.server` 找不到时，直接判失败，不再静默尝试
+  - 端侧 server 启动后会轮询 `/v1/models`
+  - 设置页会显示 `starting / ready / failed`
+  - 日志会明确写出启动失败或 readiness 失败
 - `ASR Post-Correction` 是路由前层，不单独区分 `Compose / Capture`
 - 当前 app 已经具备现成接线积木：
   - `ASRCorrectionEngine`
@@ -148,7 +153,7 @@
 - 本地 provider 契约固定为 `disabled / onDevice / customEndpoint`
 - `onDevice` 第一版固定为 `mlx_lm.server`
 - SpeakDock 接手它的生命周期，settings 变化同步，app 退出即停
-- 下一步只允许做最小诊断与保护，不继续扩大 prompt 实验面
+- 最小诊断与保护已经落地，下一步只允许做更小的模型可用性细化，不继续扩大 prompt 实验面
 
 ## 5. 本轮范围
 
@@ -185,13 +190,15 @@
 - SpeakDock 已能在启动时同步 provider 配置
 - settings 变化时已能重配或停掉端侧 server
 - app 退出时已能关闭它拉起的 server
+- 缺少 `mlx_lm.server` 时已能明确失败
+- `onDevice` 已有最小 readiness 探测与设置页状态反馈
 - `CURRENT` 与 `ARCHITECTURE` 已同步到同一口径
 - 不需要再靠口头解释“到底谁管 server 生命周期”
 
 ## 9. 下一轮候选
 
-- `mlx_lm.server` 最小 readiness / 缺失诊断
-- provider 状态反馈
+- model 可用性与缺失原因细化
+- provider 失败细节收束
 - `Workspace Refine` prompt 重定义
 
 ## 10. 当前不进入下一轮的项
@@ -223,3 +230,4 @@
 - 已完成：同一夹具下，本地 `2B` 结果已超过当前云端默认线
 - 已完成：`ASR Post-Correction` provider 契约已收口到 `disabled / onDevice / customEndpoint`
 - 已完成：`onDevice` 第一版已固定为由 SpeakDock 管理生命周期的 `mlx_lm.server`
+- 已完成：`mlx_lm.server` 缺失诊断、readiness 探测和设置页状态反馈已落地

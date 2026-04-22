@@ -882,6 +882,7 @@ macOS v1 的工程收口写死为：
   - `customEndpoint`
 - `onDevice` 第一版固定复用外部 `mlx_lm.server`
 - SpeakDock 负责它的启动、重配和停止；app 退出时必须关闭它自己拉起的 server
+- 运行期最小保护固定包括：可执行文件缺失诊断、`/v1/models` readiness 探测、设置页状态反馈
 - `ASR Post-Correction` 失败时直接回退到 `Clean`
 - `Workspace Refine` 是可选增强
 - 录音阶段只按 `Clean` 结果追加到工作区

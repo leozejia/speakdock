@@ -69,6 +69,13 @@
 "settings.asr_correction.disabled_body" = "当前行为：Apple Speech 结束后，SpeakDock 直接提交 clean 文本。";
 "settings.asr_correction.on_device_body" = "当前行为：SpeakDock 按需拉起本地 mlx_lm.server，只在本机可用，并在应用退出时关闭。";
 "settings.asr_correction.custom_body" = "当前行为：SpeakDock 使用下面的自定义接口做转写纠错，失败时自动回退。";
+"settings.asr_correction.status_label" = "状态";
+"settings.asr_correction.status_starting" = "正在启动本地服务...";
+"settings.asr_correction.status_ready" = "本地服务已就绪。";
+"settings.asr_correction.status_executable_unavailable" = "没有找到 mlx_lm.server。";
+"settings.asr_correction.status_launch_failed" = "本地服务启动失败。";
+"settings.asr_correction.status_timed_out" = "本地服务在时限内没有就绪。";
+"settings.asr_correction.status_unexpected_status_format" = "本地服务返回了状态码 %d。";
 "settings.refine_configuration.title" = "整理服务";
 "settings.refine_configuration.subtitle" = "只有在开启整理后，SpeakDock 才会读取下面这组接口配置。";
 "settings.enable_refine.title" = "开启整理";

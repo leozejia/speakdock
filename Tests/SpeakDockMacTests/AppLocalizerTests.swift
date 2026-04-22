@@ -182,4 +182,39 @@ final class AppLocalizerTests: XCTestCase {
             "这里只显示词级映射，不保存整句内容。"
         )
     }
+
+    func testOnDeviceASRCorrectionStatusCopyIsLocalized() {
+        XCTAssertEqual(
+            AppLocalizer.string(
+                .settingsASRCorrectionStatusLabel,
+                appLanguage: .english,
+                preferredLanguages: ["en"]
+            ),
+            "Status"
+        )
+        XCTAssertEqual(
+            AppLocalizer.string(
+                .settingsASRCorrectionStatusStarting,
+                appLanguage: .english,
+                preferredLanguages: ["en"]
+            ),
+            "Starting local server..."
+        )
+        XCTAssertEqual(
+            AppLocalizer.string(
+                .settingsASRCorrectionStatusReady,
+                appLanguage: .simplifiedChinese,
+                preferredLanguages: ["en"]
+            ),
+            "本地服务已就绪。"
+        )
+        XCTAssertEqual(
+            AppLocalizer.string(
+                .settingsASRCorrectionStatusExecutableUnavailable,
+                appLanguage: .simplifiedChinese,
+                preferredLanguages: ["en"]
+            ),
+            "没有找到 mlx_lm.server。"
+        )
+    }
 }

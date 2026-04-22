@@ -219,7 +219,8 @@ struct SpeakDockApp: App {
         Settings {
             SettingsView(
                 settingsStore: settingsStore,
-                termDictionaryStore: termDictionaryStore
+                termDictionaryStore: termDictionaryStore,
+                onDeviceASRCorrectionServerSupervisor: onDeviceASRCorrectionServerSupervisor
             )
         }
     }

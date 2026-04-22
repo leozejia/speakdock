@@ -69,6 +69,13 @@
 "settings.asr_correction.disabled_body" = "Current behavior: SpeakDock commits clean text directly after Apple Speech finishes.";
 "settings.asr_correction.on_device_body" = "Current behavior: SpeakDock starts a local mlx_lm.server on demand, keeps it local-only, and stops it when the app quits.";
 "settings.asr_correction.custom_body" = "Current behavior: SpeakDock uses the custom endpoint below for transcript post-correction and falls back automatically on failure.";
+"settings.asr_correction.status_label" = "Status";
+"settings.asr_correction.status_starting" = "Starting local server...";
+"settings.asr_correction.status_ready" = "Local server is ready.";
+"settings.asr_correction.status_executable_unavailable" = "mlx_lm.server was not found.";
+"settings.asr_correction.status_launch_failed" = "Local server failed to launch.";
+"settings.asr_correction.status_timed_out" = "Local server did not become ready in time.";
+"settings.asr_correction.status_unexpected_status_format" = "Local server responded with status %d.";
 "settings.refine_configuration.title" = "Refine Service";
 "settings.refine_configuration.subtitle" = "SpeakDock only reads this endpoint configuration when Refine is enabled.";
 "settings.enable_refine.title" = "Enable Refine";

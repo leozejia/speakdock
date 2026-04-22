@@ -17,6 +17,7 @@ struct SettingsView: View {
 
     @Bindable var settingsStore: SettingsStore
     @Bindable var termDictionaryStore: TermDictionaryStore
+    private var onDeviceASRCorrectionServerSupervisor: OnDeviceASRCorrectionServerSupervisor
     @State private var captureRootMessage: String?
     @State private var refineTestMessage: String?
     @State private var refineTestMessageTone: SpeakDockBadgeTone = .neutral
@@ -32,10 +33,12 @@ struct SettingsView: View {
     init(
         settingsStore: SettingsStore,
         termDictionaryStore: TermDictionaryStore,
+        onDeviceASRCorrectionServerSupervisor: OnDeviceASRCorrectionServerSupervisor,
         refineTester: any RefineConnectionTesting = RefineConnectionTester()
     ) {
         self.settingsStore = settingsStore
         self.termDictionaryStore = termDictionaryStore
+        self.onDeviceASRCorrectionServerSupervisor = onDeviceASRCorrectionServerSupervisor
         self.refineTester = refineTester
     }
 
@@ -515,7 +518,28 @@ struct SettingsView: View {
                             messageView(localized(.settingsASRCorrectionDisabledBody), tone: .neutral)
 
                         case .onDevice:
-                            messageView(localized(.settingsASRCorrectionOnDeviceBody), tone: .accent)
+                            VStack(alignment: .leading, spacing: 12) {
+                                messageView(localized(.settingsASRCorrectionOnDeviceBody), tone: .accent)
+
+                                dividerLine
+
+                                SettingsFieldBlock(title: localized(.settingsASRCorrectionStatusLabel)) {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        messageView(
+                                            onDeviceASRCorrectionStatusMessage,
+                                            tone: onDeviceASRCorrectionStatusTone
+                                        )
+
+                                        if let onDeviceASRCorrectionStatusDetail {
+                                            Text(onDeviceASRCorrectionStatusDetail)
+                                                .font(.system(size: 11.5, weight: .medium, design: .monospaced))
+                                                .foregroundStyle(SpeakDockVisualStyle.secondaryText)
+                                                .textSelection(.enabled)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
+                                    }
+                                }
+                            }
 
                         case .customEndpoint:
                             VStack(alignment: .leading, spacing: 12) {
@@ -731,6 +755,43 @@ struct SettingsView: View {
         }
 
         return isRefineConfigurationComplete ? .accent : .warning
+    }
+
+    private var onDeviceASRCorrectionStatusMessage: String {
+        switch onDeviceASRCorrectionServerSupervisor.status {
+        case .inactive, .starting:
+            return localized(.settingsASRCorrectionStatusStarting)
+        case .ready:
+            return localized(.settingsASRCorrectionStatusReady)
+        case .failed(.executableUnavailable):
+            return localized(.settingsASRCorrectionStatusExecutableUnavailable)
+        case .failed(.launchFailed):
+            return localized(.settingsASRCorrectionStatusLaunchFailed)
+        case .failed(.readinessTimedOut):
+            return localized(.settingsASRCorrectionStatusTimedOut)
+        case let .failed(.readinessUnexpectedStatus(statusCode)):
+            return localizedFormat(.settingsASRCorrectionStatusUnexpectedStatusFormat, statusCode)
+        }
+    }
+
+    private var onDeviceASRCorrectionStatusTone: SpeakDockBadgeTone {
+        switch onDeviceASRCorrectionServerSupervisor.status {
+        case .inactive, .starting:
+            return .neutral
+        case .ready:
+            return .success
+        case .failed:
+            return .critical
+        }
+    }
+
+    private var onDeviceASRCorrectionStatusDetail: String? {
+        switch onDeviceASRCorrectionServerSupervisor.status {
+        case .failed(.launchFailed), .failed(.readinessUnexpectedStatus):
+            return onDeviceASRCorrectionServerSupervisor.statusDetail
+        case .inactive, .starting, .ready, .failed(.executableUnavailable), .failed(.readinessTimedOut):
+            return nil
+        }
     }
 
     private var triggerModeBinding: Binding<String> {
