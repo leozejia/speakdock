@@ -93,6 +93,7 @@
   - `mlx_lm.server` 找不到时，直接判失败，不再静默尝试
   - 端侧 server 启动后会轮询 `/v1/models`
   - `200 OK` 也不会直接算 ready，只有目标模型真的出现在 `/v1/models` 里才算就绪
+  - 空模型列表和不可读响应会把 detail 直接带到 settings 与日志里
   - 设置页会显示 `starting / ready / failed`
   - 日志会明确写出启动失败或 readiness 失败
 - `ASR Post-Correction` 是路由前层，不单独区分 `Compose / Capture`
@@ -234,3 +235,4 @@
 - 已完成：`onDevice` 第一版已固定为由 SpeakDock 管理生命周期的 `mlx_lm.server`
 - 已完成：`mlx_lm.server` 缺失诊断、readiness 探测和设置页状态反馈已落地
 - 已完成：`/v1/models` 已真正校验目标模型是否可用，不再把任意 `200 OK` 当成 ready
+- 已完成：空模型列表和坏 `models` 响应已能在 detail 与日志里直接暴露

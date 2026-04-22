@@ -163,9 +163,14 @@ enum OnDeviceASRCorrectionServerReadinessChecker {
                                 return .ready
                             }
 
-                            let availableModelSummary = availableModelIdentifiers.isEmpty
-                                ? "none"
-                                : availableModelIdentifiers.joined(separator: ", ")
+                            if availableModelIdentifiers.isEmpty {
+                                return .failed(
+                                    .modelUnavailable,
+                                    detail: "mlx_lm.server advertised zero models; configured model \(configuration.model) was not loaded"
+                                )
+                            }
+
+                            let availableModelSummary = availableModelIdentifiers.joined(separator: ", ")
                             return .failed(
                                 .modelUnavailable,
                                 detail: "configured model \(configuration.model) not advertised by mlx_lm.server; available: \(availableModelSummary)"
@@ -173,7 +178,7 @@ enum OnDeviceASRCorrectionServerReadinessChecker {
                         } catch {
                             return .failed(
                                 .invalidModelsResponse,
-                                detail: "mlx_lm.server returned an unreadable model list"
+                                detail: unreadableModelsResponseDetail(from: data)
                             )
                         }
                     }
@@ -185,6 +190,42 @@ enum OnDeviceASRCorrectionServerReadinessChecker {
         }
 
         return .failed(.readinessTimedOut)
+    }
+
+    private static func unreadableModelsResponseDetail(from data: Data) -> String {
+        guard let preview = responseBodyPreview(from: data) else {
+            return "mlx_lm.server returned an unreadable model list"
+        }
+
+        return "mlx_lm.server returned an unreadable model list; preview: \(preview)"
+    }
+
+    private static func responseBodyPreview(from data: Data) -> String? {
+        guard !data.isEmpty else {
+            return nil
+        }
+
+        guard let string = String(data: data, encoding: .utf8) else {
+            return "<\(data.count) bytes of non-UTF8 data>"
+        }
+
+        let normalized = string
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\r", with: " ")
+            .replacingOccurrences(of: "\t", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !normalized.isEmpty else {
+            return nil
+        }
+
+        let previewLimit = 160
+        if normalized.count <= previewLimit {
+            return normalized
+        }
+
+        let endIndex = normalized.index(normalized.startIndex, offsetBy: previewLimit)
+        return "\(normalized[..<endIndex])..."
     }
 }
 
@@ -211,9 +252,9 @@ final class OnDeviceASRCorrectionServerSupervisor {
         launcher: @escaping Launcher = { command in
             try FoundationOnDeviceASRCorrectionServerProcess.launch(command: command)
         },
-            readinessChecker: @escaping ReadinessChecker = { configuration in
-                await OnDeviceASRCorrectionServerReadinessChecker.check(configuration: configuration)
-            }
+        readinessChecker: @escaping ReadinessChecker = { configuration in
+            await OnDeviceASRCorrectionServerReadinessChecker.check(configuration: configuration)
+        }
     ) {
         self.commandBuilder = commandBuilder
         self.launcher = launcher
@@ -317,7 +358,15 @@ final class OnDeviceASRCorrectionServerSupervisor {
                 case let .failed(failure):
                     self.status = .failed(failure)
                     self.statusDetail = readinessResult.detail ?? failure.detail
-                    SpeakDockLog.speech.error("on-device asr correction server not ready: \(failure.logDescription, privacy: .public)")
+                    if let detail = self.statusDetail {
+                        SpeakDockLog.speech.error(
+                            "on-device asr correction server not ready: \(failure.logDescription, privacy: .public); detail: \(detail, privacy: .public)"
+                        )
+                    } else {
+                        SpeakDockLog.speech.error(
+                            "on-device asr correction server not ready: \(failure.logDescription, privacy: .public)"
+                        )
+                    }
                 }
 
                 self.readinessTask = nil

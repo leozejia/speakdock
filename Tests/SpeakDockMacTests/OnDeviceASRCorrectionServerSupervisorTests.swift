@@ -179,6 +179,52 @@ final class OnDeviceASRCorrectionServerSupervisorTests: XCTestCase {
         XCTAssertTrue(result.detail?.contains("some-other-model") == true)
     }
 
+    func testReadinessCheckerReturnsModelUnavailableWhenServerAdvertisesZeroModels() async throws {
+        mockOnDeviceASRCorrectionReadinessRequestStore.requestHandler = { request in
+            return (
+                HTTPURLResponse(
+                    url: try XCTUnwrap(request.url),
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!,
+                #"{"data":[]}"#.data(using: .utf8)!
+            )
+        }
+
+        let result = await OnDeviceASRCorrectionServerReadinessChecker.check(
+            configuration: makeOnDeviceConfiguration(),
+            session: makeReadinessSession()
+        )
+
+        XCTAssertEqual(result.status, .failed(.modelUnavailable))
+        XCTAssertTrue(result.detail?.contains("zero models") == true)
+        XCTAssertTrue(result.detail?.contains("Qwen3.5-2B-OptiQ-4bit") == true)
+    }
+
+    func testReadinessCheckerIncludesPreviewWhenModelsResponseIsUnreadable() async throws {
+        mockOnDeviceASRCorrectionReadinessRequestStore.requestHandler = { request in
+            return (
+                HTTPURLResponse(
+                    url: try XCTUnwrap(request.url),
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!,
+                #"<html>not-json</html>"#.data(using: .utf8)!
+            )
+        }
+
+        let result = await OnDeviceASRCorrectionServerReadinessChecker.check(
+            configuration: makeOnDeviceConfiguration(),
+            session: makeReadinessSession()
+        )
+
+        XCTAssertEqual(result.status, .failed(.invalidModelsResponse))
+        XCTAssertTrue(result.detail?.contains("preview") == true)
+        XCTAssertTrue(result.detail?.contains("<html>not-json</html>") == true)
+    }
+
     private func makeOnDeviceConfiguration() -> ASRCorrectionConfiguration {
         ASRCorrectionConfiguration(
             provider: .onDevice,
