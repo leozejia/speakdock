@@ -19,6 +19,10 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.settings.appLanguage, .followSystem)
         XCTAssertEqual(store.settings.inputLanguage, .simplifiedChinese)
         XCTAssertEqual(store.settings.triggerSelection, .fn)
+        XCTAssertEqual(store.settings.asrCorrectionProvider, .disabled)
+        XCTAssertEqual(store.settings.asrCorrectionBaseURL, "")
+        XCTAssertEqual(store.settings.asrCorrectionAPIKey, "")
+        XCTAssertEqual(store.settings.asrCorrectionModel, "")
         XCTAssertFalse(store.settings.refineEnabled)
         XCTAssertEqual(
             store.settings.captureRootPath,
@@ -39,10 +43,17 @@ final class SettingsStoreTests: XCTestCase {
         store.settings.appLanguage = .english
         store.settings.inputLanguage = .english
         store.settings.triggerSelection = .alternative("right-command")
+        store.settings.asrCorrectionProvider = .customEndpoint
+        store.settings.asrCorrectionBaseURL = "https://example.com/v1"
+        store.settings.asrCorrectionAPIKey = "secret"
+        store.settings.asrCorrectionModel = "gpt-5.3-chat-latest"
         store.settings.refineEnabled = true
         store.settings.refineBaseURL = "https://example.com/v1"
         store.settings.refineAPIKey = "secret"
         store.settings.refineModel = "gpt-4.1-mini"
+        try store.save()
+
+        store.settings.asrCorrectionAPIKey = ""
         try store.save()
 
         store.settings.refineAPIKey = ""
@@ -56,6 +67,10 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(reloadedStore.settings.appLanguage, .english)
         XCTAssertEqual(reloadedStore.settings.inputLanguage, .english)
         XCTAssertEqual(reloadedStore.settings.triggerSelection, .alternative("right-command"))
+        XCTAssertEqual(reloadedStore.settings.asrCorrectionProvider, .customEndpoint)
+        XCTAssertEqual(reloadedStore.settings.asrCorrectionBaseURL, "https://example.com/v1")
+        XCTAssertEqual(reloadedStore.settings.asrCorrectionAPIKey, "")
+        XCTAssertEqual(reloadedStore.settings.asrCorrectionModel, "gpt-5.3-chat-latest")
         XCTAssertTrue(reloadedStore.settings.refineEnabled)
         XCTAssertEqual(reloadedStore.settings.refineBaseURL, "https://example.com/v1")
         XCTAssertEqual(reloadedStore.settings.refineAPIKey, "")
@@ -74,6 +89,10 @@ final class SettingsStoreTests: XCTestCase {
           "triggerSelection": {
             "kind": "fn"
           },
+          "asrCorrectionProvider": "disabled",
+          "asrCorrectionBaseURL": "",
+          "asrCorrectionAPIKey": "",
+          "asrCorrectionModel": "",
           "refineEnabled": false,
           "refineBaseURL": "",
           "refineAPIKey": "",

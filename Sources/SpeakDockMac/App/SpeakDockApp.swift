@@ -13,6 +13,7 @@ struct SpeakDockApp: App {
     @State private var speechController: SpeechController
     @State private var overlayPanelController: OverlayPanelController
     @State private var hotPathCoordinator: HotPathCoordinator
+    @State private var onDeviceASRCorrectionServerSupervisor: OnDeviceASRCorrectionServerSupervisor
 
     init() {
         let launchOptions = SpeakDockLaunchOptions()
@@ -46,6 +47,7 @@ struct SpeakDockApp: App {
         let captureTarget = CaptureFileTarget(opensFilesOnFirstWrite: opensCaptureFilesOnFirstWrite)
         let speechController = SpeechController(settingsStore: settingsStore)
         let overlayPanelController = OverlayPanelController()
+        let onDeviceASRCorrectionServerSupervisor = OnDeviceASRCorrectionServerSupervisor()
         let runtimeRefineConfigurationOverride: RefineConfiguration?
         if launchOptions.mode == .smokeRefine {
             runtimeRefineConfigurationOverride = RefineConfiguration(
@@ -82,10 +84,25 @@ struct SpeakDockApp: App {
             runtimeRefineConfigurationOverride: runtimeRefineConfigurationOverride,
             runtimeCaptureRootURLOverride: smokeCaptureRootURL
         )
+        let syncOnDeviceASRCorrectionServer = {
+            onDeviceASRCorrectionServerSupervisor.sync(
+                configuration: ASRCorrectionConfigurationResolver.resolve(
+                    settings: settingsStore.settings,
+                    runtimeOverride: launchOptions.runtimeASRCorrectionConfigurationOverride
+                )
+            )
+        }
+        _ = settingsStore.addSettingsObserver { _ in
+            syncOnDeviceASRCorrectionServer()
+        }
+        AppRuntime.onWillTerminate = {
+            onDeviceASRCorrectionServerSupervisor.stop()
+        }
         switch launchOptions.mode {
         case .normal:
             AppRuntime.onDidFinishLaunching = {
                 AppRuntime.updateActivationPolicy()
+                syncOnDeviceASRCorrectionServer()
                 triggerController.start()
             }
         case .composeProbe:
@@ -95,6 +112,7 @@ struct SpeakDockApp: App {
             )
             AppRuntime.onDidFinishLaunching = {
                 AppRuntime.updateActivationPolicy()
+                syncOnDeviceASRCorrectionServer()
                 composeProbeRunner.start()
             }
         case .smokeHotPath:
@@ -122,6 +140,7 @@ struct SpeakDockApp: App {
             )
             AppRuntime.onDidFinishLaunching = {
                 AppRuntime.updateActivationPolicy(activateApp: false)
+                syncOnDeviceASRCorrectionServer()
                 smokeHotPathRunner.start()
             }
         case .smokeASRCorrection:
@@ -133,6 +152,7 @@ struct SpeakDockApp: App {
             )
             AppRuntime.onDidFinishLaunching = {
                 AppRuntime.updateActivationPolicy(activateApp: false)
+                syncOnDeviceASRCorrectionServer()
                 smokeHotPathRunner.start()
             }
         case .smokeRefine:
@@ -154,6 +174,7 @@ struct SpeakDockApp: App {
             )
             AppRuntime.onDidFinishLaunching = {
                 AppRuntime.updateActivationPolicy(activateApp: false)
+                syncOnDeviceASRCorrectionServer()
                 smokeHotPathRunner.start()
             }
         case .smokeTermLearning:
@@ -166,6 +187,7 @@ struct SpeakDockApp: App {
             )
             AppRuntime.onDidFinishLaunching = {
                 AppRuntime.updateActivationPolicy(activateApp: false)
+                syncOnDeviceASRCorrectionServer()
                 smokeHotPathRunner.start()
             }
         }
@@ -179,6 +201,7 @@ struct SpeakDockApp: App {
         _speechController = State(initialValue: speechController)
         _overlayPanelController = State(initialValue: overlayPanelController)
         _hotPathCoordinator = State(initialValue: hotPathCoordinator)
+        _onDeviceASRCorrectionServerSupervisor = State(initialValue: onDeviceASRCorrectionServerSupervisor)
     }
 
     var body: some Scene {

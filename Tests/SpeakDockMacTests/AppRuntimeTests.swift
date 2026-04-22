@@ -134,4 +134,18 @@ final class AppRuntimeTests: XCTestCase {
         XCTAssertFalse(existingInstance.activated)
         XCTAssertFalse(terminateCalled)
     }
+
+    func testApplicationWillTerminateRunsTerminationHook() {
+        defer { AppRuntime.resetTestingHooks() }
+
+        let runtime = AppRuntime()
+        var didCallHook = false
+        AppRuntime.onWillTerminate = {
+            didCallHook = true
+        }
+
+        runtime.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+
+        XCTAssertTrue(didCallHook)
+    }
 }

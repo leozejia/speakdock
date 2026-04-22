@@ -8,6 +8,7 @@ final class AppRuntime: NSObject, NSApplicationDelegate {
     }
 
     static var onDidFinishLaunching: (() -> Void)?
+    static var onWillTerminate: (() -> Void)?
     static var launchMode: SpeakDockLaunchOptions.Mode = .normal
     private static var currentActivationPolicy: NSApplication.ActivationPolicy?
     private static var applicationIconLoader: @MainActor () -> NSImage? = { SpeakDockBrandAssets.applicationIcon }
@@ -57,6 +58,10 @@ final class AppRuntime: NSObject, NSApplicationDelegate {
         }
         SpeakDockLog.lifecycle.notice("application did finish launching")
         Self.onDidFinishLaunching?()
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        Self.onWillTerminate?()
     }
 
     static func ensureSingleInstance(mode: SpeakDockLaunchOptions.Mode) -> Bool {
@@ -128,6 +133,8 @@ final class AppRuntime: NSObject, NSApplicationDelegate {
     }
 
     static func resetTestingHooks() {
+        onDidFinishLaunching = nil
+        onWillTerminate = nil
         launchMode = .normal
         applicationIconLoader = { SpeakDockBrandAssets.applicationIcon }
         applicationResolver = { NSApp }

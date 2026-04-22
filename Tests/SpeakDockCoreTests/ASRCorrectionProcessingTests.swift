@@ -8,6 +8,7 @@ final class ASRCorrectionProcessingTests: XCTestCase {
         let preparation = preparer.prepare(
             transcript: "  project adults  ",
             configuration: ASRCorrectionConfiguration(
+                provider: .customEndpoint,
                 enabled: true,
                 baseURL: "https://api.example.com/v1",
                 apiKey: "token",
@@ -112,6 +113,7 @@ final class ASRCorrectionProcessingTests: XCTestCase {
 
     private func configuredASRCorrectionConfiguration() -> ASRCorrectionConfiguration {
         ASRCorrectionConfiguration(
+            provider: .customEndpoint,
             enabled: true,
             baseURL: "https://api.example.com/v1",
             apiKey: "token",

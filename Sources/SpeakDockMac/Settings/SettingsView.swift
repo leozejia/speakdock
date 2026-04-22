@@ -492,6 +492,57 @@ struct SettingsView: View {
         paneColumns {
             VStack(alignment: .leading, spacing: Layout.sectionSpacing) {
                 SettingsShellSection(
+                    title: localized(.settingsASRCorrectionConfigurationTitle),
+                    subtitle: localized(.settingsASRCorrectionConfigurationSubtitle),
+                    style: .plain
+                ) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        SettingsFieldBlock(title: localized(.settingsASRCorrectionProviderLabel)) {
+                            Picker(localized(.settingsASRCorrectionProviderLabel), selection: $settingsStore.settings.asrCorrectionProvider) {
+                                Text(localized(.settingsASRCorrectionProviderDisabled)).tag(ASRCorrectionProvider.disabled)
+                                Text(localized(.settingsASRCorrectionProviderOnDevice)).tag(ASRCorrectionProvider.onDevice)
+                                Text(localized(.settingsASRCorrectionProviderCustomEndpoint)).tag(ASRCorrectionProvider.customEndpoint)
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.segmented)
+                            .frame(width: 280)
+                        }
+
+                        dividerLine
+
+                        switch settingsStore.settings.asrCorrectionProvider {
+                        case .disabled:
+                            messageView(localized(.settingsASRCorrectionDisabledBody), tone: .neutral)
+
+                        case .onDevice:
+                            messageView(localized(.settingsASRCorrectionOnDeviceBody), tone: .accent)
+
+                        case .customEndpoint:
+                            VStack(alignment: .leading, spacing: 12) {
+                                SettingsFieldBlock(title: localized(.settingsBaseURLLabel)) {
+                                    TextField(localized(.settingsBaseURLPlaceholder), text: $settingsStore.settings.asrCorrectionBaseURL)
+                                        .textFieldStyle(.roundedBorder)
+                                }
+
+                                SettingsFieldBlock(title: localized(.settingsAPIKeyLabel)) {
+                                    SecureField(localized(.settingsAPIKeyPlaceholder), text: $settingsStore.settings.asrCorrectionAPIKey)
+                                        .textFieldStyle(.roundedBorder)
+                                }
+
+                                SettingsFieldBlock(title: localized(.settingsModelLabel)) {
+                                    TextField(localized(.settingsModelPlaceholder), text: $settingsStore.settings.asrCorrectionModel)
+                                        .textFieldStyle(.roundedBorder)
+                                }
+                            }
+
+                            dividerLine
+
+                            messageView(localized(.settingsASRCorrectionCustomBody), tone: .accent)
+                        }
+                    }
+                }
+
+                SettingsShellSection(
                     title: localized(.settingsRefineConfigurationTitle),
                     subtitle: localized(.settingsRefineConfigurationSubtitle),
                     style: .plain

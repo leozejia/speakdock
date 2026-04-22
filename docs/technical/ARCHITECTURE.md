@@ -874,8 +874,15 @@ macOS v1 的工程收口写死为：
   - 标点修正
   - 口头禅清理
   - 术语词典修正
-- 当前默认热路径也不引入模型型 `ASR Post-Correction`
-- 未来如果加入 `ASR Post-Correction`，它也必须是可选层，并且失败时直接回退到 `Clean`
+- 当前默认热路径仍不依赖模型型 `ASR Post-Correction`
+- 但 `ASR Post-Correction` 已经作为可选 provider 层正式接入
+- provider 契约固定为：
+  - `disabled`
+  - `onDevice`
+  - `customEndpoint`
+- `onDevice` 第一版固定复用外部 `mlx_lm.server`
+- SpeakDock 负责它的启动、重配和停止；app 退出时必须关闭它自己拉起的 server
+- `ASR Post-Correction` 失败时直接回退到 `Clean`
 - `Workspace Refine` 是可选增强
 - 录音阶段只按 `Clean` 结果追加到工作区
 - 没开 `Workspace Refine` 时，发送阶段直接提交当前工作区
@@ -883,6 +890,11 @@ macOS v1 的工程收口写死为：
 - `Workspace Refine` 的产品默认路线是云端大模型
 - 本地 `Refine` 只保留给高性能机器上的用户自定义配置，不进入默认评测主线
 - 当前端侧小模型主线只保留给 `ASR Post-Correction`
+- macOS v1 不做：
+  - 模型下载器
+  - 系统常驻 daemon
+  - model inventory
+  - 重量级 provider 健康检查页
 
 模型角色必须拆开：
 
@@ -904,10 +916,17 @@ macOS v1 的工程收口写死为：
   - 负责 transcript 级词准修正
   - 只解决”已经出字，但词不准”
   - 不负责整句重写，不进入工作区级表达整理
-  - 当前在 macOS v1 还是未来能力，不进入默认热路径
+  - 当前在 macOS v1 已有正式 provider 合同，但默认仍关闭
+  - provider 只允许：
+    - `disabled`
+    - `onDevice`
+    - `customEndpoint`
   - 当前端侧小模型路线只保留在这一层
-  - 如果后续系统 ASR 或其他主识别路线已经足够准，该层的必要性会下降；当前 seam 保留但继续默认关闭，待真实错误样本和延迟数据收口后再决定是否启用
-  - 优先评估端侧小模型或本地服务，云接口只作为验证或回退路径
+  - `onDevice` 第一版运行方式固定为外部 `mlx_lm.server`，不内嵌到 app 主进程
+  - SpeakDock 负责 `onDevice` provider 的生命周期；程序关闭就要关闭它拉起的 server
+  - `customEndpoint` 保留给云端或用户自定义服务
+  - 如果后续系统 ASR 或其他主识别路线已经足够准，该层的必要性会下降；但当前 seam 已保留并正式可接线
+  - 失败时必须直接回退到 `Clean`
 
 - `refine`
   - 对应产品术语 `Workspace Refine`

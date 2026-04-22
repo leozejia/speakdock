@@ -12,7 +12,7 @@
 ## 2. 当前阶段
 
 - 阶段：P1 `AI 语音输入法`
-- 当前 focus：`ASR Post-Correction 双轨基线固定，准备最小接线`
+- 当前 focus：`ASR Post-Correction provider 收口与端侧 server 生命周期接线`
 - 状态：`In Progress`
 
 ## 3. 当前复核结论
@@ -68,6 +68,27 @@
   - 当前最佳 eval profile 仍是 `fewshot_terms_homophone`
   - 当前命中式提示层已经把本地线推进到可准备接线的门槛
   - 下一步应转为最小接线路由与运行期保护，不再继续无脑堆提示
+- 当前 app 内最小接线路由已经固定为 `provider`：
+  - `disabled`
+  - `onDevice`
+  - `customEndpoint`
+- `onDevice` 第一版固定方案已经写死为：
+  - 直接复用外部 `mlx_lm.server`
+  - SpeakDock 负责拉起、重配和停止
+  - app 退出时必须关闭它自己拉起的 server
+  - 默认 loopback endpoint 固定为 `http://127.0.0.1:42100/v1`
+  - 默认模型固定为 `Qwen3.5-2B-OptiQ-4bit`
+  - 不要求 `apiKey`
+- `customEndpoint` 继续保留给云端或用户自定义服务
+- 当前这一轮明确不做：
+  - 下载器
+  - 常驻 daemon
+  - model inventory
+  - readiness / 健康检查页面
+- 当前默认产品行为仍然保持：
+  - `ASR Post-Correction` 是可选层，默认关闭
+  - 失败直接回退到 `Clean`
+  - `Workspace Refine` 继续与它分层，不混写
 - `ASR Post-Correction` 是路由前层，不单独区分 `Compose / Capture`
 - 当前 app 已经具备现成接线积木：
   - `ASRCorrectionEngine`
@@ -111,7 +132,7 @@
   - 模型偶发吐出 `输入 / 输出` 包裹层时，runner 必须做清洗
   - 某些 Cloudflare 风格的 OpenAI-compatible 网关会拒绝 Python 默认请求形态，远端 eval 需要走 `curl`
   - 对本地 `2B` 来说，追加“只在命中时出现”的工程片段提示，比继续无脑堆 few-shot 更值
-- 本轮 live focus 继续不碰默认热路径，但已经进入“准备最小接线”的阶段
+- 本轮 live focus 已从“评测收口”切到“provider 与生命周期接线”
 
 ## 4. 为什么现在做
 
@@ -119,56 +140,58 @@
 
 - 如果不把当前状态写死，后续很容易又回到“继续加 prompt 看看”的旧状态
 - 当前已经不缺评测入口，也不缺候选池，缺的是把已收敛结论接回真实路由
-- 只有先把“哪条线成立、成立到什么程度”写死，下一轮实现才不会重新扩散
+- 如果 provider、运行方式和生命周期不先写死，后面又会回到“模型测了很多，但 app 没真正接上”的旧状态
+- 只有先把“哪条线成立、成立到什么程度、由谁管理生命周期”写死，下一轮实现才不会重新扩散
 
 所以当前阶段转为：
 
-- 云端默认线固定到 `gpt-5.3-chat-latest`
-- 本地线固定到 `mlx-community/Qwen3.5-2B-OptiQ-4bit + fewshot_terms_homophone`
-- 下一步只允许做最小接线与保护，不继续扩大 prompt 实验面
+- 本地 provider 契约固定为 `disabled / onDevice / customEndpoint`
+- `onDevice` 第一版固定为 `mlx_lm.server`
+- SpeakDock 接手它的生命周期，settings 变化同步，app 退出即停
+- 下一步只允许做最小诊断与保护，不继续扩大 prompt 实验面
 
 ## 5. 本轮范围
 
-1. 把本地 `2B` 最新 `44/48` 结果写回 live doc
-2. 固定当前本地默认评测组合，不再继续扩候选
-3. 为下一步 app 内最小接线明确边界
-4. 只保留极小输出保护项，不引入重后处理链
-5. 同步 `CURRENT`
+1. 把 `ASR Post-Correction` 的 provider 契约写进 live doc
+2. 把 `Settings -> runtime resolve -> hot path` 的配置链接起来
+3. 让 `onDevice` provider 通过 `mlx_lm.server` 跑在独立进程里
+4. 让 SpeakDock 负责启动、重配和退出时停服
+5. 同步 `CURRENT` 与架构文档
 
 ## 6. 明确不做
 
-- 不在这一轮继续扩大候选池
-- 不在这一轮继续堆新的 prompt 花样
+- 不做模型下载器
+- 不做系统常驻 daemon
+- 不做 model inventory
+- 不做 provider 健康检查页
 - 不在这一轮改 `Workspace Refine`
 - 不在这一轮替换 Apple Speech
-- 不把 `Compose / Capture` 拆成两套评测
-- 不把 `Codex-Spark` 误写成 SpeakDock 的通用默认模型
-- 不做重量级文本后处理管线
+- 不把 `Compose / Capture` 拆成两套路由
 
 ## 7. 执行顺序
 
-1. 先固定文档里的双轨基线
-2. 再以 `mlx-community/Qwen3.5-2B-OptiQ-4bit` 作为唯一本地接线候选
-3. 然后只补最小运行期保护
-4. 最后再决定是否灰度进入真实热路径
+1. 先固定文档里的 provider 与生命周期边界
+2. 再把 `Settings -> resolver -> runtime` 接起来
+3. 然后让 `onDevice` provider 通过 `mlx_lm.server` 受 SpeakDock 生命周期管理
+4. 最后进入最小诊断与运行期保护
 
 ## 8. 完成定义
 
 满足以下条件才算完成：
 
-- 已有独立的 `ASR Post-Correction` 最小实测设计页
-- 样本真源、bucket、字段、数量已经写死
-- `0.8B` 与 `2B` 的首轮结果已经写回文档
-- 当前唯一继续候选已经收敛到 `mlx-community/Qwen3.5-2B-OptiQ-4bit`
-- checked-in runner 与 make 入口已经落地
-- 当前最佳 profile 已经收敛到 `fewshot_terms_homophone`
-- 当前本地最佳结果已经稳定在 `44/48`
-- 不需要再靠口头解释“为什么是这版，不是那版”
+- `provider` 合同已经固定为 `disabled / onDevice / customEndpoint`
+- `onDevice` 默认配置已经固定到 loopback `mlx_lm.server`
+- `onDevice` 不再要求 `apiKey`
+- SpeakDock 已能在启动时同步 provider 配置
+- settings 变化时已能重配或停掉端侧 server
+- app 退出时已能关闭它拉起的 server
+- `CURRENT` 与 `ARCHITECTURE` 已同步到同一口径
+- 不需要再靠口头解释“到底谁管 server 生命周期”
 
 ## 9. 下一轮候选
 
-- `ASR Post-Correction` app 内最小接线路由
-- 极小输出保护项
+- `mlx_lm.server` 最小 readiness / 缺失诊断
+- provider 状态反馈
 - `Workspace Refine` prompt 重定义
 
 ## 10. 当前不进入下一轮的项
@@ -176,6 +199,7 @@
 - 不重新打开本地 `Workspace Refine` 默认路线
 - 不提前把 `Qwen3-ASR` 混进文本后纠错线
 - 不重新开始本地文本模型 shortlist
+- 不把端侧 server 升级成系统常驻服务
 
 ## 11. 阻塞项
 
@@ -197,3 +221,5 @@
 - 已完成：本地 `2B` 的工程片段提示层已落地，真实结果从 `28/48` 提升到 `33/48`
 - 已完成：本地 `2B` 的命中式术语 / 同音 / 模型 ID 提示层已落地，真实结果从 `33/48` 提升到 `44/48`
 - 已完成：同一夹具下，本地 `2B` 结果已超过当前云端默认线
+- 已完成：`ASR Post-Correction` provider 契约已收口到 `disabled / onDevice / customEndpoint`
+- 已完成：`onDevice` 第一版已固定为由 SpeakDock 管理生命周期的 `mlx_lm.server`

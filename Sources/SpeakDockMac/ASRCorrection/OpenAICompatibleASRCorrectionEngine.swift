@@ -39,7 +39,10 @@ final class OpenAICompatibleASRCorrectionEngine: ASRCorrectionEngine {
         var urlRequest = URLRequest(url: endpointURL)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.setValue("Bearer \(configuration.apiKey)", forHTTPHeaderField: "Authorization")
+        let trimmedAPIKey = configuration.apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedAPIKey.isEmpty {
+            urlRequest.setValue("Bearer \(trimmedAPIKey)", forHTTPHeaderField: "Authorization")
+        }
         urlRequest.httpBody = try JSONEncoder().encode(
             ChatCompletionRequest(
                 model: configuration.model,

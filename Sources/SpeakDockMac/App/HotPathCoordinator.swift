@@ -1188,7 +1188,10 @@ final class HotPathCoordinator {
     }
 
     private var currentASRCorrectionConfiguration: ASRCorrectionConfiguration {
-        runtimeASRCorrectionConfigurationOverride ?? .disabled
+        ASRCorrectionConfigurationResolver.resolve(
+            settings: settingsStore.settings,
+            runtimeOverride: runtimeASRCorrectionConfigurationOverride
+        )
     }
 
     private func logASRCorrectionCommitResult(

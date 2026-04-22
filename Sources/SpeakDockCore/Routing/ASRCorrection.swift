@@ -1,22 +1,31 @@
 import Foundation
 
+public enum ASRCorrectionProvider: String, Equatable, Codable, Sendable, CaseIterable {
+    case disabled
+    case onDevice
+    case customEndpoint
+}
+
 public enum ASRCorrectionExecutionMode: Equatable, Sendable {
     case disabled
     case modelCorrection
 }
 
 public struct ASRCorrectionConfiguration: Equatable, Sendable {
+    public var provider: ASRCorrectionProvider
     public var enabled: Bool
     public var baseURL: String
     public var apiKey: String
     public var model: String
 
     public init(
+        provider: ASRCorrectionProvider,
         enabled: Bool,
         baseURL: String,
         apiKey: String,
         model: String
     ) {
+        self.provider = provider
         self.enabled = enabled
         self.baseURL = baseURL
         self.apiKey = apiKey
@@ -24,6 +33,7 @@ public struct ASRCorrectionConfiguration: Equatable, Sendable {
     }
 
     public static let disabled = ASRCorrectionConfiguration(
+        provider: .disabled,
         enabled: false,
         baseURL: "",
         apiKey: "",
@@ -31,13 +41,22 @@ public struct ASRCorrectionConfiguration: Equatable, Sendable {
     )
 
     public var isConfigured: Bool {
-        !baseURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !model.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let hasBaseURL = !baseURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let hasModel = !model.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let hasAPIKey = !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+
+        return switch provider {
+        case .disabled:
+            false
+        case .onDevice:
+            hasBaseURL && hasModel
+        case .customEndpoint:
+            hasBaseURL && hasModel && hasAPIKey
+        }
     }
 
     public var executionMode: ASRCorrectionExecutionMode {
-        enabled && isConfigured ? .modelCorrection : .disabled
+        enabled && provider != .disabled && isConfigured ? .modelCorrection : .disabled
     }
 }
 

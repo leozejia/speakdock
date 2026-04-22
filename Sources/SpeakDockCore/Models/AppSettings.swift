@@ -44,6 +44,10 @@ public struct AppSettings: Equatable, Codable, Sendable {
     public var inputLanguage: InputLanguageOption
     public var captureRootPath: String
     public var triggerSelection: TriggerSelection
+    public var asrCorrectionProvider: ASRCorrectionProvider
+    public var asrCorrectionBaseURL: String
+    public var asrCorrectionAPIKey: String
+    public var asrCorrectionModel: String
     public var refineEnabled: Bool
     public var refineBaseURL: String
     public var refineAPIKey: String
@@ -55,6 +59,10 @@ public struct AppSettings: Equatable, Codable, Sendable {
         case languageCode
         case captureRootPath
         case triggerSelection
+        case asrCorrectionProvider
+        case asrCorrectionBaseURL
+        case asrCorrectionAPIKey
+        case asrCorrectionModel
         case refineEnabled
         case refineBaseURL
         case refineAPIKey
@@ -66,6 +74,10 @@ public struct AppSettings: Equatable, Codable, Sendable {
         inputLanguage: InputLanguageOption,
         captureRootPath: String,
         triggerSelection: TriggerSelection,
+        asrCorrectionProvider: ASRCorrectionProvider,
+        asrCorrectionBaseURL: String,
+        asrCorrectionAPIKey: String,
+        asrCorrectionModel: String,
         refineEnabled: Bool,
         refineBaseURL: String,
         refineAPIKey: String,
@@ -75,6 +87,10 @@ public struct AppSettings: Equatable, Codable, Sendable {
         self.inputLanguage = inputLanguage
         self.captureRootPath = captureRootPath
         self.triggerSelection = triggerSelection
+        self.asrCorrectionProvider = asrCorrectionProvider
+        self.asrCorrectionBaseURL = asrCorrectionBaseURL
+        self.asrCorrectionAPIKey = asrCorrectionAPIKey
+        self.asrCorrectionModel = asrCorrectionModel
         self.refineEnabled = refineEnabled
         self.refineBaseURL = refineBaseURL
         self.refineAPIKey = refineAPIKey
@@ -90,6 +106,10 @@ public struct AppSettings: Equatable, Codable, Sendable {
             ?? .defaultOption
         captureRootPath = try container.decode(String.self, forKey: .captureRootPath)
         triggerSelection = try container.decode(TriggerSelection.self, forKey: .triggerSelection)
+        asrCorrectionProvider = try container.decodeIfPresent(ASRCorrectionProvider.self, forKey: .asrCorrectionProvider) ?? .disabled
+        asrCorrectionBaseURL = try container.decodeIfPresent(String.self, forKey: .asrCorrectionBaseURL) ?? ""
+        asrCorrectionAPIKey = try container.decodeIfPresent(String.self, forKey: .asrCorrectionAPIKey) ?? ""
+        asrCorrectionModel = try container.decodeIfPresent(String.self, forKey: .asrCorrectionModel) ?? ""
         refineEnabled = try container.decode(Bool.self, forKey: .refineEnabled)
         refineBaseURL = try container.decode(String.self, forKey: .refineBaseURL)
         refineAPIKey = try container.decode(String.self, forKey: .refineAPIKey)
@@ -102,6 +122,10 @@ public struct AppSettings: Equatable, Codable, Sendable {
         try container.encode(inputLanguage, forKey: .inputLanguage)
         try container.encode(captureRootPath, forKey: .captureRootPath)
         try container.encode(triggerSelection, forKey: .triggerSelection)
+        try container.encode(asrCorrectionProvider, forKey: .asrCorrectionProvider)
+        try container.encode(asrCorrectionBaseURL, forKey: .asrCorrectionBaseURL)
+        try container.encode(asrCorrectionAPIKey, forKey: .asrCorrectionAPIKey)
+        try container.encode(asrCorrectionModel, forKey: .asrCorrectionModel)
         try container.encode(refineEnabled, forKey: .refineEnabled)
         try container.encode(refineBaseURL, forKey: .refineBaseURL)
         try container.encode(refineAPIKey, forKey: .refineAPIKey)

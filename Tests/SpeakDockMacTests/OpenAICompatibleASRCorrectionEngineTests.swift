@@ -78,6 +78,7 @@ final class OpenAICompatibleASRCorrectionEngineTests: XCTestCase {
 
     private func configuredConfiguration() -> ASRCorrectionConfiguration {
         ASRCorrectionConfiguration(
+            provider: .customEndpoint,
             enabled: true,
             baseURL: "https://example.com/v1",
             apiKey: "secret",

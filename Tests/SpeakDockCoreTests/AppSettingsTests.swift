@@ -10,6 +10,10 @@ final class AppSettingsTests: XCTestCase {
           "triggerSelection": {
             "kind": "fn"
           },
+          "asrCorrectionProvider": "disabled",
+          "asrCorrectionBaseURL": "",
+          "asrCorrectionAPIKey": "",
+          "asrCorrectionModel": "",
           "refineEnabled": false,
           "refineBaseURL": "",
           "refineAPIKey": "",
@@ -21,6 +25,10 @@ final class AppSettingsTests: XCTestCase {
 
         XCTAssertEqual(decoded.appLanguage, .followSystem)
         XCTAssertEqual(decoded.inputLanguage, .simplifiedChinese)
+        XCTAssertEqual(decoded.asrCorrectionProvider, .disabled)
+        XCTAssertEqual(decoded.asrCorrectionBaseURL, "")
+        XCTAssertEqual(decoded.asrCorrectionAPIKey, "")
+        XCTAssertEqual(decoded.asrCorrectionModel, "")
     }
 
     func testSettingsEncodeWritesSplitLanguageFieldsWithoutLegacyLanguageCodeOrDockToggle() throws {
@@ -29,6 +37,10 @@ final class AppSettingsTests: XCTestCase {
             inputLanguage: .japanese,
             captureRootPath: "/tmp",
             triggerSelection: .fn,
+            asrCorrectionProvider: .customEndpoint,
+            asrCorrectionBaseURL: "https://example.com/v1",
+            asrCorrectionAPIKey: "secret",
+            asrCorrectionModel: "gpt-5.3-chat-latest",
             refineEnabled: false,
             refineBaseURL: "",
             refineAPIKey: "",
@@ -42,6 +54,10 @@ final class AppSettingsTests: XCTestCase {
 
         XCTAssertEqual(payload["appLanguage"] as? String, "en")
         XCTAssertEqual(payload["inputLanguage"] as? String, "ja-JP")
+        XCTAssertEqual(payload["asrCorrectionProvider"] as? String, "customEndpoint")
+        XCTAssertEqual(payload["asrCorrectionBaseURL"] as? String, "https://example.com/v1")
+        XCTAssertEqual(payload["asrCorrectionAPIKey"] as? String, "secret")
+        XCTAssertEqual(payload["asrCorrectionModel"] as? String, "gpt-5.3-chat-latest")
         XCTAssertNil(payload["languageCode"])
         XCTAssertNil(payload["showDockIcon"])
     }

@@ -147,6 +147,7 @@ struct SpeakDockLaunchOptions: Equatable {
 
     var runtimeASRCorrectionConfigurationOverride: ASRCorrectionConfiguration? {
         let configuration = ASRCorrectionConfiguration(
+            provider: .customEndpoint,
             enabled: true,
             baseURL: asrCorrectionBaseURL,
             apiKey: asrCorrectionAPIKey,
